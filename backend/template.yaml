@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Runtime: dotnet8
+    Architectures:
+      - x86_64
+    MemorySize: 512
+    Timeout: 10
+    Environment:
+      Variables:
+        SUPABASE_DB_URL: !Sub '{{resolve:ssm:/suburblens/supabase-db-url}}'
+
+Resources:
+  SuburbLensApi:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: SuburbLens.Api
+      CodeUri: SuburbLens.Api/
+      SnapStart:
+        ApplyOn: PublishedVersions
+      Events:
+        ProxyEvent:
+          Type: HttpApi
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+        HealthEvent:
+          Type: HttpApi
+          Properties:
+            Path: /health
+            Method: GET
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com'
