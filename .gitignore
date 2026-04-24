@@ -1,0 +1,27 @@
+# Data
+data/raw/
+data/extracted/
+
+# Backend
+backend/**/bin/
+backend/**/obj/
+backend/**/appsettings.Development.json
+backend/**/*.user
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+
+# ETL
+etl/.env
+etl/__pycache__/
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Env
+.env
+.DS_Store
+EOF

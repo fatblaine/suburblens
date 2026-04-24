@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug API",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/backend/SuburbLens.Api/bin/Debug/net8.0/SuburbLens.Api.dll",
+      "cwd": "${workspaceFolder}/backend/SuburbLens.Api",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "SUPABASE_DB_URL": "在这里填你的连接串"
+      }
+    }
+  ]
+}
