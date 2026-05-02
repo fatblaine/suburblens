@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dotnet *)"
+      "Bash(dotnet *)",
+      "Bash(grep -n \"Tot$\\\\|Tot_Tot\")",
+      "Bash(python3 *)",
+      "WebFetch(domain:www.abs.gov.au)",
+      "Bash(python *)",
+      "Bash(.venv/Scripts/pip install *)",
+      "Bash(pip install *)"
     ]
   }
 }
