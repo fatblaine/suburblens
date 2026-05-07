@@ -30,3 +30,19 @@ export function useSuburbTenure(salCode: string | undefined) {
         staleTime: 5 * 60 * 1000
     })
 }
+
+// Fetch tenure data for multiple suburbs by their salCodes
+export function useSuburbTenureBatch(salCodes: string[]) {
+    return useQuery<TenureResponse[]>({
+        queryKey: ['suburb-tenure-batch', salCodes],
+        queryFn: async () => {
+            const params = new URLSearchParams()
+            salCodes.forEach(code => params.append('salCodes', code))
+            const res = await fetch(`${API_BASE}/api/suburbs/tenure/batch?${params}`)
+            if (!res.ok) throw new Error('Failed to fetch batch tenure data.')
+            return res.json()
+        },
+        enabled: salCodes.length > 0,
+        staleTime: 5 * 60 * 1000
+    })
+}
