@@ -25,3 +25,10 @@ etl/__pycache__/
 .env
 .DS_Store
 EOF
+
+docs/
+.claude/agents/
+
+CLAUDE.md
+.claude/
+CLAUDE.md
