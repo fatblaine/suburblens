@@ -18,18 +18,23 @@ Phase 1 只做 Tenure 数据。脚本从 ABS TSP DataPack CSV 读取数据，写
 ETL 脚本期望以下路径存在（相对于项目根目录）：
 
 ```
-data/
-└── 2021_TSP_SA2_for_NSW_short-header/
-    └── 2021 Census TSP Statistical Area 2 for NSW/
-        ├── 2021Census_T18A_NSW_SA2.csv
-        └── 2021Census_T18B_NSW_SA2.csv
+data/extracted/
+├── 2021_TSP_SA2_for_NSW_short-header/
+│   └── 2021 Census TSP Statistical Area 2 for NSW/
+│       ├── 2021Census_T18A_NSW_SA2.csv
+│       └── 2021Census_T18B_NSW_SA2.csv
+└── 2021_TSP_SA2_for_VIC_short-header/
+    └── 2021 Census TSP Statistical Area 2 for VIC/
+        ├── 2021Census_T18A_VIC_SA2.csv
+        └── 2021Census_T18B_VIC_SA2.csv
 ```
 
 如果 zip 还没解压：
 
 ```bash
-cd data
+cd data/extracted
 unzip 2021_TSP_SA2_for_NSW_short-header.zip
+unzip 2021_TSP_SA2_for_VIC_short-header.zip
 ```
 
 ---
@@ -112,9 +117,11 @@ geo step complete.
 ```
 Reading 2021Census_T18A_NSW_SA2.csv ...
 Reading 2021Census_T18B_NSW_SA2.csv ...
-  Merged: 644 SA2 rows
-Ensuring 644 geo_sa2 rows exist ...
-Upserting 1932 tsp_tenure rows (644 SA2s × 3 years) ...
+Reading 2021Census_T18A_VIC_SA2.csv ...
+Reading 2021Census_T18B_VIC_SA2.csv ...
+  Merged: ~1300 SA2 rows (NSW=644, VIC=~660)
+Ensuring ~1300 geo_sa2 rows exist ...
+Upserting ~3900 tsp_tenure rows (~1300 SA2s × 3 years) ...
 tsp step complete.
 ```
 
@@ -162,7 +169,7 @@ python etl.py --step verify
 | 项目 | 状态 | 何时解决 |
 |------|------|---------|
 | 几何坐标（geom/centroid）未写入 | 待补 | Phase 1 不需要，Phase 2 地图功能时补 |
-| 仅含 NSW Tenure 数据 | 待补 | VIC TSP 下载后重跑 `--step tsp` |
+| 同时含 NSW + VIC Tenure 数据 | 已完成 | — |
 | SAL→SA2 映射基于面积重叠（无精确 Correspondence 文件） | 可接受 | ABS 不提供 SAL→SA2 直接对照，当前方案精度足够 |
 
 ---

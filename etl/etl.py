@@ -7,6 +7,10 @@ Reads:
       2021 Census TSP Statistical Area 2 for NSW/
           2021Census_T18A_NSW_SA2.csv
           2021Census_T18B_NSW_SA2.csv
+  ../data/2021_TSP_SA2_for_VIC_short-header/
+      2021 Census TSP Statistical Area 2 for VIC/
+          2021Census_T18A_VIC_SA2.csv
+          2021Census_T18B_VIC_SA2.csv
   ../data/SA2_2021_AUST_SHP_GDA2020/SA2_2021_AUST_GDA2020.shp
   ../data/SAL_2021_AUST_GDA2020_SHP/SAL_2021_AUST_GDA2020.shp
 
@@ -50,6 +54,14 @@ NSW_DIR = (
 )
 T18A     = NSW_DIR / "2021Census_T18A_NSW_SA2.csv"
 T18B     = NSW_DIR / "2021Census_T18B_NSW_SA2.csv"
+
+VIC_DIR  = (
+    DATA
+    / "2021_TSP_SA2_for_VIC_short-header"
+    / "2021 Census TSP Statistical Area 2 for VIC"
+)
+VIC_T18A = VIC_DIR / "2021Census_T18A_VIC_SA2.csv"
+VIC_T18B = VIC_DIR / "2021Census_T18B_VIC_SA2.csv"
 SA2_SHP  = DATA / "SA2_2021_AUST_SHP_GDA2020" / "SA2_2021_AUST_GDA2020.shp"
 SAL_SHP  = DATA / "SAL_2021_AUST_GDA2020_SHP" / "SAL_2021_AUST_GDA2020.shp"
 
@@ -325,15 +337,23 @@ def load_geography() -> None:
 def load_tsp_tenure() -> None:
     check_file(T18A)
     check_file(T18B)
+    check_file(VIC_T18A)
+    check_file(VIC_T18B)
 
     print(f"Reading {T18A.name} ...")
-    df_a = pd.read_csv(T18A, usecols=T18A_COLS, dtype={"SA2_CODE_2021": str})
-
+    nsw_a = pd.read_csv(T18A, usecols=T18A_COLS, dtype={"SA2_CODE_2021": str})
     print(f"Reading {T18B.name} ...")
-    df_b = pd.read_csv(T18B, usecols=T18B_COLS, dtype={"SA2_CODE_2021": str})
+    nsw_b = pd.read_csv(T18B, usecols=T18B_COLS, dtype={"SA2_CODE_2021": str})
 
-    df = df_a.merge(df_b, on="SA2_CODE_2021", how="left")
-    print(f"  Merged: {len(df)} SA2 rows")
+    print(f"Reading {VIC_T18A.name} ...")
+    vic_a = pd.read_csv(VIC_T18A, usecols=T18A_COLS, dtype={"SA2_CODE_2021": str})
+    print(f"Reading {VIC_T18B.name} ...")
+    vic_b = pd.read_csv(VIC_T18B, usecols=T18B_COLS, dtype={"SA2_CODE_2021": str})
+
+    nsw = nsw_a.merge(nsw_b, on="SA2_CODE_2021", how="left")
+    vic = vic_a.merge(vic_b, on="SA2_CODE_2021", how="left")
+    df = pd.concat([nsw, vic], ignore_index=True)
+    print(f"  Merged: {len(df)} SA2 rows (NSW={len(nsw)}, VIC={len(vic)})")
 
     tenure_rows = []
     for _, row in df.iterrows():
@@ -353,10 +373,13 @@ def load_tsp_tenure() -> None:
     sa2_codes = sorted({r[0] for r in tenure_rows})
 
     # Insert geo_sa2 stubs for any SA2 not yet loaded by the geo step
-    stub_rows = [
-        (code, f"[stub] {code}", "1RNSW", "New South Wales", "1", "New South Wales")
-        for code in sa2_codes
-    ]
+    # SA2 codes starting with "2" are VIC; "1" are NSW
+    def _stub(code: str) -> tuple:
+        if code.startswith("2"):
+            return (code, f"[stub] {code}", "2GMEL", "Victoria", "2", "Victoria")
+        return (code, f"[stub] {code}", "1RNSW", "New South Wales", "1", "New South Wales")
+
+    stub_rows = [_stub(code) for code in sa2_codes]
 
     conn = get_connection()
     try:
