@@ -80,6 +80,9 @@ app.MapGet("/api/suburbs/{salCode}/tenure", async (IDbConnection db, string salC
             outright_2011 AS Outright2011, outright_2016 AS Outright2016, outright_2021 AS Outright2021,
             mortgage_2011 AS Mortgage2011, mortgage_2016 AS Mortgage2016, mortgage_2021 AS Mortgage2021,
             rent_2011 AS Rent2011, rent_2016 AS Rent2016, rent_2021 AS Rent2021,
+            total_dwellings_2011 AS TotalDwellings2011,
+            total_dwellings_2016 AS TotalDwellings2016,
+            total_dwellings_2021 AS TotalDwellings2021,
             residency_shift_index AS ResidencyShiftIndex, trend_label AS TrendLabel
         FROM v_tenure_shift
         WHERE sal_code = @salCode",
@@ -96,9 +99,10 @@ app.MapGet("/api/suburbs/{salCode}/tenure", async (IDbConnection db, string salC
         Sa2Code: row.Sa2Code,
         Sa2Name: row.Sa2Name,
         Tenure: new TenureByYear(
-            Outright: new YearValues(row.Outright2011, row.Outright2016, row.Outright2021),
-            Mortgage: new YearValues(row.Mortgage2011, row.Mortgage2016, row.Mortgage2021),
-            Rent:     new YearValues(row.Rent2011,     row.Rent2016,     row.Rent2021)
+            Outright:        new YearValues(row.Outright2011, row.Outright2016, row.Outright2021),
+            Mortgage:        new YearValues(row.Mortgage2011, row.Mortgage2016, row.Mortgage2021),
+            Rent:            new YearValues(row.Rent2011,     row.Rent2016,     row.Rent2021),
+            TotalDwellings:  new YearCounts(row.TotalDwellings2011, row.TotalDwellings2016, row.TotalDwellings2021)
         ),
         ResidencyShiftIndex: row.ResidencyShiftIndex,
         TrendLabel: row.TrendLabel,
@@ -121,6 +125,7 @@ record TenureRow(
     decimal? Outright2011, decimal? Outright2016, decimal? Outright2021,
     decimal? Mortgage2011, decimal? Mortgage2016, decimal? Mortgage2021,
     decimal? Rent2011,     decimal? Rent2016,     decimal? Rent2021,
+    int? TotalDwellings2011, int? TotalDwellings2016, int? TotalDwellings2021,
     decimal? ResidencyShiftIndex, string TrendLabel);
 
 // Nested response the frontend receives
@@ -130,6 +135,7 @@ record TenureResponse(
     TenureByYear Tenure,
     decimal? ResidencyShiftIndex, string TrendLabel, string DataNote);
 
-record TenureByYear(YearValues Outright, YearValues Mortgage, YearValues Rent);
+record TenureByYear(YearValues Outright, YearValues Mortgage, YearValues Rent, YearCounts TotalDwellings);
 
 record YearValues(decimal? Y2011, decimal? Y2016, decimal? Y2021);
+record YearCounts(int? Y2011, int? Y2016, int? Y2021);

@@ -23,3 +23,19 @@ Phase 1 covers only one feature: the Tenure Time Machine. Full plan: `docs/Subur
 
 ## Current Phase
 Phase 1 - Week 1 - Backend Skeleton
+
+## AI Modification Logging (MANDATORY)
+
+After **every** modification to any file in this repository, you MUST append an entry to `docs/ai-changelog.md` in English before the session ends.
+
+Each entry must include:
+- **Date & Time**: the session date (YYYY-MM-DD)
+- **Files Modified**: every file created, edited, or deleted
+- **Purpose**: why the change was made (one or two sentences)
+- **Result**: what the change achieves or how the system behaves differently after it
+
+Rules:
+- Write in English only
+- Log ALL changes in a single session under one date heading; use sub-entries (### title) per logical change
+- Never skip logging, even for trivial edits (typo fixes, comment changes)
+- If a change is reverted, log both the change and the revert

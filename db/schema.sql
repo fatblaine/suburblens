@@ -146,7 +146,10 @@ pivoted AS (
         MAX(CASE WHEN census_year = 2021 THEN mortgage_pct END) AS mortgage_2021,
         MAX(CASE WHEN census_year = 2011 THEN rent_pct END)     AS rent_2011,
         MAX(CASE WHEN census_year = 2016 THEN rent_pct END)     AS rent_2016,
-        MAX(CASE WHEN census_year = 2021 THEN rent_pct END)     AS rent_2021
+        MAX(CASE WHEN census_year = 2021 THEN rent_pct END)     AS rent_2021,
+        MAX(CASE WHEN census_year = 2011 THEN total_occupied_dwellings END) AS total_dwellings_2011,
+        MAX(CASE WHEN census_year = 2016 THEN total_occupied_dwellings END) AS total_dwellings_2016,
+        MAX(CASE WHEN census_year = 2021 THEN total_occupied_dwellings END) AS total_dwellings_2021
     FROM tenure_pct
     GROUP BY sa2_code
 ),
@@ -169,6 +172,7 @@ SELECT
     w.outright_2011, w.outright_2016, w.outright_2021,
     w.mortgage_2011, w.mortgage_2016, w.mortgage_2021,
     w.rent_2011,     w.rent_2016,     w.rent_2021,
+    w.total_dwellings_2011, w.total_dwellings_2016, w.total_dwellings_2021,
     w.residency_shift_index,
     CASE
         WHEN w.residency_shift_index >=  3 THEN 'strong_ownership_shift'
