@@ -7,9 +7,10 @@ interface Props {
   onAdd: (suburb: SuburbSearchResult) => void
   onRemove: (salCode: string) => void
   onCompare: () => void
+  onNearby: () => void  // 查看周边，只在选了 1 个 suburb 时触发
 }
 
-export default function SearchBox({ selected, onAdd, onRemove, onCompare }: Props) {
+export default function SearchBox({ selected, onAdd, onRemove, onCompare, onNearby }: Props) {
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [open, setOpen] = useState(false)
@@ -113,6 +114,16 @@ export default function SearchBox({ selected, onAdd, onRemove, onCompare }: Prop
           className="mt-3 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors"
         >
           Compare {selected.length} suburb{selected.length > 1 ? 's' : ''}
+        </button>
+      )}
+
+      {/* 只选了 1 个 suburb 时才显示"查看周边"，Compare 需要至少 2 个没有意义 */}
+      {selected.length === 1 && (
+        <button
+          onClick={onNearby}
+          className="mt-2 w-full py-3 bg-white border border-gray-200 hover:border-blue-400 text-gray-700 font-semibold rounded-xl transition-colors"
+        >
+          Nearby Suburbs of {selected[0].salName}
         </button>
       )}
     </div>

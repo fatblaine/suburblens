@@ -1,3 +1,17 @@
+// Nearby suburbs — matches GET /api/suburbs/:salCode/nearby
+export interface NearbySuburb {
+  salCode: string
+  salName: string
+  stateName: string
+  gccsaName: string
+  distanceMeters: number
+}
+
+export interface NearbySuburbsResponse {
+  suburb: { salCode: string; salName: string }
+  nearby: NearbySuburb[]
+}
+
 // Suburb search result — matches GET /api/suburbs/search
 export interface SuburbSearchResult {
   salCode: string
