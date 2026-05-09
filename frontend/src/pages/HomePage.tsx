@@ -23,6 +23,12 @@ export default function HomePage() {
     navigate(`/compare?${params}`)
   }
 
+  function handleNearby() {
+    // 只有 1 个 suburb 时才会调用，直接取第一个
+    // nearby=1 告诉详情页默认展开周边列表
+    navigate(`/suburb/${selected[0].salCode}?nearby=1`)
+  }
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
 
@@ -41,6 +47,7 @@ export default function HomePage() {
         onAdd={handleAdd}
         onRemove={handleRemove}
         onCompare={handleCompare}
+        onNearby={handleNearby}
       />
 
       <p className="mt-6 text-xs text-gray-400">

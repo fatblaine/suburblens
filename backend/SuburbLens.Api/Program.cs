@@ -183,6 +183,53 @@ app.MapGet("/api/suburbs/tenure/batch", async (IDbConnection db, string[] salCod
     return Results.Ok(response);
 });
 
+// Find nearby suburbs of the designated suburb
+app.MapGet("/api/suburbs/{salCode}/nearby", async (IDbConnection db, string salCode, int limit = 5) =>
+{
+    if (limit < 1 || limit > 10) limit = 5;
+
+    // 先确认目标 suburb 存在
+    var target = await db.QuerySingleOrDefaultAsync<SuburbSearchResult>(@"
+        SELECT sal_code AS SalCode, sal_name AS SalName,
+               state_name AS StateName, gccsa_name AS GccsaName
+        FROM geo_sal
+        WHERE sal_code = @salCode",
+        new { salCode });
+
+    if (target is null)
+        return Results.NotFound(new { error = $"Suburb not found: {salCode}" });
+
+    // 用子查询直接引用目标的 centroid，避免 text 转换导致的格式问题
+    var nearby = await db.QueryAsync<NearbySuburbResult>(@"
+        SELECT
+            g.sal_code   AS SalCode,
+            g.sal_name   AS SalName,
+            g.state_name AS StateName,
+            g.gccsa_name AS GccsaName,
+            ROUND(ST_Distance(
+                g.centroid,
+                ref.centroid
+            )::numeric, 0)::int AS DistanceMeters
+        FROM geo_sal g
+        CROSS JOIN (
+            SELECT centroid FROM geo_sal WHERE sal_code = @salCode
+        ) ref
+        WHERE
+            g.sal_code != @salCode
+            AND g.gccsa_code IN ('1GSYD', '2GMEL')
+            AND g.centroid IS NOT NULL
+            AND ST_DWithin(g.centroid, ref.centroid, 20000)
+        ORDER BY DistanceMeters ASC
+        LIMIT @limit",
+        new { salCode, limit });
+
+    return Results.Ok(new
+    {
+        suburb = new { target.SalCode, target.SalName },
+        nearby = nearby
+    });
+});
+
 app.Run();
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
@@ -210,3 +257,12 @@ record TenureByYear(YearValues Outright, YearValues Mortgage, YearValues Rent, Y
 
 record YearValues(decimal? Y2011, decimal? Y2016, decimal? Y2021);
 record YearCounts(int? Y2011, int? Y2016, int? Y2021);
+
+record NearbySuburbResult(
+    string SalCode,
+    string SalName,
+    string StateName,
+    string GccsaName,
+    int DistanceMeters
+);
+
