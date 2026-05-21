@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import type { SuburbSearchResult, TenureResponse, NearbySuburbsResponse } from '../types/api'
+import type { SuburbSearchResult, TenureResponse, NearbySuburbsResponse, LanguageResponse } from '../types/api'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
@@ -43,6 +43,20 @@ export function useNearbySuburbs(salCode: string | undefined, limit = 5, enabled
         },
         enabled: !!salCode && enabled,  // salCode 存在 且 用户已展开，才发请求
         staleTime: 10 * 60 * 1000  // 地理数据不变，缓存 10 分钟
+    })
+}
+
+// Fetch language profile for a suburb by its salCode
+export function useSuburbLanguage(salCode: string | undefined) {
+    return useQuery<LanguageResponse>({
+        queryKey: ['suburb-language', salCode],
+        queryFn: async () => {
+            const res = await fetch(`${API_BASE}/api/suburbs/${salCode}/language`)
+            if (!res.ok) throw new Error('Failed to fetch suburb language data.')
+            return res.json()
+        },
+        enabled: !!salCode,
+        staleTime: 5 * 60 * 1000
     })
 }
 

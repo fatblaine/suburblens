@@ -1,8 +1,38 @@
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { useSuburbTenureBatch } from '../api/suburbs'
+import { useSuburbTenureBatch, useSuburbLanguage } from '../api/suburbs'
 import ShiftIndexCard from '../components/ShiftIndexCard'
 import TenureChart from '../components/TenureChart'
+import LanguageChart from '../components/LanguageChart'
 import LoadingSkeleton from '../components/LoadingSkeleton'
+
+function LanguageSection({ salCode }: { salCode: string }) {
+  const { data, isPending, isError } = useSuburbLanguage(salCode)
+
+  if (isPending) return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm">
+      <div className="animate-pulse space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="w-24 h-3 bg-gray-200 rounded" />
+            <div className="flex-1 h-4 bg-gray-200 rounded-full" />
+            <div className="w-10 h-3 bg-gray-200 rounded" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
+  if (isError || !data) return null
+
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm">
+      <h3 className="text-base font-semibold text-gray-900 mb-1">Language at Home</h3>
+      <p className="text-xs text-gray-400 mb-4">Community language profile · 2011 / 2016 / 2021</p>
+      <LanguageChart response={data} />
+      <p className="mt-4 text-xs text-gray-400">&#9432; {data.dataNote}</p>
+    </div>
+  )
+}
 
 export default function ComparePage() {
   const [searchParams] = useSearchParams()
@@ -73,6 +103,8 @@ export default function ComparePage() {
                     &#9432; Data sourced from ABS SA2: <strong>{suburb.sa2Name}</strong>
                   </p>
                 </div>
+
+                <LanguageSection salCode={suburb.salCode} />
               </div>
             ))}
           </div>

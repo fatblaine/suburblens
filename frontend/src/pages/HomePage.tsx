@@ -35,7 +35,7 @@ export default function HomePage() {
       <div className="text-center mb-10">
         <h1 className="text-4xl font-bold text-gray-900 mb-3">SuburbLens</h1>
         <p className="text-gray-500 text-lg">
-          Is this suburb becoming more "owner-occupied" or "rental"?
+          Explore how Australian suburbs are changing over time.
         </p>
         <p className="text-gray-400 text-sm mt-1">
           Based on Australian Census data from 2011, 2016, and 2021.

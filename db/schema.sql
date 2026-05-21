@@ -190,3 +190,166 @@ WHERE s.gccsa_code IN ('1GSYD', '2GMEL');
 COMMENT ON VIEW v_tenure_shift IS
     'Tenure Time Machine 核心视图：将 tsp_tenure 各普查年数据转为百分比并横向展开，'
     '计算 Residency Shift Index（SuburbLens Custom 指标），并 JOIN SAL/SA2 地理信息供 API 直接查询';
+
+-- ----------------------------------------------------------------------------
+-- Phase 2: Language spoken at home (TSP T10A + T10B)
+-- One row per SA2 per census year — same PK pattern as tsp_tenure.
+-- Source: ABS 2021 Census TSP Table 10 (Uses of Language, UOL).
+-- chinese_total = cantonese + mandarin + chinese_other (ABS pre-aggregated).
+-- total_persons  = sum of all individual language columns (excl. chinese_total).
+-- ----------------------------------------------------------------------------
+CREATE TABLE tsp_language (
+    sa2_code          TEXT     NOT NULL REFERENCES geo_sa2(sa2_code),
+    census_year       SMALLINT NOT NULL,   -- 2011 | 2016 | 2021
+
+    total_persons     INTEGER,             -- response denominator (sum of all below)
+
+    -- English
+    english_only      INTEGER,
+
+    -- Non-English languages (alphabetical)
+    arabic            INTEGER,
+    aus_indigenous    INTEGER,
+    bengali           INTEGER,
+    cantonese         INTEGER,
+    mandarin          INTEGER,
+    chinese_other     INTEGER,
+    chinese_total     INTEGER,             -- ABS pre-aggregated: cantonese + mandarin + chinese_other
+    croatian          INTEGER,
+    filipino          INTEGER,
+    french            INTEGER,
+    german            INTEGER,
+    greek             INTEGER,
+    gujarati          INTEGER,
+    hindi             INTEGER,
+    indonesian        INTEGER,
+    italian           INTEGER,
+    japanese          INTEGER,
+    korean            INTEGER,
+    macedonian        INTEGER,
+    malayalam         INTEGER,
+    nepali            INTEGER,
+    persian_dari      INTEGER,
+    portuguese        INTEGER,
+    punjabi           INTEGER,
+    russian           INTEGER,
+    serbian           INTEGER,
+    sinhalese         INTEGER,
+    spanish           INTEGER,
+    tagalog           INTEGER,
+    tamil             INTEGER,
+    thai              INTEGER,
+    turkish           INTEGER,
+    urdu              INTEGER,
+    vietnamese        INTEGER,
+    other_language    INTEGER,
+
+    PRIMARY KEY (sa2_code, census_year)
+);
+
+COMMENT ON TABLE  tsp_language              IS 'TSP 家庭用语统计事实表，每行为一个 SA2 在某普查年的语言分布人数';
+COMMENT ON COLUMN tsp_language.sa2_code     IS 'SA2 区域编码，外键关联 geo_sa2';
+COMMENT ON COLUMN tsp_language.census_year  IS '人口普查年份，取值 2011、2016 或 2021';
+COMMENT ON COLUMN tsp_language.total_persons IS '语言申报总人数，等于以下所有语言列之和（不含 chinese_total，避免重复计算）';
+COMMENT ON COLUMN tsp_language.chinese_total IS 'ABS 预合计：粤语 + 普通话 + 其他中文方言，便于快速查询，不计入 total_persons';
+
+-- ----------------------------------------------------------------------------
+-- View: Language Profile per suburb per census year
+-- Returns one row per (sal_code, census_year) with raw counts + percentages.
+-- The API groups the 3 rows into a year-keyed object.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE VIEW v_language_profile AS
+SELECT
+    s.sal_code,
+    s.sal_name,
+    s.state_name,
+    s.gccsa_name,
+    sa2.sa2_code,
+    sa2.sa2_name,
+    l.census_year,
+    l.total_persons,
+
+    -- raw counts
+    l.english_only,
+    l.arabic,
+    l.aus_indigenous,
+    l.bengali,
+    l.cantonese,
+    l.mandarin,
+    l.chinese_other,
+    l.chinese_total,
+    l.croatian,
+    l.filipino,
+    l.french,
+    l.german,
+    l.greek,
+    l.gujarati,
+    l.hindi,
+    l.indonesian,
+    l.italian,
+    l.japanese,
+    l.korean,
+    l.macedonian,
+    l.malayalam,
+    l.nepali,
+    l.persian_dari,
+    l.portuguese,
+    l.punjabi,
+    l.russian,
+    l.serbian,
+    l.sinhalese,
+    l.spanish,
+    l.tagalog,
+    l.tamil,
+    l.thai,
+    l.turkish,
+    l.urdu,
+    l.vietnamese,
+    l.other_language,
+
+    -- percentages (1 decimal place, NULL-safe)
+    ROUND(100.0 * l.english_only   / NULLIF(l.total_persons, 0), 1) AS english_only_pct,
+    ROUND(100.0 * l.arabic         / NULLIF(l.total_persons, 0), 1) AS arabic_pct,
+    ROUND(100.0 * l.aus_indigenous / NULLIF(l.total_persons, 0), 1) AS aus_indigenous_pct,
+    ROUND(100.0 * l.bengali        / NULLIF(l.total_persons, 0), 1) AS bengali_pct,
+    ROUND(100.0 * l.cantonese      / NULLIF(l.total_persons, 0), 1) AS cantonese_pct,
+    ROUND(100.0 * l.mandarin       / NULLIF(l.total_persons, 0), 1) AS mandarin_pct,
+    ROUND(100.0 * l.chinese_other  / NULLIF(l.total_persons, 0), 1) AS chinese_other_pct,
+    ROUND(100.0 * l.chinese_total  / NULLIF(l.total_persons, 0), 1) AS chinese_total_pct,
+    ROUND(100.0 * l.croatian       / NULLIF(l.total_persons, 0), 1) AS croatian_pct,
+    ROUND(100.0 * l.filipino       / NULLIF(l.total_persons, 0), 1) AS filipino_pct,
+    ROUND(100.0 * l.french         / NULLIF(l.total_persons, 0), 1) AS french_pct,
+    ROUND(100.0 * l.german         / NULLIF(l.total_persons, 0), 1) AS german_pct,
+    ROUND(100.0 * l.greek          / NULLIF(l.total_persons, 0), 1) AS greek_pct,
+    ROUND(100.0 * l.gujarati       / NULLIF(l.total_persons, 0), 1) AS gujarati_pct,
+    ROUND(100.0 * l.hindi          / NULLIF(l.total_persons, 0), 1) AS hindi_pct,
+    ROUND(100.0 * l.indonesian     / NULLIF(l.total_persons, 0), 1) AS indonesian_pct,
+    ROUND(100.0 * l.italian        / NULLIF(l.total_persons, 0), 1) AS italian_pct,
+    ROUND(100.0 * l.japanese       / NULLIF(l.total_persons, 0), 1) AS japanese_pct,
+    ROUND(100.0 * l.korean         / NULLIF(l.total_persons, 0), 1) AS korean_pct,
+    ROUND(100.0 * l.macedonian     / NULLIF(l.total_persons, 0), 1) AS macedonian_pct,
+    ROUND(100.0 * l.malayalam      / NULLIF(l.total_persons, 0), 1) AS malayalam_pct,
+    ROUND(100.0 * l.nepali         / NULLIF(l.total_persons, 0), 1) AS nepali_pct,
+    ROUND(100.0 * l.persian_dari   / NULLIF(l.total_persons, 0), 1) AS persian_dari_pct,
+    ROUND(100.0 * l.portuguese     / NULLIF(l.total_persons, 0), 1) AS portuguese_pct,
+    ROUND(100.0 * l.punjabi        / NULLIF(l.total_persons, 0), 1) AS punjabi_pct,
+    ROUND(100.0 * l.russian        / NULLIF(l.total_persons, 0), 1) AS russian_pct,
+    ROUND(100.0 * l.serbian        / NULLIF(l.total_persons, 0), 1) AS serbian_pct,
+    ROUND(100.0 * l.sinhalese      / NULLIF(l.total_persons, 0), 1) AS sinhalese_pct,
+    ROUND(100.0 * l.spanish        / NULLIF(l.total_persons, 0), 1) AS spanish_pct,
+    ROUND(100.0 * l.tagalog        / NULLIF(l.total_persons, 0), 1) AS tagalog_pct,
+    ROUND(100.0 * l.tamil          / NULLIF(l.total_persons, 0), 1) AS tamil_pct,
+    ROUND(100.0 * l.thai           / NULLIF(l.total_persons, 0), 1) AS thai_pct,
+    ROUND(100.0 * l.turkish        / NULLIF(l.total_persons, 0), 1) AS turkish_pct,
+    ROUND(100.0 * l.urdu           / NULLIF(l.total_persons, 0), 1) AS urdu_pct,
+    ROUND(100.0 * l.vietnamese     / NULLIF(l.total_persons, 0), 1) AS vietnamese_pct,
+    ROUND(100.0 * l.other_language / NULLIF(l.total_persons, 0), 1) AS other_language_pct
+
+FROM geo_sal s
+JOIN geo_sal_to_sa2 m  ON m.sal_code  = s.sal_code  AND m.is_primary
+JOIN geo_sa2 sa2       ON sa2.sa2_code = m.sa2_code
+LEFT JOIN tsp_language l ON l.sa2_code = sa2.sa2_code
+WHERE s.gccsa_code IN ('1GSYD', '2GMEL');
+
+COMMENT ON VIEW v_language_profile IS
+    '家庭用语视图：tsp_language 原始人数 + 百分比，每郊区每普查年一行，JOIN SAL/SA2 地理信息供 API 查询';
