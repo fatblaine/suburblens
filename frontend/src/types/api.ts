@@ -53,6 +53,30 @@ export interface TenureResponse {
   dataNote: string
 }
 
+// Country of birth — matches GET /api/suburbs/:salCode/birthcountry
+export interface CountryEntry {
+  country: string
+  pct: number | null
+}
+
+export interface BirthCountryYearData {
+  totalPersons: number | null
+  countries: CountryEntry[]
+}
+
+export interface BirthCountryResponse {
+  salCode: string
+  salName: string
+  stateName: string
+  gccsaName: string
+  sa2Code: string
+  sa2Name: string
+  y2011: BirthCountryYearData | null
+  y2016: BirthCountryYearData | null
+  y2021: BirthCountryYearData | null
+  dataNote: string
+}
+
 // Language at home — matches GET /api/suburbs/:salCode/language
 export interface LanguageEntry {
   language: string
