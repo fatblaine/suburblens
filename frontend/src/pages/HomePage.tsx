@@ -30,14 +30,14 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+    <main className="min-h-screen flex flex-col items-center justify-center bg-transparent px-4">
 
       <div className="text-center mb-10">
-        <h1 className="text-4xl font-bold text-gray-900 mb-3">SuburbLens</h1>
-        <p className="text-gray-500 text-lg">
+        <h1 className="text-4xl font-bold text-white mb-3">SuburbLens</h1>
+        <p className="text-white/60 text-lg">
           Explore how Australian suburbs are changing over time.
         </p>
-        <p className="text-gray-400 text-sm mt-1">
+        <p className="text-white/40 text-sm mt-1">
           Based on Australian Census data from 2011, 2016, and 2021.
         </p>
       </div>
@@ -50,7 +50,7 @@ export default function HomePage() {
         onNearby={handleNearby}
       />
 
-      <p className="mt-6 text-xs text-gray-400">
+      <p className="mt-6 text-xs text-white/40">
         Only Sydney and Melbourne suburbs are available in this demo version.
       </p>
 

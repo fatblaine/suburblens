@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import type { SuburbSearchResult, TenureResponse, NearbySuburbsResponse, LanguageResponse } from '../types/api'
+import type { SuburbSearchResult, TenureResponse, NearbySuburbsResponse, LanguageResponse, BirthCountryResponse } from '../types/api'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
@@ -57,6 +57,21 @@ export function useSuburbLanguage(salCode: string | undefined) {
         },
         enabled: !!salCode,
         staleTime: 5 * 60 * 1000
+    })
+}
+
+// Fetch country of birth profile for a suburb by its salCode
+export function useSuburbBirthCountry(salCode: string | undefined) {
+    return useQuery<BirthCountryResponse>({
+        queryKey: ['suburb-birthcountry', salCode],
+        queryFn: async () => {
+            const res = await fetch(`${API_BASE}/api/suburbs/${salCode}/birthcountry`)
+            if (!res.ok) throw new Error('Failed to fetch suburb birth country data.')
+            return res.json()
+        },
+        enabled: !!salCode,
+        staleTime: 5 * 60 * 1000,
+        retry: 0,
     })
 }
 

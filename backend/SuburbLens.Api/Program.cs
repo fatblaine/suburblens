@@ -330,6 +330,105 @@ app.MapGet("/api/suburbs/{salCode}/language", async (IDbConnection db, string sa
     ));
 });
 
+app.MapGet("/api/suburbs/{salCode}/birthcountry", async (IDbConnection db, string salCode) =>
+  {
+      var rows = await db.QueryAsync<BirthCountryRow>(@"
+          SELECT
+              sal_code AS SalCode, sal_name AS SalName,
+              state_name AS StateName, gccsa_name AS GccsaName,
+              sa2_code AS Sa2Code, sa2_name AS Sa2Name,
+              census_year AS CensusYear, total_persons AS TotalPersons,
+              australia_pct AS AustraliaPct, china_pct AS ChinaPct,
+              india_pct AS IndiaPct, new_zealand_pct AS NewZealandPct,
+              philippines_pct AS PhilippinesPct, vietnam_pct AS VietnamPct,
+              uk_pct AS UkPct, south_africa_pct AS SouthAfricaPct,
+              malaysia_pct AS MalaysiaPct, south_korea_pct AS SouthKoreaPct,
+              italy_pct AS ItalyPct, sri_lanka_pct AS SriLankaPct,
+              nepal_pct AS NepalPct, pakistan_pct AS PakistanPct,
+              hong_kong_pct AS HongKongPct, usa_pct AS UsaPct,
+              lebanon_pct AS LebanonPct, iraq_pct AS IraqPct,
+              germany_pct AS GermanyPct, indonesia_pct AS IndonesiaPct,
+              bangladesh_pct AS BangladeshPct, afghanistan_pct AS AfghanistanPct,
+              greece_pct AS GreecePct, egypt_pct AS EgyptPct,
+              fiji_pct AS FijiPct, croatia_pct AS CroatiaPct,
+              ireland_pct AS IrelandPct, japan_pct AS JapanPct,
+              netherlands_pct AS NetherlandsPct, poland_pct AS PolandPct,
+              singapore_pct AS SingaporePct, taiwan_pct AS TaiwanPct,
+              thailand_pct AS ThailandPct, canada_pct AS CanadaPct,
+              born_elsewhere_pct AS BornElsewherePct
+          FROM v_birthcountry_profile
+          WHERE sal_code = @salCode
+          ORDER BY census_year",
+          new { salCode });
+
+      var rowList = rows.ToList();
+      if (rowList.Count == 0)
+          return Results.NotFound(new { error = $"Suburb not found: {salCode}" });
+
+      var first = rowList[0];
+      var byYear = rowList.ToDictionary(r => r.CensusYear);
+
+      static BirthCountryYearData? ToYearData(Dictionary<short, BirthCountryRow> d, short year)
+      {
+          if (!d.TryGetValue(year, out var r)) return null;
+          var entries = new[]
+          {
+              new CountryEntry("Australia",    r.AustraliaPct),
+              new CountryEntry("China",        r.ChinaPct),
+              new CountryEntry("India",        r.IndiaPct),
+              new CountryEntry("New Zealand",  r.NewZealandPct),
+              new CountryEntry("Philippines",  r.PhilippinesPct),
+              new CountryEntry("Vietnam",      r.VietnamPct),
+              new CountryEntry("UK",           r.UkPct),
+              new CountryEntry("South Africa", r.SouthAfricaPct),
+              new CountryEntry("Malaysia",     r.MalaysiaPct),
+              new CountryEntry("South Korea",  r.SouthKoreaPct),
+              new CountryEntry("Italy",        r.ItalyPct),
+              new CountryEntry("Sri Lanka",    r.SriLankaPct),
+              new CountryEntry("Nepal",        r.NepalPct),
+              new CountryEntry("Pakistan",     r.PakistanPct),
+              new CountryEntry("Hong Kong",    r.HongKongPct),
+              new CountryEntry("USA",          r.UsaPct),
+              new CountryEntry("Lebanon",      r.LebanonPct),
+              new CountryEntry("Iraq",         r.IraqPct),
+              new CountryEntry("Germany",      r.GermanyPct),
+              new CountryEntry("Indonesia",    r.IndonesiaPct),
+              new CountryEntry("Bangladesh",   r.BangladeshPct),
+              new CountryEntry("Afghanistan",  r.AfghanistanPct),
+              new CountryEntry("Greece",       r.GreecePct),
+              new CountryEntry("Egypt",        r.EgyptPct),
+              new CountryEntry("Fiji",         r.FijiPct),
+              new CountryEntry("Croatia",      r.CroatiaPct),
+              new CountryEntry("Ireland",      r.IrelandPct),
+              new CountryEntry("Japan",        r.JapanPct),
+              new CountryEntry("Netherlands",  r.NetherlandsPct),
+              new CountryEntry("Poland",       r.PolandPct),
+              new CountryEntry("Singapore",    r.SingaporePct),
+              new CountryEntry("Taiwan",       r.TaiwanPct),
+              new CountryEntry("Thailand",     r.ThailandPct),
+              new CountryEntry("Canada",       r.CanadaPct),
+              new CountryEntry("Other",        r.BornElsewherePct),
+          }
+          .Where(e => e.Pct > 0)
+          .OrderByDescending(e => e.Pct)
+          .ToArray();
+          return new BirthCountryYearData(r.TotalPersons, entries);
+      }
+
+      return Results.Ok(new BirthCountryResponse(
+          SalCode: first.SalCode,
+          SalName: first.SalName,
+          StateName: first.StateName,
+          GccsaName: first.GccsaName,
+          Sa2Code: first.Sa2Code,
+          Sa2Name: first.Sa2Name,
+          Y2011: ToYearData(byYear, 2011),
+          Y2016: ToYearData(byYear, 2016),
+          Y2021: ToYearData(byYear, 2021),
+          DataNote: $"Birth country data is based on the ABS SA2 '{first.Sa2Name}', which may include nearby suburbs."
+      ));
+  });
+
 app.Run();
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
@@ -388,5 +487,29 @@ record LanguageRow(
     decimal? PunjabiPct, decimal? RussianPct, decimal? SerbianPct, decimal? SinhalesePct,
     decimal? SpanishPct, decimal? TagalogPct, decimal? TamilPct, decimal? ThaiPct,
     decimal? TurkishPct, decimal? UrduPct, decimal? VietnamesePct, decimal? OtherLanguagePct
+);
+
+record CountryEntry(string Country, decimal? Pct);
+record BirthCountryYearData(int? TotalPersons, CountryEntry[] Countries);
+
+record BirthCountryResponse(
+    string SalCode, string SalName, string StateName, string GccsaName,
+    string Sa2Code, string Sa2Name,
+    BirthCountryYearData? Y2011, BirthCountryYearData? Y2016, BirthCountryYearData? Y2021,
+    string DataNote
+);
+
+record BirthCountryRow(
+    string SalCode, string SalName, string StateName, string GccsaName,
+    string Sa2Code, string Sa2Name, short CensusYear, int? TotalPersons,
+    decimal? AustraliaPct, decimal? ChinaPct, decimal? IndiaPct, decimal? NewZealandPct,
+    decimal? PhilippinesPct, decimal? VietnamPct, decimal? UkPct, decimal? SouthAfricaPct,
+    decimal? MalaysiaPct, decimal? SouthKoreaPct, decimal? ItalyPct, decimal? SriLankaPct,
+    decimal? NepalPct, decimal? PakistanPct, decimal? HongKongPct, decimal? UsaPct,
+    decimal? LebanonPct, decimal? IraqPct, decimal? GermanyPct, decimal? IndonesiaPct,
+    decimal? BangladeshPct, decimal? AfghanistanPct, decimal? GreecePct, decimal? EgyptPct,
+    decimal? FijiPct, decimal? CroatiaPct, decimal? IrelandPct, decimal? JapanPct,
+    decimal? NetherlandsPct, decimal? PolandPct, decimal? SingaporePct, decimal? TaiwanPct,
+    decimal? ThailandPct, decimal? CanadaPct, decimal? BornElsewherePct
 );
 

@@ -6,9 +6,9 @@ import { useSuburbTenure } from '../api/suburbs'
 
 function NotFound({ onBack }: { onBack: () => void }) {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
-      <p className="text-gray-500 text-lg mb-4">No data found for this suburb.</p>
-      <button onClick={onBack} className="text-blue-500 hover:underline text-sm">
+    <div className="min-h-screen bg-transparent flex flex-col items-center justify-center px-4">
+      <p className="text-white/60 text-lg mb-4">No data found for this suburb.</p>
+      <button onClick={onBack} className="text-white/50 hover:text-white/80 underline text-sm">
         ← Go back
       </button>
     </div>
@@ -18,7 +18,7 @@ function NotFound({ onBack }: { onBack: () => void }) {
 function InitialLoader({ salCode }: { salCode: string }) {
   const { isPending, isError } = useSuburbTenure(salCode)
   if (isPending) return (
-    <div className="min-h-screen bg-gray-50 px-4 py-10">
+    <div className="min-h-screen bg-transparent px-4 py-10">
       <div className="max-w-2xl mx-auto"><LoadingSkeleton /></div>
     </div>
   )
@@ -50,12 +50,12 @@ export default function SuburbDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-transparent">
       <div className="max-w-2xl mx-auto px-4 py-10">
 
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-1 text-gray-400 hover:text-gray-600 text-sm transition-colors mb-8"
+          className="flex items-center gap-1 text-white/50 hover:text-white/80 text-sm transition-colors mb-8"
         >
           ← Search again
         </button>
@@ -64,7 +64,7 @@ export default function SuburbDetailPage() {
           {salCodes.map((code, index) => (
             <div key={code}>
               {/* 第二张卡片起加分割线 */}
-              {index > 0 && <hr className="border-gray-200 mb-12" />}
+              {index > 0 && <hr className="border-white/10 mb-12" />}
               <SuburbCard
                 salCode={code}
                 onAdd={addSuburb}
