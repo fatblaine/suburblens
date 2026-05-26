@@ -230,6 +230,106 @@ app.MapGet("/api/suburbs/{salCode}/nearby", async (IDbConnection db, string salC
     });
 });
 
+// Get language data for a suburb by SAL code
+app.MapGet("/api/suburbs/{salCode}/language", async (IDbConnection db, string salCode) =>
+{
+    var rows = await db.QueryAsync<LanguageRow>(@"
+          SELECT
+              sal_code AS SalCode, sal_name AS SalName,
+              state_name AS StateName, gccsa_name AS GccsaName,
+              sa2_code AS Sa2Code, sa2_name AS Sa2Name,
+              census_year AS CensusYear, total_persons AS TotalPersons,
+              english_only_pct AS EnglishOnlyPct, arabic_pct AS ArabicPct,
+              aus_indigenous_pct AS AusIndigenousPct, bengali_pct AS BengaliPct,
+              cantonese_pct AS CantonesePct, mandarin_pct AS MandarinPct,
+              chinese_other_pct AS ChineseOtherPct, chinese_total_pct AS ChineseTotalPct,
+              croatian_pct AS CroatianPct, filipino_pct AS FilipinosPct,
+              french_pct AS FrenchPct, german_pct AS GermanPct,
+              greek_pct AS GreekPct, gujarati_pct AS GujaratiPct,
+              hindi_pct AS HindiPct, indonesian_pct AS IndonesianPct,
+              italian_pct AS ItalianPct, japanese_pct AS JapanesePct,
+              korean_pct AS KoreanPct, macedonian_pct AS MacedonianPct,
+              malayalam_pct AS MalayalamPct, nepali_pct AS NepaliPct,
+              persian_dari_pct AS PersianDariPct, portuguese_pct AS PortuguesePct,
+              punjabi_pct AS PunjabiPct, russian_pct AS RussianPct,
+              serbian_pct AS SerbianPct, sinhalese_pct AS SinhalesePct,
+              spanish_pct AS SpanishPct, tagalog_pct AS TagalogPct,
+              tamil_pct AS TamilPct, thai_pct AS ThaiPct,
+              turkish_pct AS TurkishPct, urdu_pct AS UrduPct,
+              vietnamese_pct AS VietnamesePct, other_language_pct AS OtherLanguagePct
+          FROM v_language_profile
+          WHERE sal_code = @salCode
+          ORDER BY census_year",
+          new { salCode });
+
+    var rowList = rows.ToList();
+    if (rowList.Count == 0)
+        return Results.NotFound(new { error = $"Suburb not found: {salCode}" });
+
+    var first = rowList[0];
+    var byYear = rowList.ToDictionary(r => r.CensusYear);
+
+    static LanguageYearData? ToYearData(Dictionary<short, LanguageRow> d, short year)
+    {
+        if (!d.TryGetValue(year, out var r)) return null;
+        var languages = new[]
+        {
+            new LanguageEntry("English only",    r.EnglishOnlyPct),
+            new LanguageEntry("Mandarin",         r.MandarinPct),
+            new LanguageEntry("Cantonese",        r.CantonesePct),
+            new LanguageEntry("Arabic",           r.ArabicPct),
+            new LanguageEntry("Vietnamese",       r.VietnamesePct),
+            new LanguageEntry("Hindi",            r.HindiPct),
+            new LanguageEntry("Punjabi",          r.PunjabiPct),
+            new LanguageEntry("Spanish",          r.SpanishPct),
+            new LanguageEntry("Italian",          r.ItalianPct),
+            new LanguageEntry("Greek",            r.GreekPct),
+            new LanguageEntry("Tagalog",          r.TagalogPct),
+            new LanguageEntry("Korean",           r.KoreanPct),
+            new LanguageEntry("Tamil",            r.TamilPct),
+            new LanguageEntry("Bengali",          r.BengaliPct),
+            new LanguageEntry("Gujarati",         r.GujaratiPct),
+            new LanguageEntry("Indonesian",       r.IndonesianPct),
+            new LanguageEntry("Nepali",           r.NepaliPct),
+            new LanguageEntry("French",           r.FrenchPct),
+            new LanguageEntry("Urdu",             r.UrduPct),
+            new LanguageEntry("Persian/Dari",     r.PersianDariPct),
+            new LanguageEntry("Japanese",         r.JapanesePct),
+            new LanguageEntry("Malayalam",        r.MalayalamPct),
+            new LanguageEntry("Portuguese",       r.PortuguesePct),
+            new LanguageEntry("Russian",          r.RussianPct),
+            new LanguageEntry("Turkish",          r.TurkishPct),
+            new LanguageEntry("Serbian",          r.SerbianPct),
+            new LanguageEntry("German",           r.GermanPct),
+            new LanguageEntry("Filipino",         r.FilipinosPct),
+            new LanguageEntry("Croatian",         r.CroatianPct),
+            new LanguageEntry("Macedonian",       r.MacedonianPct),
+            new LanguageEntry("Sinhalese",        r.SinhalesePct),
+            new LanguageEntry("Thai",             r.ThaiPct),
+            new LanguageEntry("Aus. Indigenous",  r.AusIndigenousPct),
+            new LanguageEntry("Chinese (other)",  r.ChineseOtherPct),
+            new LanguageEntry("Other",            r.OtherLanguagePct),
+        }
+        .Where(e => e.Pct > 0)
+        .OrderByDescending(e => e.Pct)
+        .ToArray();
+        return new LanguageYearData(r.TotalPersons, languages);
+    }
+
+    return Results.Ok(new LanguageResponse(
+        SalCode: first.SalCode,
+        SalName: first.SalName,
+        StateName: first.StateName,
+        GccsaName: first.GccsaName,
+        Sa2Code: first.Sa2Code,
+        Sa2Name: first.Sa2Name,
+        Y2011: ToYearData(byYear, 2011),
+        Y2016: ToYearData(byYear, 2016),
+        Y2021: ToYearData(byYear, 2021),
+        DataNote: $"Language data is based on the ABS SA2 '{first.Sa2Name}', which may include nearby suburbs."
+    ));
+});
+
 app.Run();
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
@@ -264,5 +364,29 @@ record NearbySuburbResult(
     string StateName,
     string GccsaName,
     int DistanceMeters
+);
+
+record LanguageEntry(string Language, decimal? Pct);
+record LanguageYearData(int? TotalPersons, LanguageEntry[] Languages);
+
+record LanguageResponse(
+    string SalCode, string SalName, string StateName, string GccsaName,
+    string Sa2Code, string Sa2Name,
+    LanguageYearData? Y2011, LanguageYearData? Y2016, LanguageYearData? Y2021,
+    string DataNote
+);
+
+record LanguageRow(
+    string SalCode, string SalName, string StateName, string GccsaName,
+    string Sa2Code, string Sa2Name, short CensusYear, int? TotalPersons,
+    decimal? EnglishOnlyPct, decimal? ArabicPct, decimal? AusIndigenousPct, decimal? BengaliPct,
+    decimal? CantonesePct, decimal? MandarinPct, decimal? ChineseOtherPct, decimal? ChineseTotalPct,
+    decimal? CroatianPct, decimal? FilipinosPct, decimal? FrenchPct, decimal? GermanPct,
+    decimal? GreekPct, decimal? GujaratiPct, decimal? HindiPct, decimal? IndonesianPct,
+    decimal? ItalianPct, decimal? JapanesePct, decimal? KoreanPct, decimal? MacedonianPct,
+    decimal? MalayalamPct, decimal? NepaliPct, decimal? PersianDariPct, decimal? PortuguesePct,
+    decimal? PunjabiPct, decimal? RussianPct, decimal? SerbianPct, decimal? SinhalesePct,
+    decimal? SpanishPct, decimal? TagalogPct, decimal? TamilPct, decimal? ThaiPct,
+    decimal? TurkishPct, decimal? UrduPct, decimal? VietnamesePct, decimal? OtherLanguagePct
 );
 

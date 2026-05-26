@@ -52,3 +52,27 @@ export interface TenureResponse {
   trendLabel: string
   dataNote: string
 }
+
+// Language at home — matches GET /api/suburbs/:salCode/language
+export interface LanguageEntry {
+  language: string
+  pct: number | null
+}
+
+export interface LanguageYearData {
+  totalPersons: number | null
+  languages: LanguageEntry[]  // sorted by pct desc, pct > 0 only
+}
+
+export interface LanguageResponse {
+  salCode: string
+  salName: string
+  stateName: string
+  gccsaName: string
+  sa2Code: string
+  sa2Name: string
+  y2011: LanguageYearData | null
+  y2016: LanguageYearData | null
+  y2021: LanguageYearData | null
+  dataNote: string
+}
