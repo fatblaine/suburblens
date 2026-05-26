@@ -77,6 +77,31 @@ export interface BirthCountryResponse {
   dataNote: string
 }
 
+// Education level — matches GET /api/suburbs/:salCode/education
+export interface EducationLevel {
+  label: string
+  pct: number | null
+}
+
+export interface EducationYearData {
+  totalPersons: number | null
+  universityPct: number | null
+  levels: EducationLevel[]
+}
+
+export interface EducationResponse {
+  salCode: string
+  salName: string
+  stateName: string
+  gccsaName: string
+  sa2Code: string
+  sa2Name: string
+  y2011: EducationYearData | null
+  y2016: EducationYearData | null
+  y2021: EducationYearData | null
+  dataNote: string
+}
+
 // Language at home — matches GET /api/suburbs/:salCode/language
 export interface LanguageEntry {
   language: string

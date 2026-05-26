@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import type { SuburbSearchResult, TenureResponse, NearbySuburbsResponse, LanguageResponse, BirthCountryResponse } from '../types/api'
+import type { SuburbSearchResult, TenureResponse, NearbySuburbsResponse, LanguageResponse, BirthCountryResponse, EducationResponse } from '../types/api'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
@@ -67,6 +67,21 @@ export function useSuburbBirthCountry(salCode: string | undefined) {
         queryFn: async () => {
             const res = await fetch(`${API_BASE}/api/suburbs/${salCode}/birthcountry`)
             if (!res.ok) throw new Error('Failed to fetch suburb birth country data.')
+            return res.json()
+        },
+        enabled: !!salCode,
+        staleTime: 5 * 60 * 1000,
+        retry: 0,
+    })
+}
+
+// Fetch education level profile for a suburb by its salCode
+export function useSuburbEducation(salCode: string | undefined) {
+    return useQuery<EducationResponse>({
+        queryKey: ['suburb-education', salCode],
+        queryFn: async () => {
+            const res = await fetch(`${API_BASE}/api/suburbs/${salCode}/education`)
+            if (!res.ok) throw new Error('Failed to fetch suburb education data.')
             return res.json()
         },
         enabled: !!salCode,

@@ -429,6 +429,62 @@ app.MapGet("/api/suburbs/{salCode}/birthcountry", async (IDbConnection db, strin
       ));
   });
 
+app.MapGet("/api/suburbs/{salCode}/education", async (IDbConnection db, string salCode) =>
+{
+    var rows = await db.QueryAsync<EducationRow>(@"
+        SELECT
+            sal_code AS SalCode, sal_name AS SalName,
+            state_name AS StateName, gccsa_name AS GccsaName,
+            sa2_code AS Sa2Code, sa2_name AS Sa2Name,
+            census_year AS CensusYear, total_persons AS TotalPersons,
+            postgrad_deg_pct  AS PostgradDegPct,
+            grad_dip_cert_pct AS GradDipCertPct,
+            bach_deg_pct      AS BachDegPct,
+            adv_dip_dip_pct   AS AdvDipDipPct,
+            cert_iii_iv_pct   AS CertIIIIVPct,
+            cert_i_ii_pct     AS CertIIIPct,
+            university_pct    AS UniversityPct
+        FROM v_education_profile
+        WHERE sal_code = @salCode
+        ORDER BY census_year",
+        new { salCode });
+
+    var rowList = rows.ToList();
+    if (rowList.Count == 0)
+        return Results.NotFound(new { error = $"Suburb not found: {salCode}" });
+
+    var first = rowList[0];
+    var byYear = rowList.ToDictionary(r => r.CensusYear);
+
+    static EducationYearData? ToYearData(Dictionary<short, EducationRow> d, short year)
+    {
+        if (!d.TryGetValue(year, out var r)) return null;
+        var levels = new[]
+        {
+            new EducationLevel("Postgraduate",          r.PostgradDegPct),
+            new EducationLevel("Grad Diploma/Cert",     r.GradDipCertPct),
+            new EducationLevel("Bachelor Degree",       r.BachDegPct),
+            new EducationLevel("Adv Diploma/Diploma",   r.AdvDipDipPct),
+            new EducationLevel("Certificate III/IV",    r.CertIIIIVPct),
+            new EducationLevel("Certificate I/II",      r.CertIIIPct),
+        };
+        return new EducationYearData(r.TotalPersons, r.UniversityPct, levels);
+    }
+
+    return Results.Ok(new EducationResponse(
+        SalCode: first.SalCode,
+        SalName: first.SalName,
+        StateName: first.StateName,
+        GccsaName: first.GccsaName,
+        Sa2Code: first.Sa2Code,
+        Sa2Name: first.Sa2Name,
+        Y2011: ToYearData(byYear, 2011),
+        Y2016: ToYearData(byYear, 2016),
+        Y2021: ToYearData(byYear, 2021),
+        DataNote: $"Education data is based on the ABS SA2 '{first.Sa2Name}', which may include nearby suburbs."
+    ));
+});
+
 app.Run();
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
@@ -511,5 +567,23 @@ record BirthCountryRow(
     decimal? FijiPct, decimal? CroatiaPct, decimal? IrelandPct, decimal? JapanPct,
     decimal? NetherlandsPct, decimal? PolandPct, decimal? SingaporePct, decimal? TaiwanPct,
     decimal? ThailandPct, decimal? CanadaPct, decimal? BornElsewherePct
+);
+
+record EducationLevel(string Label, decimal? Pct);
+record EducationYearData(int? TotalPersons, decimal? UniversityPct, EducationLevel[] Levels);
+
+record EducationResponse(
+    string SalCode, string SalName, string StateName, string GccsaName,
+    string Sa2Code, string Sa2Name,
+    EducationYearData? Y2011, EducationYearData? Y2016, EducationYearData? Y2021,
+    string DataNote
+);
+
+record EducationRow(
+    string SalCode, string SalName, string StateName, string GccsaName,
+    string Sa2Code, string Sa2Name, short CensusYear, int? TotalPersons,
+    decimal? PostgradDegPct, decimal? GradDipCertPct, decimal? BachDegPct,
+    decimal? AdvDipDipPct, decimal? CertIIIIVPct, decimal? CertIIIPct,
+    decimal? UniversityPct
 );
 
