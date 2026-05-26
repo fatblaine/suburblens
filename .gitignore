@@ -1,6 +1,7 @@
 # Data
 data/raw/
 data/extracted/
+data/sql/
 
 # Backend
 backend/**/bin/
