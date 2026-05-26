@@ -47,7 +47,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { payl
 function DonutYear({ year, slices }: { year: string; slices: SliceDatum[] }) {
   return (
     <div className="flex flex-col items-center flex-1 min-w-0">
-      <p className="text-sm font-semibold text-gray-500 mb-1">{year}</p>
+      <p className="text-sm font-semibold text-white/60 mb-1">{year}</p>
 
       <ResponsiveContainer width="100%" height={160}>
         <PieChart>
@@ -72,12 +72,12 @@ function DonutYear({ year, slices }: { year: string; slices: SliceDatum[] }) {
           <div key={s.name} className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.fill }} />
-              <span className="text-gray-500 truncate">{s.name}</span>
+              <span className="text-white/60 truncate">{s.name}</span>
             </div>
             <div className="text-right ml-2 flex-shrink-0">
-              <span className="font-medium text-gray-900">{s.pct.toFixed(1)}%</span>
+              <span className="font-medium text-white">{s.pct.toFixed(1)}%</span>
               {s.count != null && (
-                <span className="text-gray-400 ml-1">({s.count.toLocaleString()})</span>
+                <span className="text-white/40 ml-1">({s.count.toLocaleString()})</span>
               )}
             </div>
           </div>

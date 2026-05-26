@@ -27,17 +27,17 @@ function migrantDelta(
 function MigrantBadge({ delta }: { delta: number }) {
   const abs = Math.abs(delta).toFixed(1)
   if (delta < -2) return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-teal-50 text-teal-700">
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-teal-500/20 text-teal-300">
       ↑ {abs}pp more overseas-born since 2011
     </span>
   )
   if (delta > 2) return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-700">
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-500/20 text-orange-300">
       ↑ {abs}pp more Australia-born since 2011
     </span>
   )
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-white/10 text-white/50">
       → Origins mix stable since 2011
     </span>
   )
@@ -58,11 +58,11 @@ function SnapshotBars({ yearData }: { yearData: BirthCountryYearData }) {
         return (
           <div key={c.country} className="flex items-center gap-3">
             <div className="w-28 shrink-0 text-right">
-              <span className={`text-xs truncate block ${isAustralia ? 'font-semibold text-gray-700' : 'text-gray-500'}`}>
+              <span className={`text-xs truncate block ${isAustralia ? 'font-semibold text-white' : 'text-white/60'}`}>
                 {c.country}
               </span>
             </div>
-            <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="flex-1 h-5 bg-white/10 rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
@@ -73,7 +73,7 @@ function SnapshotBars({ yearData }: { yearData: BirthCountryYearData }) {
               />
             </div>
             <div className="w-11 shrink-0 text-right">
-              <span className={`text-xs ${isAustralia ? 'font-bold text-gray-800' : 'font-medium text-gray-700'}`}>
+              <span className={`text-xs ${isAustralia ? 'font-bold text-white' : 'font-medium text-white/80'}`}>
                 {c.pct?.toFixed(1)}%
               </span>
             </div>
@@ -81,7 +81,7 @@ function SnapshotBars({ yearData }: { yearData: BirthCountryYearData }) {
         )
       })}
       {yearData.totalPersons != null && (
-        <p className="text-xs text-gray-400 pt-1">
+        <p className="text-xs text-white/40 pt-1">
           {yearData.totalPersons.toLocaleString()} residents responded
         </p>
       )}
@@ -90,9 +90,12 @@ function SnapshotBars({ yearData }: { yearData: BirthCountryYearData }) {
 }
 
 const TOOLTIP_STYLE = {
-  fontSize: 12, borderRadius: 8,
-  border: '1px solid #e5e7eb',
-  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.06)',
+  fontSize: 12,
+  borderRadius: 8,
+  border: '1px solid rgba(255,255,255,0.15)',
+  backgroundColor: 'rgba(15,12,41,0.9)',
+  color: '#fff',
+  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.3)',
   padding: '8px 12px',
 }
 
@@ -119,9 +122,9 @@ function TrendLines({ response }: { response: BirthCountryResponse }) {
     <div>
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 4 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-          <XAxis dataKey="year" tick={{ fontSize: 12, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
+          <XAxis dataKey="year" tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.4)' }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.4)' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
           <Tooltip
             formatter={(value: number, name: string) => [`${value?.toFixed(1)}%`, name]}
             contentStyle={TOOLTIP_STYLE}
@@ -146,7 +149,7 @@ function TrendLines({ response }: { response: BirthCountryResponse }) {
             <span className="shrink-0 rounded-full" style={{
               width: i === 0 ? 10 : 8, height: i === 0 ? 10 : 8, backgroundColor: color,
             }} />
-            <span className={`text-xs ${i === 0 ? 'font-semibold text-gray-700' : 'text-gray-500'}`}>
+            <span className={`text-xs ${i === 0 ? 'font-semibold text-white' : 'text-white/60'}`}>
               {country}
             </span>
           </div>
@@ -168,16 +171,16 @@ export default function BirthCountryChart({ response }: Props) {
       <div>
         <div className="flex items-start justify-between mb-4">
           <div>
-            <p className="text-sm font-semibold text-gray-800">Where are residents born?</p>
-            <p className="text-xs text-gray-400 mt-0.5">% of residents by country of birth</p>
+            <p className="text-sm font-semibold text-white">Where are residents born?</p>
+            <p className="text-xs text-white/40 mt-0.5">% of residents by country of birth</p>
           </div>
-          <div className="flex gap-0.5 bg-gray-100 rounded-lg p-1 shrink-0 ml-4">
+          <div className="flex gap-0.5 bg-white/10 border border-white/10 rounded-lg p-1 shrink-0 ml-4">
             {YEARS.map(y => (
               <button
                 key={y}
                 onClick={() => setYear(y)}
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                  year === y ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400 hover:text-gray-600'
+                  year === y ? 'bg-white/25 text-white' : 'text-white/50 hover:text-white/80'
                 }`}
               >
                 {YEAR_LABEL[y]}
@@ -187,17 +190,17 @@ export default function BirthCountryChart({ response }: Props) {
         </div>
         {yearData
           ? <SnapshotBars yearData={yearData} />
-          : <p className="text-sm text-gray-400">No data available.</p>
+          : <p className="text-sm text-white/40">No data available.</p>
         }
       </div>
 
-      <div className="border-t border-gray-100" />
+      <div className="border-t border-white/10" />
 
       <div>
         <div className="flex items-start justify-between mb-4">
           <div>
-            <p className="text-sm font-semibold text-gray-800">How are origins changing?</p>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-sm font-semibold text-white">How are origins changing?</p>
+            <p className="text-xs text-white/40 mt-0.5">
               Australia-born + top overseas countries across census years
             </p>
           </div>
