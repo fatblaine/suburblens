@@ -24,6 +24,8 @@ etl/__pycache__/
 
 # Env
 .env
+agent/.env
+agent/.venv/
 .DS_Store
 EOF
 
@@ -36,3 +38,4 @@ CLAUDE.md
 db/schema.sql
 
 /db
+.fake
