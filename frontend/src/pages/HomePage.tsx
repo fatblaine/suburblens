@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import SearchBox from '../components/SearchBox'
+import AgentChat from '../components/AgentChat'
 import type { SuburbSearchResult } from '../types/api'
 
 export default function HomePage() {
@@ -49,6 +50,8 @@ export default function HomePage() {
         onCompare={handleCompare}
         onNearby={handleNearby}
       />
+
+      <AgentChat />
 
       <p className="mt-6 text-xs text-white/40">
         Only Sydney and Melbourne suburbs are available in this demo version.
