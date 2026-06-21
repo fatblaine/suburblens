@@ -4,50 +4,70 @@ from langchain_core.tools import tool
 
 BASE = os.environ.get("SUBURBLENS_API_BASE", "http://localhost:5000")
 
+# One shared client = connection pooling + a sane default timeout
+_client = httpx.Client(base_url=BASE, timeout=10.0)
+
+
+def _get(path: str, **params) -> dict | list:
+    """GET a SuburbLens endpoint, returning data or a structured error.
+    Never raises — the agent reads the error and decides what to do next."""
+    try:
+        r = _client.get(path, params=params or None)
+        r.raise_for_status()
+        return r.json()
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            return {"error": "not_found",
+                    "message": f"No data found for {path}. "
+                               "Check the salCode is correct (call search_suburb first)."}
+        return {"error": "http_error",
+                "message": f"API returned {e.response.status_code} for {path}."}
+    except httpx.TimeoutException:
+        return {"error": "timeout",
+                "message": f"Request to {path} timed out. The data service may be slow."}
+    except httpx.RequestError as e:
+        return {"error": "connection_error",
+                "message": f"Could not reach the data service: {e!s}"}
+
+
 @tool
-def search_suburb(name: str) -> list[dict]:
+def search_suburb(name: str) -> list[dict] | dict:
     """Search for Australian suburbs by name. Returns salCode, salName, stateName.
     Always call this first to get the salCode before fetching any suburb data."""
-    r = httpx.get(f"{BASE}/api/suburbs/search", params={"q": name})
-    r.raise_for_status()
-    return r.json()
+    return _get("/api/suburbs/search", q=name)
+
 
 @tool
 def get_tenure(sal_code: str) -> dict:
     """Get tenure trends (owned/mortgage/rented) for a suburb across 2011/2016/2021.
     Also returns Residency Shift Index (SuburbLens Custom metric)."""
-    r = httpx.get(f"{BASE}/api/suburbs/{sal_code}/tenure")
-    r.raise_for_status()
-    return r.json()
+    return _get(f"/api/suburbs/{sal_code}/tenure")
+
 
 @tool
 def get_education(sal_code: str) -> dict:
     """Get education qualification distribution for a suburb across 2011/2016/2021.
     Includes university-qualified rate and other qualification levels."""
-    r = httpx.get(f"{BASE}/api/suburbs/{sal_code}/education")
-    r.raise_for_status()
-    return r.json()
+    return _get(f"/api/suburbs/{sal_code}/education")
+
 
 @tool
 def get_language(sal_code: str) -> dict:
     """Get languages spoken at home distribution for a suburb across census years."""
-    r = httpx.get(f"{BASE}/api/suburbs/{sal_code}/language")
-    r.raise_for_status()
-    return r.json()
+    return _get(f"/api/suburbs/{sal_code}/language")
+
 
 @tool
 def get_birthcountry(sal_code: str) -> dict:
     """Get country of birth distribution for a suburb across census years."""
-    r = httpx.get(f"{BASE}/api/suburbs/{sal_code}/birthcountry")
-    r.raise_for_status()
-    return r.json()
+    return _get(f"/api/suburbs/{sal_code}/birthcountry")
+
 
 @tool
 def get_nearby(sal_code: str, limit: int = 5) -> dict:
     """Get suburbs within 20km of the given suburb."""
-    r = httpx.get(f"{BASE}/api/suburbs/{sal_code}/nearby", params={"limit": limit})
-    r.raise_for_status()
-    return r.json()
+    return _get(f"/api/suburbs/{sal_code}/nearby", limit=limit)
+
 
 tools = [search_suburb, get_tenure, get_education,
          get_language, get_birthcountry, get_nearby]
