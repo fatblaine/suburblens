@@ -1,30 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import LoadingSkeleton from '../components/LoadingSkeleton'
 import SuburbCard from '../components/SuburbCard'
-import { useSuburbTenure } from '../api/suburbs'
-
-function NotFound({ onBack }: { onBack: () => void }) {
-  return (
-    <div className="min-h-screen bg-transparent flex flex-col items-center justify-center px-4">
-      <p className="text-white/60 text-lg mb-4">No data found for this suburb.</p>
-      <button onClick={onBack} className="text-white/50 hover:text-white/80 underline text-sm">
-        ← Go back
-      </button>
-    </div>
-  )
-}
-
-function InitialLoader({ salCode }: { salCode: string }) {
-  const { isPending, isError } = useSuburbTenure(salCode)
-  if (isPending) return (
-    <div className="min-h-screen bg-transparent px-4 py-10">
-      <div className="max-w-2xl mx-auto"><LoadingSkeleton /></div>
-    </div>
-  )
-  if (isError) return null
-  return null
-}
 
 export default function SuburbDetailPage() {
   const { salCode: urlSalCode } = useParams<{ salCode: string }>()

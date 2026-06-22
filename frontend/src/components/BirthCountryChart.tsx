@@ -126,7 +126,7 @@ function TrendLines({ response }: { response: BirthCountryResponse }) {
           <XAxis dataKey="year" tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.4)' }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.4)' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
           <Tooltip
-            formatter={(value: number, name: string) => [`${value?.toFixed(1)}%`, name]}
+            formatter={(value, name) => [`${Number(value).toFixed(1)}%`, name]}
             contentStyle={TOOLTIP_STYLE}
           />
           {tracked.map(({ country, color }, i) => (
