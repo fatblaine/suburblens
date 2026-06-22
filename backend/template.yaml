@@ -10,7 +10,10 @@ Globals:
     Timeout: 10
     Environment:
       Variables:
-        SUPABASE_DB_URL: !Sub '{{resolve:ssm:/suburblens/supabase-db-url}}'
+        # Only the parameter NAME is passed — never the secret itself. The
+        # connection string is fetched & decrypted from SSM SecureString at
+        # startup, so no plaintext lives in git, this template, or the Lambda env.
+        DB_URL_SSM_PARAM: /suburblens/supabase-db-url
 
 Resources:
   SuburbLensApi:
@@ -20,6 +23,18 @@ Resources:
       CodeUri: SuburbLens.Api/
       SnapStart:
         ApplyOn: PublishedVersions
+      Policies:
+        # Read the SecureString DB connection string parameter…
+        - SSMParameterReadPolicy:
+            ParameterName: suburblens/supabase-db-url
+        # …and decrypt it, but only via the SSM service (defence in depth).
+        - Statement:
+            - Effect: Allow
+              Action: kms:Decrypt
+              Resource: '*'
+              Condition:
+                StringEquals:
+                  kms:ViaService: !Sub 'ssm.${AWS::Region}.amazonaws.com'
       Events:
         ProxyEvent:
           Type: HttpApi
