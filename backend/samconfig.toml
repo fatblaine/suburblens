@@ -1,0 +1,24 @@
+version = 0.1
+
+# Two deploy environments share the same template.yaml; only the stack name
+# differs -> two independent Lambda + API Gateway URLs.
+# Usage:
+#   sam build
+#   sam deploy --config-env dev     # deploy to dev first, test
+#   sam deploy --config-env prod    # then promote to prod
+
+[dev.deploy.parameters]
+stack_name = "suburblens-api-dev"
+region = "ap-southeast-2"
+resolve_s3 = true
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = false
+disable_rollback = false
+
+[prod.deploy.parameters]
+stack_name = "suburblens-api-prod"
+region = "ap-southeast-2"
+resolve_s3 = true
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+disable_rollback = false
