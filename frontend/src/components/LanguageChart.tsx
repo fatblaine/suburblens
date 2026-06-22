@@ -150,7 +150,7 @@ function TrendLines({ response }: { response: LanguageResponse }) {
             tickFormatter={v => `${v}%`}
           />
           <Tooltip
-            formatter={(value: number, name: string) => [`${value?.toFixed(1)}%`, name]}
+            formatter={(value, name) => [`${Number(value).toFixed(1)}%`, name]}
             contentStyle={TREND_TOOLTIP_STYLE}
           />
           {tracked.map(({ language, color }, i) => (
