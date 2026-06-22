@@ -1,3 +1,5 @@
+using Amazon.SimpleSystemsManagement;
+using Amazon.SimpleSystemsManagement.Model;
 using Dapper;
 using Npgsql;
 using System.Data;
@@ -12,14 +14,27 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 // Lambda hosting
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
 
-// Npgsql — connection left closed; Dapper opens/closes per query
-builder.Services.AddScoped<IDbConnection>(_ =>
+// Connection string resolution (once at startup; baked into SnapStart snapshot):
+//  1. Local dev: SUPABASE_DB_URL from appsettings.Development.json / env var.
+//  2. Cloud: fetched & decrypted from an SSM SecureString parameter — the secret
+//     never lives in git, the CloudFormation template, or the Lambda env vars.
+var connStr = builder.Configuration["SUPABASE_DB_URL"];
+if (string.IsNullOrWhiteSpace(connStr))
 {
-    var connStr = builder.Configuration["SUPABASE_DB_URL"]
-        ?? Environment.GetEnvironmentVariable("SUPABASE_DB_URL")
-        ?? throw new InvalidOperationException("SUPABASE_DB_URL not set");
-    return new NpgsqlConnection(connStr);
-});
+    var paramName = builder.Configuration["DB_URL_SSM_PARAM"] ?? "/suburblens/supabase-db-url";
+    using var ssm = new AmazonSimpleSystemsManagementClient();
+    var resp = await ssm.GetParameterAsync(new GetParameterRequest
+    {
+        Name = paramName,
+        WithDecryption = true
+    });
+    connStr = resp.Parameter.Value;
+}
+if (string.IsNullOrWhiteSpace(connStr))
+    throw new InvalidOperationException("Database connection string could not be resolved (SUPABASE_DB_URL / DB_URL_SSM_PARAM).");
+
+// Npgsql — connection left closed; Dapper opens/closes per query
+builder.Services.AddScoped<IDbConnection>(_ => new NpgsqlConnection(connStr));
 
 // CORS
 builder.Services.AddCors(options =>
@@ -27,7 +42,7 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(p => p
         .WithOrigins(
             "http://localhost:5173",
-            "https://suburblens.vercel.app"
+            "https://main.d1yrvhzuhaioqy.amplifyapp.com"
         )
         .AllowAnyMethod()
         .AllowAnyHeader());
