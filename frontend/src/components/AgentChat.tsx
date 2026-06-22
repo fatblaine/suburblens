@@ -6,13 +6,26 @@ interface Message {
 }
 
 const AGENT_BASE = import.meta.env.VITE_AGENT_BASE ?? 'http://localhost:8001'
+const THREAD_ID_KEY = 'suburblens_agent_thread_id'
+
+// Reuse the same thread_id across page reloads so the agent's persisted
+// conversation history (in Supabase) stays connected to this browser.
+function loadThreadId(): string {
+  let id = localStorage.getItem(THREAD_ID_KEY)
+  if (!id) {
+    id = crypto.randomUUID()
+    localStorage.setItem(THREAD_ID_KEY, id)
+  }
+  return id
+}
 
 export default function AgentChat() {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const threadId = useRef(crypto.randomUUID())
+  const threadId = useRef<string>('')
+  if (!threadId.current) threadId.current = loadThreadId()
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {

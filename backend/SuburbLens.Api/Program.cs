@@ -485,9 +485,67 @@ app.MapGet("/api/suburbs/{salCode}/education", async (IDbConnection db, string s
     ));
 });
 
+// heatmap
+app.MapGet("/api/suburbs/heatmap", async (IDbConnection db, string? city) =>
+{
+    // city: "sydney" | "melbourne" | null (both)
+    var gccsaFilter = city?.ToLower() switch
+    {
+        "sydney" => new[] { "1GSYD" },
+        "melbourne" => new[] { "2GMEL" },
+        _ => new[] { "1GSYD", "2GMEL" }
+    };
+
+    var rows = await db.QueryAsync<HeatmapRow>(@"
+        SELECT
+            s.sal_code          AS SalCode,
+            s.sal_name          AS SalName,
+            s.gccsa_code        AS GccsaCode,
+            s.gccsa_name        AS GccsaName,
+            s.state_name        AS StateName,
+            t.residency_shift_index AS ResidencyShiftIndex,
+            t.trend_label       AS TrendLabel,
+            ST_AsGeoJSON(
+                ST_Simplify(s.geom::geometry, 0.001)
+            )                   AS GeometryJson
+        FROM geo_sal s
+        LEFT JOIN v_tenure_shift t ON t.sal_code = s.sal_code
+        WHERE s.gccsa_code = ANY(@gccsaFilter)
+          AND s.geom IS NOT NULL",
+        new { gccsaFilter });
+
+    var features = rows.Select(r => $$"""
+        {
+          "type": "Feature",
+          "properties": {
+            "salCode":              "{{r.SalCode}}",
+            "salName":              "{{r.SalName.Replace("\"", "\\\"")}}",
+            "gccsaCode":            "{{r.GccsaCode}}",
+            "stateName":            "{{r.StateName}}",
+            "residencyShiftIndex":  {{(r.ResidencyShiftIndex.HasValue ? r.ResidencyShiftIndex.Value.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) : "null")}},
+            "trendLabel":           "{{r.TrendLabel ?? ""}}"
+          },
+          "geometry": {{r.GeometryJson}}
+        }
+        """);
+
+    var geojson = $$"""
+        {
+          "type": "FeatureCollection",
+          "features": [{{string.Join(",", features)}}]
+        }
+        """;
+
+    return Results.Content(geojson, "application/json");
+});
+
 app.Run();
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
+
+record HeatmapRow(
+    string SalCode, string SalName, string GccsaCode, string GccsaName, string StateName,
+    decimal? ResidencyShiftIndex, string? TrendLabel, string GeometryJson);
 
 record SuburbSearchResult(string SalCode, string SalName, string StateName, string GccsaName);
 

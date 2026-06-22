@@ -51,6 +51,13 @@ export default function HomePage() {
         onNearby={handleNearby}
       />
 
+      <button
+        onClick={() => navigate('/map')}
+        className="mt-4 text-white/40 hover:text-white/70 text-sm underline underline-offset-4 transition-colors"
+      >
+        or browse suburbs on map →
+      </button>
+
       <AgentChat />
 
       <p className="mt-6 text-xs text-white/40">
