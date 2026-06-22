@@ -9,6 +9,9 @@ backend/**/obj/
 backend/**/appsettings.Development.json
 backend/**/*.user
 
+# SAM build artifacts
+backend/.aws-sam/
+
 # Frontend
 frontend/node_modules/
 frontend/dist/
@@ -27,7 +30,9 @@ etl/__pycache__/
 agent/.env
 agent/.venv/
 .DS_Store
-EOF
+
+# Python cache
+**/__pycache__/
 
 docs/
 .claude/agents/
