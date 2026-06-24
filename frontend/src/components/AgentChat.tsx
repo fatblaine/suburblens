@@ -1,4 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../auth/AuthProvider'
+import { supabase } from '../lib/supabase'
 
 interface Message {
   role: 'user' | 'agent'
@@ -6,31 +9,34 @@ interface Message {
 }
 
 const AGENT_BASE = import.meta.env.VITE_AGENT_BASE ?? 'http://localhost:8001'
-const THREAD_ID_KEY = 'suburblens_agent_thread_id'
-
-// Reuse the same thread_id across page reloads so the agent's persisted
-// conversation history (in Supabase) stays connected to this browser.
-function loadThreadId(): string {
-  let id = localStorage.getItem(THREAD_ID_KEY)
-  if (!id) {
-    id = crypto.randomUUID()
-    localStorage.setItem(THREAD_ID_KEY, id)
-  }
-  return id
-}
 
 export default function AgentChat() {
+  const { isGuest, user } = useAuth()
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const threadId = useRef<string>('')
-  if (!threadId.current) threadId.current = loadThreadId()
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Guests can't use the AI assistant — the agent rejects anonymous users
+  // server-side, so here we just hide the chat and invite them to log in.
+  if (isGuest) {
+    return (
+      <div className="w-full max-w-lg mt-2">
+        <button
+          onClick={() => navigate('/login')}
+          className="mt-2 w-full py-3 bg-white/5 hover:bg-white/10 border border-white/15 text-white/50 font-semibold rounded-xl transition-colors backdrop-blur-sm"
+        >
+          🔒 Log in to use the AI assistant
+        </button>
+      </div>
+    )
+  }
 
   async function send() {
     const text = input.trim()
@@ -41,14 +47,40 @@ export default function AgentChat() {
     setMessages(prev => [...prev, { role: 'user', text }])
     setMessages(prev => [...prev, { role: 'agent', text: '' }])
 
+    function setLastAgent(textValue: string) {
+      setMessages(prev => {
+        const next = [...prev]
+        next[next.length - 1] = { role: 'agent', text: textValue }
+        return next
+      })
+    }
+
     try {
+      // Always read the current (possibly just-refreshed) access token.
+      const { data } = await supabase.auth.getSession()
+      const token = data.session?.access_token
+
       const res = await fetch(`${AGENT_BASE}/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, thread_id: threadId.current }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        // thread_id = user id so the agent's persisted history follows the
+        // account across devices/reloads.
+        body: JSON.stringify({ message: text, thread_id: user?.id ?? 'default' }),
       })
 
-      const reader = res.body!.getReader()
+      if (!res.ok || !res.body) {
+        setLastAgent(
+          res.status === 401 || res.status === 403
+            ? 'Please log in with an account to use the AI assistant.'
+            : `Error: agent returned ${res.status}.`
+        )
+        return
+      }
+
+      const reader = res.body.getReader()
       const decoder = new TextDecoder()
 
       while (true) {
@@ -62,11 +94,7 @@ export default function AgentChat() {
         })
       }
     } catch {
-      setMessages(prev => {
-        const next = [...prev]
-        next[next.length - 1] = { role: 'agent', text: 'Error: could not reach agent service.' }
-        return next
-      })
+      setLastAgent('Error: could not reach agent service.')
     } finally {
       setLoading(false)
     }
