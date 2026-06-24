@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 
 export default function LoginPage() {
-  const { session, signInWithPassword, signUp, signInAsGuest } = useAuth()
+  const { session, isGuest, signInWithPassword, signUp, signInAsGuest } = useAuth()
   const navigate = useNavigate()
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
@@ -13,10 +13,11 @@ export default function LoginPage() {
   const [info, setInfo] = useState('')
   const [busy, setBusy] = useState(false)
 
-  // Already signed in (including as a guest) → go straight to the app.
+  // Only registered users skip the login screen. Guests keep a session too, but
+  // they land here on purpose to upgrade to a real account.
   useEffect(() => {
-    if (session) navigate('/', { replace: true })
-  }, [session, navigate])
+    if (session && !isGuest) navigate('/', { replace: true })
+  }, [session, isGuest, navigate])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
