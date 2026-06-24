@@ -4,14 +4,7 @@ import {
   ResponsiveContainer, CartesianGrid,
 } from 'recharts'
 import type { LanguageResponse, LanguageYearData, LanguageEntry } from '../types/api'
-
-// ── Palette ───────────────────────────────────────────────────────────────────
-
-const PALETTE = [
-  '#6366f1', '#3b82f6', '#06b6d4', '#10b981',
-  '#f59e0b', '#f97316', '#ef4444', '#8b5cf6',
-  '#ec4899', '#84cc16',
-]
+import { CHART_PALETTE as PALETTE, COLORS, TOOLTIP_STYLE as TREND_TOOLTIP_STYLE } from '../lib/theme'
 
 type YearKey = 'y2011' | 'y2016' | 'y2021'
 const YEARS: YearKey[] = ['y2011', 'y2016', 'y2021']
@@ -74,7 +67,7 @@ function SnapshotBars({ yearData }: { yearData: LanguageYearData }) {
                 className="h-full rounded-full transition-all duration-500"
                 style={{
                   width: `${barWidth}%`,
-                  backgroundColor: isEnglish ? '#6366f1' : PALETTE[(i) % PALETTE.length],
+                  backgroundColor: isEnglish ? COLORS.lemon : PALETTE[(i) % PALETTE.length],
                   minWidth: '2px',
                 }}
               />
@@ -99,23 +92,13 @@ function SnapshotBars({ yearData }: { yearData: LanguageYearData }) {
 
 // ── Q2: Trend line chart ──────────────────────────────────────────────────────
 
-const TREND_TOOLTIP_STYLE = {
-  fontSize: 12,
-  borderRadius: 8,
-  border: '1px solid rgba(255,255,255,0.15)',
-  backgroundColor: 'rgba(15,12,41,0.9)',
-  color: '#fff',
-  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.3)',
-  padding: '8px 12px',
-}
-
 function TrendLines({ response }: { response: LanguageResponse }) {
   const nonEnglish = (response.y2021?.languages ?? [])
     .filter(l => l.language !== 'English only')
     .slice(0, 4)
 
   const tracked = [
-    { language: 'English only', color: '#6366f1', dash: '' },
+    { language: 'English only', color: COLORS.lemon, dash: '' },
     ...nonEnglish.map((l, i) => ({
       language: l.language,
       color: PALETTE[(i + 1) % PALETTE.length],
@@ -217,8 +200,8 @@ export default function LanguageChart({ response }: Props) {
                 onClick={() => setYear(y)}
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
                   year === y
-                    ? 'bg-white/25 text-white'
-                    : 'text-white/50 hover:text-white/80'
+                    ? 'bg-lemon text-ink'
+                    : 'text-muted hover:text-fg'
                 }`}
               >
                 {YEAR_LABEL[y]}

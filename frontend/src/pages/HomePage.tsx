@@ -31,39 +31,52 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-transparent px-4">
+    <main className="min-h-screen bg-ink">
+      {/* ── Header ─────────────────────────────────────── */}
+      <header className="flex items-center px-6 sm:px-10 py-5 border-b border-white/[0.06]">
+        <div className="flex items-center gap-2.5 font-display font-bold text-lg text-white">
+          <img src="/logo.svg" alt="" className="w-6 h-6" />
+          SuburbLens
+        </div>
+      </header>
 
-      <div className="text-center mb-10">
-        <h1 className="text-4xl font-bold text-white mb-3">SuburbLens</h1>
-        <p className="text-white/60 text-lg">
-          Explore how Australian suburbs are changing over time.
-        </p>
-        <p className="text-white/40 text-sm mt-1">
-          Based on Australian Census data from 2011, 2016, and 2021.
+      {/* ── Landing ────────────────────────────────────── */}
+      <div className="max-w-4xl mx-auto px-6 sm:px-10 pt-16 pb-24">
+        <div className="font-mono text-xs tracking-[0.16em] uppercase text-lemon mb-4">
+          Compare multiple suburbs
+        </div>
+        <h1 className="font-display font-bold text-4xl sm:text-5xl leading-[1.04] tracking-tight text-fg mb-9">
+          Which suburb are you<br />weighing up?
+        </h1>
+
+        <SearchBox
+          selected={selected}
+          onAdd={handleAdd}
+          onRemove={handleRemove}
+          onCompare={handleCompare}
+          onNearby={handleNearby}
+        />
+
+        {/* feature card */}
+        <button
+          onClick={() => navigate('/map')}
+          className="mt-12 w-full text-left rounded-2xl p-6 border border-white/[0.08] overflow-hidden relative transition-transform hover:-translate-y-0.5"
+          style={{ background: 'linear-gradient(135deg, #15323a, #0d0f14)' }}
+        >
+          <div className="font-display font-semibold text-[17px] text-fg mb-1.5">Browse on the map →</div>
+          <div className="text-[13px] text-muted">
+            See ownership-to-rental shift across all of Sydney &amp; Melbourne.
+          </div>
+        </button>
+
+        <div className="mt-8">
+          <AgentChat />
+        </div>
+
+        <p className="mt-8 font-mono text-xs text-dim">
+          Covers Sydney &amp; Melbourne suburbs only.
         </p>
       </div>
-
-      <SearchBox
-        selected={selected}
-        onAdd={handleAdd}
-        onRemove={handleRemove}
-        onCompare={handleCompare}
-        onNearby={handleNearby}
-      />
-
-      <button
-        onClick={() => navigate('/map')}
-        className="mt-4 text-white/40 hover:text-white/70 text-sm underline underline-offset-4 transition-colors"
-      >
-        or browse suburbs on map →
-      </button>
-
-      <AgentChat />
-
-      <p className="mt-6 text-xs text-white/40">
-        Only Sydney and Melbourne suburbs are available in this demo version.
-      </p>
-
     </main>
   )
 }

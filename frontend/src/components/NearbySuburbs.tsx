@@ -16,10 +16,10 @@ export default function NearbySuburbs({ salCode, defaultExpanded = false, onSele
 
       <button
         onClick={() => setExpanded(prev => !prev)}
-        className="w-full flex items-center justify-between bg-white/10 border border-white/15 rounded-xl px-4 py-3 hover:border-white/30 hover:bg-white/15 transition text-white/70"
+        className="w-full flex items-center justify-between bg-surface-2 border border-white/10 rounded-xl px-4 py-3 hover:border-white/25 hover:bg-surface-3 transition text-fg"
       >
         <span className="font-medium">Nearby Suburbs</span>
-        <span className={`text-white/40 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}>
+        <span className={`text-faint transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}>
           ▼
         </span>
       </button>
@@ -30,31 +30,31 @@ export default function NearbySuburbs({ salCode, defaultExpanded = false, onSele
           {isPending && (
             <>
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-14 bg-white/10 rounded-xl animate-pulse" />
+                <div key={i} className="h-14 bg-surface-2 rounded-xl animate-pulse" />
               ))}
             </>
           )}
 
           {isError && (
-            <p className="text-sm text-red-400/80 px-1">Failed to load nearby suburbs.</p>
+            <p className="text-sm text-rented px-1">Failed to load nearby suburbs.</p>
           )}
 
           {data && data.nearby.length === 0 && (
-            <p className="text-sm text-white/40 px-1">No nearby suburbs found within 20 km.</p>
+            <p className="text-sm text-faint px-1">No nearby suburbs found within 20 km.</p>
           )}
 
           {data && data.nearby.map((suburb) => (
             <button
               key={suburb.salCode}
               onClick={() => onSelect(suburb.salCode)}
-              className="flex items-center justify-between bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-left hover:border-white/30 hover:bg-white/15 transition"
+              className="flex items-center justify-between bg-surface-2 border border-white/10 rounded-xl px-4 py-3 text-left hover:border-lemon/30 hover:bg-surface-3 transition"
             >
               <div>
-                <span className="font-medium text-white/90">{suburb.salName}</span>
-                <span className="text-sm text-white/40 ml-2">{suburb.gccsaName}</span>
+                <span className="font-medium text-fg">{suburb.salName}</span>
+                <span className="text-sm text-faint ml-2">{suburb.gccsaName}</span>
               </div>
 
-              <span className="text-sm text-white/40 shrink-0 ml-4">
+              <span className="font-mono text-sm text-muted shrink-0 ml-4">
                 {suburb.distanceMeters >= 1000
                   ? `${(suburb.distanceMeters / 1000).toFixed(1)} km`
                   : `${suburb.distanceMeters} m`}

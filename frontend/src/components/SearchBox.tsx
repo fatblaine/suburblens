@@ -44,27 +44,30 @@ export default function SearchBox({ selected, onAdd, onRemove, onCompare, onNear
   const showDropdown = open && debouncedQuery.trim().length >= 2
 
   return (
-    <div ref={wrapperRef} className="relative w-full max-w-lg">
-      <input
-        type="text"
-        value={query}
-        placeholder="Search a suburb, e.g. Glebe..."
-        onChange={(e) => {
-          setQuery(e.target.value)
-          setOpen(true)
-        }}
-        onFocus={() => setOpen(true)}
-        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:outline-none focus:border-white/40 backdrop-blur-sm text-base"
-      />
+    <div ref={wrapperRef} className="relative w-full">
+      <div className="flex items-center gap-3 bg-surface-2 border border-white/12 rounded-xl px-5 focus-within:border-lemon/60 transition-colors">
+        <span className="text-dim select-none">⌕</span>
+        <input
+          type="text"
+          value={query}
+          placeholder="Search a suburb, e.g. Glebe…"
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setOpen(true)
+          }}
+          onFocus={() => setOpen(true)}
+          className="flex-1 py-4 bg-transparent text-fg placeholder:text-dim focus:outline-none text-[17px]"
+        />
+      </div>
 
       {showDropdown && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900/90 backdrop-blur-md border border-white/15 rounded-xl shadow-2xl z-10 overflow-hidden">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-surface-2 border border-white/12 rounded-xl shadow-2xl shadow-black/50 z-20 overflow-hidden">
           {isPending && (
-            <div className="px-4 py-3 text-sm text-white/40">Searching...</div>
+            <div className="px-4 py-3 text-sm text-faint">Searching…</div>
           )}
 
           {!isPending && results?.length === 0 && (
-            <div className="px-4 py-3 text-sm text-white/40">No suburbs found.</div>
+            <div className="px-4 py-3 text-sm text-faint">No suburbs found.</div>
           )}
 
           {results?.map((suburb) => {
@@ -74,14 +77,14 @@ export default function SearchBox({ selected, onAdd, onRemove, onCompare, onNear
                 key={suburb.salCode}
                 onClick={() => handleSelect(suburb)}
                 disabled={alreadyAdded}
-                className="w-full text-left px-4 py-3 hover:bg-white/10 transition-colors border-b border-white/10 last:border-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full text-left px-4 py-3 hover:bg-white/5 transition-colors border-b border-white/[0.06] last:border-0 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <span className="font-medium text-white/90">{suburb.salName}</span>
-                <span className="ml-2 text-sm text-white/40">
+                <span className="font-medium text-fg">{suburb.salName}</span>
+                <span className="ml-2 text-sm text-faint">
                   {suburb.stateName} · {suburb.gccsaName}
                 </span>
                 {alreadyAdded && (
-                  <span className="ml-2 text-xs text-purple-300">Added</span>
+                  <span className="ml-2 font-mono text-xs text-lemon">Added</span>
                 )}
               </button>
             )
@@ -90,16 +93,16 @@ export default function SearchBox({ selected, onAdd, onRemove, onCompare, onNear
       )}
 
       {selected.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2.5">
           {selected.map(suburb => (
             <span
               key={suburb.salCode}
-              className="inline-flex items-center gap-1 px-3 py-1 bg-white/15 border border-white/20 text-white rounded-full text-sm font-medium"
+              className="inline-flex items-center gap-2 px-3.5 py-2 bg-surface-3 border border-lemon/30 text-fg rounded-full text-sm"
             >
               {suburb.salName}
               <button
                 onClick={() => onRemove(suburb.salCode)}
-                className="ml-1 text-white/40 hover:text-white font-bold leading-none"
+                className="text-faint hover:text-fg leading-none"
               >
                 ×
               </button>
@@ -111,7 +114,7 @@ export default function SearchBox({ selected, onAdd, onRemove, onCompare, onNear
       {selected.length > 0 && (
         <button
           onClick={onCompare}
-          className="mt-3 w-full py-3 bg-white/20 hover:bg-white/30 border border-white/20 text-white font-semibold rounded-xl transition-colors backdrop-blur-sm"
+          className="mt-4 w-full py-3.5 bg-lemon hover:brightness-95 text-ink font-display font-semibold rounded-xl transition-all"
         >
           Compare {selected.length} suburb{selected.length > 1 ? 's' : ''}
         </button>
@@ -120,7 +123,7 @@ export default function SearchBox({ selected, onAdd, onRemove, onCompare, onNear
       {selected.length === 1 && (
         <button
           onClick={onNearby}
-          className="mt-2 w-full py-3 bg-white/10 hover:bg-white/20 border border-white/15 text-white/80 font-semibold rounded-xl transition-colors backdrop-blur-sm"
+          className="mt-2.5 w-full py-3.5 border border-white/15 hover:border-white/30 text-fg font-display font-medium rounded-xl transition-colors"
         >
           Nearby Suburbs of {selected[0].salName}
         </button>

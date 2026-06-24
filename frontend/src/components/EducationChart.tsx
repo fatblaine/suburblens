@@ -4,14 +4,15 @@ import {
   ResponsiveContainer, CartesianGrid,
 } from 'recharts'
 import type { EducationResponse, EducationYearData } from '../types/api'
+import { COLORS, TOOLTIP_STYLE } from '../lib/theme'
 
 const LEVEL_COLORS: Record<string, string> = {
-  'Postgraduate':        '#6366f1',
-  'Grad Diploma/Cert':   '#818cf8',
-  'Bachelor Degree':     '#a5b4fc',
-  'Adv Diploma/Diploma': '#f59e0b',
-  'Certificate III/IV':  '#f97316',
-  'Certificate I/II':    '#fb923c',
+  'Postgraduate':        '#c6f24e',
+  'Grad Diploma/Cert':   '#9bd96f',
+  'Bachelor Degree':     '#5fd6a0',
+  'Adv Diploma/Diploma': '#f2c14e',
+  'Certificate III/IV':  '#f29e54',
+  'Certificate I/II':    '#f2685c',
 }
 
 const UNIVERSITY_LABELS = ['Postgraduate', 'Grad Diploma/Cert', 'Bachelor Degree']
@@ -20,20 +21,10 @@ type YearKey = 'y2011' | 'y2016' | 'y2021'
 const YEARS: YearKey[] = ['y2011', 'y2016', 'y2021']
 const YEAR_LABEL: Record<YearKey, string> = { y2011: '2011', y2016: '2016', y2021: '2021' }
 
-const TOOLTIP_STYLE = {
-  fontSize: 12,
-  borderRadius: 8,
-  border: '1px solid rgba(255,255,255,0.15)',
-  backgroundColor: 'rgba(15,12,41,0.9)',
-  color: '#fff',
-  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.3)',
-  padding: '8px 12px',
-}
-
 const TREND_LINES = [
-  { key: 'University',          color: '#6366f1' },
-  { key: 'Certificate III/IV',  color: '#f97316' },
-  { key: 'Adv Diploma/Diploma', color: '#f59e0b' },
+  { key: 'University',          color: COLORS.lemon },
+  { key: 'Certificate III/IV',  color: '#f29e54' },
+  { key: 'Adv Diploma/Diploma', color: COLORS.mortgage },
 ]
 
 // ── University badge ──────────────────────────────────────────────────────────
@@ -44,12 +35,12 @@ function UniversityBadge({ pct2011, pct2021 }: { pct2011: number | null; pct2021
 
   return (
     <div className="flex items-center gap-2 flex-wrap mb-4">
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-indigo-500/20 text-indigo-300">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-lemon/15 text-lemon">
         🎓 {pct2021.toFixed(1)}% university-qualified (2021)
       </span>
       {delta != null && Math.abs(delta) >= 1 && (
         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-          delta > 0 ? 'bg-indigo-500/15 text-indigo-300' : 'bg-white/10 text-white/50'
+          delta > 0 ? 'bg-lemon/15 text-lemon' : 'bg-white/10 text-muted'
         }`}>
           {delta > 0
             ? `↑ ${delta.toFixed(1)}pp since 2011`
@@ -71,7 +62,7 @@ function SnapshotBars({ yearData }: { yearData: EducationYearData }) {
       {levels.map(level => {
         const barWidth = ((level.pct ?? 0) / maxPct) * 100
         const isUni = UNIVERSITY_LABELS.includes(level.label)
-        const color = LEVEL_COLORS[level.label] ?? '#6366f1'
+        const color = LEVEL_COLORS[level.label] ?? COLORS.lemon
 
         return (
           <div key={level.label} className="flex items-center gap-3">
@@ -175,7 +166,7 @@ export default function EducationChart({ response }: { response: EducationRespon
                 key={y}
                 onClick={() => setYear(y)}
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                  year === y ? 'bg-white/25 text-white' : 'text-white/50 hover:text-white/80'
+                  year === y ? 'bg-lemon text-ink' : 'text-muted hover:text-fg'
                 }`}
               >
                 {YEAR_LABEL[y]}
