@@ -1,3 +1,12 @@
+from graph import build_graph
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from psycopg_pool import AsyncConnectionPool
+from langchain_core.messages import HumanMessage
+from pydantic import BaseModel
+from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request
 import os
 import sys
 import asyncio
@@ -10,16 +19,6 @@ load_dotenv()
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from langchain_core.messages import HumanMessage
-from psycopg_pool import AsyncConnectionPool
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from langgraph.checkpoint.memory import MemorySaver
-
-from graph import build_graph
 
 DB_URI = os.environ.get("SUPABASE_DB_URL")
 
@@ -33,7 +32,8 @@ async def lifespan(app: FastAPI):
         async with AsyncConnectionPool(
             conninfo=DB_URI,
             max_size=10,
-            kwargs={"autocommit": True, "prepare_threshold": None, "sslmode": "require"},
+            kwargs={"autocommit": True,
+                    "prepare_threshold": None, "sslmode": "require"},
         ) as pool:
             checkpointer = AsyncPostgresSaver(pool)
             await checkpointer.setup()      # idempotent: creates checkpoint tables on first run
@@ -49,7 +49,11 @@ server = FastAPI(lifespan=lifespan)
 
 server.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite dev server
+    allow_origins=[
+        "http://localhost:5173",
+        "https://main.d1yrvhzuhaioqy.amplifyapp.com",
+        "https://dev.d1yrvhzuhaioqy.amplifyapp.com",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
