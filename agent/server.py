@@ -6,7 +6,8 @@ from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
+from auth import require_registered_user
 import os
 import sys
 import asyncio
@@ -65,7 +66,9 @@ class ChatRequest(BaseModel):
 
 
 @server.post("/chat")
-async def chat(req: ChatRequest, request: Request):
+async def chat(req: ChatRequest, request: Request, user: dict = Depends(require_registered_user)):
+    # require_registered_user rejects missing/invalid tokens (401) and
+    # anonymous guests (403) before we reach the graph.
     graph = request.app.state.graph
     config = {"configurable": {"thread_id": req.thread_id}}
     input_state = {"messages": [HumanMessage(content=req.message)]}
