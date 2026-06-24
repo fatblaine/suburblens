@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import SuburbCard from '../components/SuburbCard'
 
@@ -11,9 +11,21 @@ export default function SuburbDetailPage() {
   // 页面上显示的 suburb 列表，从 URL 的那个开始
   const [salCodes, setSalCodes] = useState<string[]>([urlSalCode!])
 
+  // 每张卡片的容器引用 + 待滚动目标（新加入的 suburb）
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const [scrollTo, setScrollTo] = useState<string | null>(null)
+
+  // 列表更新、目标卡片挂载后再滚动过去
+  useEffect(() => {
+    if (!scrollTo) return
+    cardRefs.current[scrollTo]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setScrollTo(null)
+  }, [salCodes, scrollTo])
+
   function addSuburb(code: string) {
-    // 已经在列表里就不重复添加
-    setSalCodes(prev => prev.includes(code) ? prev : [...prev, code])
+    setSalCodes(prev => (prev.includes(code) ? prev : [...prev, code]))
+    // 已存在也滚过去，方便定位
+    setScrollTo(code)
   }
 
   function removeSuburb(code: string) {
@@ -38,7 +50,7 @@ export default function SuburbDetailPage() {
 
         <div className="space-y-12">
           {salCodes.map((code, index) => (
-            <div key={code}>
+            <div key={code} ref={el => { cardRefs.current[code] = el }} className="scroll-mt-6">
               {/* 第二张卡片起加分割线 */}
               {index > 0 && <hr className="border-white/10 mb-12" />}
               <SuburbCard

@@ -27,10 +27,10 @@ export default function AgentChat() {
   // server-side, so here we just hide the chat and invite them to log in.
   if (isGuest) {
     return (
-      <div className="w-full max-w-lg mt-2">
+      <div className="w-full">
         <button
           onClick={() => navigate('/login')}
-          className="mt-2 w-full py-3 bg-white/5 hover:bg-white/10 border border-white/15 text-white/50 font-semibold rounded-xl transition-colors backdrop-blur-sm"
+          className="w-full py-3.5 border border-white/15 hover:border-white/30 text-faint hover:text-fg font-display font-medium rounded-xl transition-colors"
         >
           🔒 Log in to use the AI assistant
         </button>
@@ -101,21 +101,21 @@ export default function AgentChat() {
   }
 
   return (
-    <div className="w-full max-w-lg mt-2">
+    <div className="w-full">
 
       <button
         onClick={() => setOpen(o => !o)}
-        className="mt-2 w-full py-3 bg-white/10 hover:bg-white/20 border border-white/15 text-white/80 font-semibold rounded-xl transition-colors backdrop-blur-sm"
+        className="w-full py-3.5 bg-surface-2 hover:bg-surface-3 border border-white/10 text-fg font-display font-medium rounded-xl transition-colors"
       >
-        {open ? 'Hide AI Assistant' : 'Ask AI about a suburb'}
+        {open ? 'Hide AI Assistant' : 'Ask AI about a suburb ✦'}
       </button>
 
       {open && (
-        <div className="mt-1 bg-slate-900/90 backdrop-blur-md border border-white/15 rounded-xl shadow-2xl overflow-hidden">
+        <div className="mt-2 bg-surface border border-white/[0.07] rounded-xl shadow-2xl shadow-black/40 overflow-hidden">
 
           <div className="h-64 overflow-y-auto px-4 py-3 space-y-2">
             {messages.length === 0 && (
-              <p className="text-white/30 text-sm text-center mt-10">
+              <p className="text-faint text-sm text-center mt-10">
                 e.g. "What is the education level in Glebe?"
               </p>
             )}
@@ -123,29 +123,29 @@ export default function AgentChat() {
               <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
                 <span className={`inline-block px-3 py-2 rounded-xl text-sm max-w-[85%] whitespace-pre-wrap leading-relaxed ${
                   m.role === 'user'
-                    ? 'bg-white/15 border border-white/20 text-white'
-                    : 'bg-white/5 border border-white/10 text-white/90'
+                    ? 'bg-lemon/15 border border-lemon/25 text-fg'
+                    : 'bg-surface-2 border border-white/10 text-fg/90'
                 }`}>
-                  {m.text || <span className="text-white/30 animate-pulse">…</span>}
+                  {m.text || <span className="text-faint animate-pulse">…</span>}
                 </span>
               </div>
             ))}
             <div ref={bottomRef} />
           </div>
 
-          <div className="px-3 pb-3 pt-2 border-t border-white/10 flex gap-2">
+          <div className="px-3 pb-3 pt-2 border-t border-white/[0.07] flex gap-2">
             <input
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
               disabled={loading}
-              placeholder="Ask about a suburb..."
-              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:outline-none focus:border-white/40 backdrop-blur-sm text-base disabled:opacity-50"
+              placeholder="Ask about a suburb…"
+              className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-white/10 text-fg placeholder:text-dim focus:outline-none focus:border-lemon/60 text-base disabled:opacity-50"
             />
             <button
               onClick={send}
               disabled={loading || !input.trim()}
-              className="px-5 py-3 bg-white/20 hover:bg-white/30 border border-white/20 text-white font-semibold rounded-xl transition-colors backdrop-blur-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-5 py-3 bg-lemon hover:brightness-95 text-ink font-display font-semibold rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Send
             </button>

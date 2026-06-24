@@ -4,12 +4,7 @@ import {
   ResponsiveContainer, CartesianGrid,
 } from 'recharts'
 import type { BirthCountryResponse, BirthCountryYearData, CountryEntry } from '../types/api'
-
-const PALETTE = [
-  '#6366f1', '#3b82f6', '#06b6d4', '#10b981',
-  '#f59e0b', '#f97316', '#ef4444', '#8b5cf6',
-  '#ec4899', '#84cc16',
-]
+import { CHART_PALETTE as PALETTE, COLORS, TOOLTIP_STYLE } from '../lib/theme'
 
 type YearKey = 'y2011' | 'y2016' | 'y2021'
 const YEARS: YearKey[] = ['y2011', 'y2016', 'y2021']
@@ -67,7 +62,7 @@ function SnapshotBars({ yearData }: { yearData: BirthCountryYearData }) {
                 className="h-full rounded-full transition-all duration-500"
                 style={{
                   width: `${barWidth}%`,
-                  backgroundColor: isAustralia ? '#6366f1' : PALETTE[(i) % PALETTE.length],
+                  backgroundColor: isAustralia ? COLORS.origin : PALETTE[(i) % PALETTE.length],
                   minWidth: '2px',
                 }}
               />
@@ -89,23 +84,13 @@ function SnapshotBars({ yearData }: { yearData: BirthCountryYearData }) {
   )
 }
 
-const TOOLTIP_STYLE = {
-  fontSize: 12,
-  borderRadius: 8,
-  border: '1px solid rgba(255,255,255,0.15)',
-  backgroundColor: 'rgba(15,12,41,0.9)',
-  color: '#fff',
-  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.3)',
-  padding: '8px 12px',
-}
-
 function TrendLines({ response }: { response: BirthCountryResponse }) {
   const top4 = (response.y2021?.countries ?? [])
     .filter(c => c.country !== 'Australia')
     .slice(0, 4)
 
   const tracked = [
-    { country: 'Australia', color: '#6366f1' },
+    { country: 'Australia', color: COLORS.origin },
     ...top4.map((c, i) => ({ country: c.country, color: PALETTE[(i + 1) % PALETTE.length] })),
   ]
 
@@ -180,7 +165,7 @@ export default function BirthCountryChart({ response }: Props) {
                 key={y}
                 onClick={() => setYear(y)}
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                  year === y ? 'bg-white/25 text-white' : 'text-white/50 hover:text-white/80'
+                  year === y ? 'bg-lemon text-ink' : 'text-muted hover:text-fg'
                 }`}
               >
                 {YEAR_LABEL[y]}

@@ -1,6 +1,46 @@
 @import "tailwindcss";
 
+/* ===== SuburbLens · Nocturne design system =====
+   Dark editorial data terminal. Electric-lemon accent.
+   Fonts: Space Grotesk (display) / IBM Plex Sans (body) / IBM Plex Mono (labels & numbers) */
+@theme {
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-sans: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  /* Surfaces */
+  --color-ink: #0d0f14;        /* app background        */
+  --color-ink-2: #10131a;      /* login right panel     */
+  --color-surface: #13161d;    /* primary card          */
+  --color-surface-2: #161922;  /* inputs / nested cards */
+  --color-surface-3: #1d212c;  /* hover / pills         */
+  --color-track: #222733;      /* progress track        */
+
+  /* Text */
+  --color-fg: #eef1f6;
+  --color-muted: #9aa0ad;
+  --color-faint: #7d8290;
+  --color-dim: #5b606d;
+
+  /* Accent */
+  --color-lemon: #c6f24e;
+
+  /* Data palette (tenure / charts) */
+  --color-owned: #3fb97f;
+  --color-mortgage: #f2c14e;
+  --color-rented: #f2685c;
+  --color-origin: #5aa9ff;
+}
+
+html {
+  background: var(--color-ink);
+}
+
 body {
-  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  margin: 0;
   min-height: 100vh;
+  background: var(--color-ink);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }

@@ -10,12 +10,12 @@ import LoadingSkeleton from '../components/LoadingSkeleton'
 
 type CommunityTab = 'language' | 'birthcountry'
 
-const GLASS_CARD = 'bg-white/10 backdrop-blur-md border border-white/15 shadow-xl shadow-black/20 rounded-2xl'
+const GLASS_CARD = 'bg-surface border border-white/[0.07] shadow-xl shadow-black/30 rounded-2xl'
 
 function CollapsibleSection({
   title,
   subtitle,
-  defaultOpen = true,
+  defaultOpen = false,
   children,
 }: {
   title: string
@@ -107,11 +107,11 @@ function CommunitySection({ salCode }: { salCode: string }) {
       title="Community Profile"
       subtitle="Language & origins · 2011 / 2016 / 2021"
     >
-      <div className="flex gap-1 bg-white/10 border border-white/10 rounded-lg p-1 w-fit mb-5">
+      <div className="flex gap-1 bg-surface-2 border border-white/10 rounded-lg p-1 w-fit mb-5">
         <button
           onClick={() => setTab('language')}
           className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-            tab === 'language' ? 'bg-white/25 shadow-sm text-white' : 'text-white/50 hover:text-white/80'
+            tab === 'language' ? 'bg-lemon text-ink' : 'text-muted hover:text-fg'
           }`}
         >
           Language at Home
@@ -119,7 +119,7 @@ function CommunitySection({ salCode }: { salCode: string }) {
         <button
           onClick={() => setTab('birthcountry')}
           className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-            tab === 'birthcountry' ? 'bg-white/25 shadow-sm text-white' : 'text-white/50 hover:text-white/80'
+            tab === 'birthcountry' ? 'bg-lemon text-ink' : 'text-muted hover:text-fg'
           }`}
         >
           Country of Birth
@@ -163,7 +163,7 @@ export default function ComparePage() {
           ← Search again
         </button>
 
-        <h1 className="text-2xl font-bold text-white mb-8">Suburb Comparison</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight text-fg mb-8">Suburb Comparison</h1>
 
         {isPending && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -184,8 +184,8 @@ export default function ComparePage() {
             {data.map(suburb => (
               <div key={suburb.salCode} className="space-y-4">
                 <div>
-                  <h2 className="text-xl font-bold text-white">{suburb.salName}</h2>
-                  <p className="text-white/60 text-sm">{suburb.stateName} · {suburb.gccsaName}</p>
+                  <h2 className="font-display text-xl font-bold tracking-tight text-fg">{suburb.salName}</h2>
+                  <p className="text-muted text-sm">{suburb.stateName} · {suburb.gccsaName}</p>
                 </div>
 
                 <ShiftIndexCard

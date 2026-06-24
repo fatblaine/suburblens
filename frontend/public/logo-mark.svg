@@ -1,0 +1,5 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SuburbLens">
+  <circle cx="14" cy="14" r="6.4" stroke="#C6F24E" stroke-width="2.4"/>
+  <circle cx="14" cy="14" r="2" fill="#C6F24E"/>
+  <line x1="18.8" y1="18.8" x2="23.2" y2="23.2" stroke="#C6F24E" stroke-width="2.8" stroke-linecap="round"/>
+</svg>
