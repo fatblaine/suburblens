@@ -10,6 +10,38 @@ interface Message {
 
 const AGENT_BASE = import.meta.env.VITE_AGENT_BASE ?? 'http://localhost:8001'
 
+// Suburb-specific examples — clicking sends them to the agent (LLM + tools).
+const SUGGESTIONS = [
+  'What is the tenure trend in Glebe?',
+  'What is the education level in Carlton?',
+  'Top languages spoken at home in Box Hill?',
+  'Which suburbs are near Newtown?',
+]
+
+// Generic FAQs — answered instantly, client-side. No LLM call, no network,
+// and they don't count against the daily question limit.
+const FAQ: { q: string; a: string }[] = [
+  {
+    q: 'What data can you look up?',
+    a: 'I can pull ABS Census data for a suburb across 2011, 2016 and 2021:\n• Tenure trends (owned / mortgage / rented) + the SuburbLens Residency Shift Index\n• Education qualification levels\n• Languages spoken at home\n• Country of birth\n• Nearby suburbs (within ~20km)\n\nJust name a Sydney or Melbourne suburb.',
+  },
+  {
+    q: 'Where does the data come from?',
+    a: 'All figures come from the Australian Bureau of Statistics (ABS) Census — the 2011, 2016 and 2021 releases. Nothing is estimated or scraped.',
+  },
+  {
+    q: 'Which cities are covered?',
+    a: 'Currently Greater Sydney and Greater Melbourne only. Other regions are out of scope for now.',
+  },
+]
+
+// Loose match so a typed FAQ (not just a clicked chip) still short-circuits.
+const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9一-鿿]+/g, ' ').trim()
+function lookupFaq(text: string): string | null {
+  const n = normalize(text)
+  return FAQ.find(f => normalize(f.q) === n)?.a ?? null
+}
+
 export default function AgentChat() {
   const { isGuest, user } = useAuth()
   const navigate = useNavigate()
@@ -38,11 +70,19 @@ export default function AgentChat() {
     )
   }
 
-  async function send() {
-    const text = input.trim()
+  async function send(textArg?: string) {
+    const text = (textArg ?? input).trim()
     if (!text || loading) return
 
     setInput('')
+
+    // B — generic FAQ: answer instantly client-side, skip the LLM entirely.
+    const canned = lookupFaq(text)
+    if (canned) {
+      setMessages(prev => [...prev, { role: 'user', text }, { role: 'agent', text: canned }])
+      return
+    }
+
     setLoading(true)
     setMessages(prev => [...prev, { role: 'user', text }])
     setMessages(prev => [...prev, { role: 'agent', text: '' }])
@@ -117,9 +157,40 @@ export default function AgentChat() {
 
           <div className="h-64 overflow-y-auto px-4 py-3 space-y-2">
             {messages.length === 0 && (
-              <p className="text-faint text-sm text-center mt-10">
-                e.g. "What is the education level in Glebe?"
-              </p>
+              <div className="pt-3 space-y-4">
+                <div>
+                  <p className="font-mono text-[10px] tracking-[0.14em] uppercase text-dim mb-2">
+                    Quick answers
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {FAQ.map(f => (
+                      <button
+                        key={f.q}
+                        onClick={() => send(f.q)}
+                        className="px-3 py-1.5 rounded-full bg-surface-2 hover:bg-surface-3 border border-white/10 text-faint hover:text-fg text-xs transition-colors"
+                      >
+                        {f.q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="font-mono text-[10px] tracking-[0.14em] uppercase text-dim mb-2">
+                    Try asking
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {SUGGESTIONS.map(q => (
+                      <button
+                        key={q}
+                        onClick={() => send(q)}
+                        className="px-3 py-1.5 rounded-full bg-surface-2 hover:bg-surface-3 border border-white/10 text-faint hover:text-fg text-xs transition-colors text-left"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             )}
             {messages.map((m, i) => (
               <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
@@ -135,6 +206,21 @@ export default function AgentChat() {
             <div ref={bottomRef} />
           </div>
 
+          {messages.length > 0 && (
+            <div className="px-3 pt-2 pb-1.5 flex gap-2 overflow-x-auto [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.18)_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/15 hover:[&::-webkit-scrollbar-thumb]:bg-white/25">
+              {[...FAQ.map(f => f.q), ...SUGGESTIONS].map(q => (
+                <button
+                  key={q}
+                  onClick={() => send(q)}
+                  disabled={loading}
+                  className="shrink-0 px-3 py-1.5 rounded-full bg-surface-2 hover:bg-surface-3 border border-white/10 text-faint hover:text-fg text-xs whitespace-nowrap transition-colors disabled:opacity-40"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="px-3 pb-3 pt-2 border-t border-white/[0.07] flex gap-2">
             <input
               value={input}
@@ -145,7 +231,7 @@ export default function AgentChat() {
               className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-white/10 text-fg placeholder:text-dim focus:outline-none focus:border-lemon/60 text-base disabled:opacity-50"
             />
             <button
-              onClick={send}
+              onClick={() => send()}
               disabled={loading || !input.trim()}
               className="px-5 py-3 bg-lemon hover:brightness-95 text-ink font-display font-semibold rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
