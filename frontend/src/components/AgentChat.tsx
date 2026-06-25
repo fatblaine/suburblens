@@ -75,6 +75,8 @@ export default function AgentChat() {
         setLastAgent(
           res.status === 401 || res.status === 403
             ? 'Please log in with an account to use the AI assistant.'
+            : res.status === 429
+            ? "You've reached today's limit of 50 questions. Please come back tomorrow."
             : `Error: agent returned ${res.status}.`
         )
         return
