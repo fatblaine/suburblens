@@ -6,7 +6,7 @@ from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request, Depends, HTTPException
 from auth import require_registered_user
 import os
 import sys
@@ -38,10 +38,13 @@ async def lifespan(app: FastAPI):
         ) as pool:
             checkpointer = AsyncPostgresSaver(pool)
             await checkpointer.setup()      # idempotent: creates checkpoint tables on first run
+            app.state.pool = pool
             app.state.graph = build_graph(checkpointer)
             yield
     else:
         # No Supabase configured → fall back to in-memory for local dev.
+        # Without a pool we can't persist per-user usage, so rate limiting is skipped.
+        app.state.pool = None
         app.state.graph = build_graph(MemorySaver())
         yield
 
@@ -60,6 +63,32 @@ server.add_middleware(
 )
 
 
+# Each registered user may ask at most this many questions per day (Sydney time).
+DAILY_LIMIT = int(os.environ.get("AI_DAILY_LIMIT", "50"))
+
+
+async def check_and_increment_quota(pool, user_id: str) -> int:
+    """Atomically bump today's usage for a user and return the new count.
+
+    The 'day' resets at Sydney midnight. Blocked (over-limit) requests still
+    increment the counter, which is harmless since they're rejected anyway.
+    """
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                """
+                insert into ai_usage (user_id, usage_date, count)
+                values (%s, (now() at time zone 'Australia/Sydney')::date, 1)
+                on conflict (user_id, usage_date)
+                do update set count = ai_usage.count + 1
+                returning count
+                """,
+                (user_id,),
+            )
+            row = await cur.fetchone()
+            return row[0]
+
+
 class ChatRequest(BaseModel):
     message: str
     thread_id: str = "default"
@@ -69,6 +98,15 @@ class ChatRequest(BaseModel):
 async def chat(req: ChatRequest, request: Request, user: dict = Depends(require_registered_user)):
     # require_registered_user rejects missing/invalid tokens (401) and
     # anonymous guests (403) before we reach the graph.
+    pool = request.app.state.pool
+    if pool is not None:
+        count = await check_and_increment_quota(pool, user["sub"])
+        if count > DAILY_LIMIT:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Daily limit of {DAILY_LIMIT} questions reached. Please try again tomorrow.",
+            )
+
     graph = request.app.state.graph
     config = {"configurable": {"thread_id": req.thread_id}}
     input_state = {"messages": [HumanMessage(content=req.message)]}
