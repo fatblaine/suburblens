@@ -16,10 +16,17 @@ export default function LoginPage() {
   // home once the (async) session lands — without auto-bouncing an existing guest
   // who opened /login on purpose to upgrade to a real account.
   const [pendingGuest, setPendingGuest] = useState(false)
+  // Drives the fade-out before we hand off to the home page.
+  const [leaving, setLeaving] = useState(false)
 
   // Registered users skip the login screen; a just-signed-in guest is sent home too.
+  // Fade the login screen out first, then navigate once the transition has played.
   useEffect(() => {
-    if (session && (!isGuest || pendingGuest)) navigate('/', { replace: true })
+    if (session && (!isGuest || pendingGuest)) {
+      setLeaving(true)
+      const t = setTimeout(() => navigate('/', { replace: true }), 550)
+      return () => clearTimeout(t)
+    }
   }, [session, isGuest, pendingGuest, navigate])
 
   async function handleSubmit(e: FormEvent) {
@@ -52,7 +59,11 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-ink px-4 py-10">
+    <main
+      className={`min-h-screen flex items-center justify-center bg-ink px-4 py-10 transition-all duration-500 ease-out ${
+        leaving ? 'opacity-0 scale-[0.97] blur-sm' : 'opacity-100 scale-100'
+      }`}
+    >
       <div className="w-full max-w-5xl grid md:grid-cols-2 rounded-2xl overflow-hidden shadow-2xl shadow-black/50">
 
         {/* ── Left: editorial ───────────────────────────── */}

@@ -30,6 +30,18 @@
   --color-mortgage: #f2c14e;
   --color-rented: #f2685c;
   --color-origin: #5aa9ff;
+
+  /* Motion */
+  --animate-fade-in: fade-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @theme { --animate-fade-in: none; }
 }
 
 html {
