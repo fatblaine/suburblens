@@ -31,7 +31,7 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-ink">
+    <main className="min-h-screen bg-ink animate-fade-in">
       {/* ── Header ─────────────────────────────────────── */}
       <header className="flex items-center px-6 sm:px-10 py-5 border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5 font-display font-bold text-lg text-white">
