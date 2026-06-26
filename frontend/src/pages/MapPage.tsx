@@ -178,7 +178,7 @@ export default function MapPage() {
       <div ref={mapContainer} style={{ position: 'absolute', inset: 0 }} />
 
       {/* Top bar */}
-      <div className="absolute top-4 left-4 z-10 flex items-center gap-3">
+      <div className="absolute top-4 left-4 right-4 z-10 flex flex-wrap items-center gap-2">
         <button
           onClick={() => navigate('/')}
           className="bg-black/50 backdrop-blur text-white/70 hover:text-white px-3 py-1.5 rounded-lg text-sm border border-white/10"
@@ -244,7 +244,7 @@ function SlidePanel({
   const style = TREND_STYLE[suburb.trendLabel] ?? { color: 'text-white/40', label: '—' }
 
   return (
-    <div className="absolute top-0 right-0 h-full w-72 z-20
+    <div className="absolute top-0 right-0 h-full w-[85vw] max-w-xs sm:w-72 z-20
                     bg-black/60 backdrop-blur-md border-l border-white/10
                     flex flex-col p-6 gap-4">
       <div className="flex items-start justify-between">
@@ -284,9 +284,9 @@ function Legend() {
   ]
 
   return (
-    <div className="absolute bottom-6 left-4 z-10
+    <div className="absolute bottom-6 left-4 z-10 max-w-[calc(100vw-2rem)]
                     bg-black/50 backdrop-blur border border-white/10
-                    rounded-xl px-4 py-3 flex gap-4 flex-wrap">
+                    rounded-xl px-4 py-3 flex gap-x-4 gap-y-2 flex-wrap">
       {items.map(({ color, label }) => (
         <div key={label} className="flex items-center gap-1.5">
           <span className={`w-3 h-3 rounded-sm ${color} opacity-80`} />
