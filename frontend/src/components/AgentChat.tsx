@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useAuth } from '../auth/AuthProvider'
 import { supabase } from '../lib/supabase'
 
@@ -193,16 +195,22 @@ export default function AgentChat() {
               </div>
             )}
             {messages.map((m, i) => (
-              <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
-                <span className={`inline-block px-3 py-2 rounded-xl text-sm max-w-[85%] whitespace-pre-wrap leading-relaxed ${
-                  m.role === 'user'
-                    ? 'bg-lemon/15 border border-lemon/25 text-fg'
-                    : 'bg-surface-2 border border-white/10 text-fg/90'
-                }`}>
-                  {m.text || <span className="text-faint animate-pulse">…</span>}
-                </span>
+  <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
+    <span className={`inline-block px-3 py-2 rounded-xl text-sm max-w-[85%] leading-relaxed ${
+      m.role === 'user'
+        ? 'bg-lemon/15 border border-lemon/25 text-fg whitespace-pre-wrap'
+        : 'bg-surface-2 border border-white/10 text-fg/90'
+    }`}>
+      {m.role === 'agent'
+        ? (m.text
+            ? <div className="markdown-body space-y-2">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
               </div>
-            ))}
+            : <span className="text-faint animate-pulse">…</span>)
+        : m.text}
+    </span>
+  </div>
+))}
             <div ref={bottomRef} />
           </div>
 
