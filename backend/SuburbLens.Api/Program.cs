@@ -79,10 +79,25 @@ app.MapGet("/api/suburbs/search", async (IDbConnection db, string q) =>
         SELECT sal_code AS SalCode, sal_name AS SalName,
                state_name AS StateName, gccsa_name AS GccsaName
         FROM geo_sal
-        WHERE sal_name ILIKE @pattern
+        WHERE sal_name ILIKE @contains
           AND gccsa_code IN ('1GSYD', '2GMEL')
-        ORDER BY sal_name
-        LIMIT 10", new { pattern = $"%{q}%" });
+        ORDER BY
+            CASE
+                WHEN sal_name ILIKE @exact  THEN 0   -- exact name match
+                WHEN sal_name ILIKE @prefix THEN 1   -- starts with the query
+                WHEN sal_name ILIKE @word   THEN 2   -- a later word starts with the query
+                ELSE 3                                -- contains the query somewhere
+            END,
+            length(sal_name),   -- within a tier, shorter names rank as closer matches
+            sal_name            -- alphabetical tie-breaker
+        LIMIT 10",
+        new
+        {
+            exact    = q,
+            prefix   = $"{q}%",
+            word     = $"% {q}%",
+            contains = $"%{q}%",
+        });
 
     return Results.Ok(results);
 });
