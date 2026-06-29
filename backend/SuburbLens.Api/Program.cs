@@ -4,6 +4,7 @@ using Dapper;
 using Npgsql;
 using System.Data;
 using System.Text.Json;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +36,41 @@ if (string.IsNullOrWhiteSpace(connStr))
 
 // Npgsql — connection left closed; Dapper opens/closes per query
 builder.Services.AddScoped<IDbConnection>(_ => new NpgsqlConnection(connStr));
+
+// Redis cache (optional). Local dev: REDIS_CONNECTION=localhost:6379.
+// Cloud: the connection string (incl. Upstash password) is fetched & decrypted
+// from an SSM SecureString — same pattern as the DB URL, no plaintext in git.
+var redisConn = builder.Configuration["REDIS_CONNECTION"];
+if (string.IsNullOrWhiteSpace(redisConn))
+{
+    var redisParam = builder.Configuration["REDIS_SSM_PARAM"];
+    if (!string.IsNullOrWhiteSpace(redisParam))
+    {
+        using var ssm = new AmazonSimpleSystemsManagementClient();
+        var resp = await ssm.GetParameterAsync(new GetParameterRequest
+        {
+            Name = redisParam,
+            WithDecryption = true
+        });
+        redisConn = resp.Parameter.Value;
+    }
+}
+
+// Lazy so the TCP connection is opened on first request (post-SnapStart restore),
+// not baked into the snapshot where the socket would already be dead.
+// AbortOnConnectFail=false → Redis being down never crashes startup or a request.
+Lazy<IConnectionMultiplexer>? redisLazy = null;
+if (!string.IsNullOrWhiteSpace(redisConn))
+{
+    var redisOptions = ConfigurationOptions.Parse(redisConn);
+    redisOptions.AbortOnConnectFail = false;
+    redisOptions.ConnectTimeout = 2000;
+    redisOptions.ConnectRetry = 1;
+    redisLazy = new Lazy<IConnectionMultiplexer>(() => ConnectionMultiplexer.Connect(redisOptions));
+}
+
+var heatmapTtl = TimeSpan.FromSeconds(
+    builder.Configuration.GetValue("HEATMAP_CACHE_TTL_SECONDS", 86400));
 
 // CORS
 builder.Services.AddCors(options =>
@@ -516,56 +552,66 @@ app.MapGet("/api/suburbs/{salCode}/education", async (IDbConnection db, string s
     ));
 });
 
-// heatmap
-app.MapGet("/api/suburbs/heatmap", async (IDbConnection db, string? city) =>
+// heatmap — full GeoJSON FeatureCollection, aggregated in Postgres and cached in
+// Redis (fail-open). Census data is static, so it's also marked cacheable for
+// browsers/CDN via Cache-Control.
+app.MapGet("/api/suburbs/heatmap", async (IDbConnection db, HttpContext http, string? city) =>
 {
-    // city: "sydney" | "melbourne" | null (both)
-    var gccsaFilter = city?.ToLower() switch
+    var (cacheKey, gccsaFilter) = city?.ToLower() switch
     {
-        "sydney" => new[] { "1GSYD" },
-        "melbourne" => new[] { "2GMEL" },
-        _ => new[] { "1GSYD", "2GMEL" }
+        "sydney"    => ("heatmap:v1:sydney",    new[] { "1GSYD" }),
+        "melbourne" => ("heatmap:v1:melbourne", new[] { "2GMEL" }),
+        _           => ("heatmap:v1:all",       new[] { "1GSYD", "2GMEL" }),
     };
 
-    var rows = await db.QueryAsync<HeatmapRow>(@"
-        SELECT
-            s.sal_code          AS SalCode,
-            s.sal_name          AS SalName,
-            s.gccsa_code        AS GccsaCode,
-            s.gccsa_name        AS GccsaName,
-            s.state_name        AS StateName,
-            t.residency_shift_index AS ResidencyShiftIndex,
-            t.trend_label       AS TrendLabel,
-            ST_AsGeoJSON(
-                ST_Simplify(s.geom::geometry, 0.001)
-            )                   AS GeometryJson
+    http.Response.Headers.CacheControl = $"public, max-age={(int)heatmapTtl.TotalSeconds}";
+
+    // 1. Try Redis. Any failure → log and fall through to the DB (fail-open).
+    IDatabase? cache = null;
+    try { cache = redisLazy?.Value.GetDatabase(); }
+    catch (Exception ex) { app.Logger.LogWarning(ex, "Redis unavailable; serving heatmap from DB"); }
+
+    if (cache is not null)
+    {
+        try
+        {
+            var hit = await cache.StringGetAsync(cacheKey);
+            if (hit.HasValue)
+                return Results.Content(hit!, "application/json");
+        }
+        catch (Exception ex) { app.Logger.LogWarning(ex, "Redis GET failed for {Key}", cacheKey); }
+    }
+
+    // 2. Build the whole FeatureCollection in Postgres — no fragile C# string
+    //    concatenation, so quotes in any field are correctly escaped by Postgres.
+    var geojson = await db.QuerySingleAsync<string>(@"
+        SELECT json_build_object(
+            'type', 'FeatureCollection',
+            'features', COALESCE(json_agg(json_build_object(
+                'type', 'Feature',
+                'properties', json_build_object(
+                    'salCode',             s.sal_code,
+                    'salName',             s.sal_name,
+                    'gccsaCode',           s.gccsa_code,
+                    'stateName',           s.state_name,
+                    'residencyShiftIndex', t.residency_shift_index,
+                    'trendLabel',          t.trend_label
+                ),
+                'geometry', ST_AsGeoJSON(ST_Simplify(s.geom::geometry, 0.001))::json
+            )), '[]'::json)
+        )::text
         FROM geo_sal s
         LEFT JOIN v_tenure_shift t ON t.sal_code = s.sal_code
         WHERE s.gccsa_code = ANY(@gccsaFilter)
           AND s.geom IS NOT NULL",
         new { gccsaFilter });
 
-    var features = rows.Select(r => $$"""
-        {
-          "type": "Feature",
-          "properties": {
-            "salCode":              "{{r.SalCode}}",
-            "salName":              "{{r.SalName.Replace("\"", "\\\"")}}",
-            "gccsaCode":            "{{r.GccsaCode}}",
-            "stateName":            "{{r.StateName}}",
-            "residencyShiftIndex":  {{(r.ResidencyShiftIndex.HasValue ? r.ResidencyShiftIndex.Value.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) : "null")}},
-            "trendLabel":           "{{r.TrendLabel ?? ""}}"
-          },
-          "geometry": {{r.GeometryJson}}
-        }
-        """);
-
-    var geojson = $$"""
-        {
-          "type": "FeatureCollection",
-          "features": [{{string.Join(",", features)}}]
-        }
-        """;
+    // 3. Best-effort cache write (never blocks the response on a Redis error).
+    if (cache is not null)
+    {
+        try { await cache.StringSetAsync(cacheKey, geojson, heatmapTtl); }
+        catch (Exception ex) { app.Logger.LogWarning(ex, "Redis SET failed for {Key}", cacheKey); }
+    }
 
     return Results.Content(geojson, "application/json");
 });
@@ -573,10 +619,6 @@ app.MapGet("/api/suburbs/heatmap", async (IDbConnection db, string? city) =>
 app.Run();
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
-
-record HeatmapRow(
-    string SalCode, string SalName, string GccsaCode, string GccsaName, string StateName,
-    decimal? ResidencyShiftIndex, string? TrendLabel, string GeometryJson);
 
 record SuburbSearchResult(string SalCode, string SalName, string StateName, string GccsaName);
 
