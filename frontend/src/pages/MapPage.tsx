@@ -177,15 +177,17 @@ export default function MapPage() {
           height. Inline styles outrank class selectors, so this always wins. */}
       <div ref={mapContainer} style={{ position: 'absolute', inset: 0 }} />
 
-      {/* Top bar */}
-      <div className="absolute top-4 left-4 right-4 z-10 flex flex-wrap items-center gap-2">
+      {/* Top bar. `pointer-events-none` on the container so its transparent
+          full-width gaps don't intercept clicks meant for the map / the
+          top-right zoom control beneath it; interactive children opt back in. */}
+      <div className="absolute top-4 left-4 right-4 z-10 flex flex-wrap items-center gap-2 pointer-events-none">
         <button
           onClick={() => navigate('/')}
-          className="bg-black/50 backdrop-blur text-white/70 hover:text-white px-3 py-1.5 rounded-lg text-sm border border-white/10"
+          className="pointer-events-auto bg-black/50 backdrop-blur text-white/70 hover:text-white px-3 py-1.5 rounded-lg text-sm border border-white/10"
         >
           ← Back
         </button>
-        <div className="bg-black/50 backdrop-blur border border-white/10 rounded-lg p-1 flex gap-1">
+        <div className="pointer-events-auto bg-black/50 backdrop-blur border border-white/10 rounded-lg p-1 flex gap-1">
           {(['sydney', 'melbourne'] as const).map((c) => (
             <button
               key={c}
