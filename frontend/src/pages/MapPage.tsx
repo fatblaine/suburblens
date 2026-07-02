@@ -244,15 +244,34 @@ function SlidePanel({
   const style = TREND_STYLE[suburb.trendLabel] ?? { color: 'text-white/40', label: '—' }
 
   return (
-    <div className="absolute top-0 right-0 h-full w-[85vw] max-w-xs sm:w-72 z-20
-                    bg-black/60 backdrop-blur-md border-l border-white/10
-                    flex flex-col p-6 gap-4">
+    <>
+      {/* Backdrop — mobile only: tap outside the sheet to close. Desktop keeps
+          the map interactive (narrow drawer, close via ×). */}
+      <div className="absolute inset-0 z-10 sm:hidden" onClick={onClose} />
+
+      {/* Mobile: bottom sheet. Desktop (sm+): right drawer. */}
+      <div
+        className="absolute z-20 flex flex-col gap-4 overflow-y-auto
+                   bg-black/60 backdrop-blur-md
+                   bottom-0 left-0 right-0 max-h-[70vh] rounded-t-2xl border-t border-white/10 p-6
+                   sm:top-0 sm:right-0 sm:bottom-auto sm:left-auto sm:h-full sm:max-h-none
+                   sm:w-72 sm:rounded-none sm:border-t-0 sm:border-l"
+      >
+        {/* Drag-handle affordance (mobile only) */}
+        <div className="sm:hidden mx-auto -mt-2 h-1 w-10 rounded-full bg-white/25" />
+
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-white font-bold text-lg leading-tight">{suburb.salName}</h2>
           <p className="text-white/50 text-sm mt-0.5">{suburb.stateName}</p>
         </div>
-        <button onClick={onClose} className="text-white/30 hover:text-white/70 text-xl ml-2">×</button>
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          className="-m-2 p-2 text-white/40 hover:text-white/80 text-xl leading-none ml-2"
+        >
+          ×
+        </button>
       </div>
 
       <div className="bg-white/10 border border-white/15 rounded-xl p-4">
@@ -262,14 +281,15 @@ function SlidePanel({
         <p className="text-white/30 text-xs mt-2">SuburbLens Custom · Not an ABS metric</p>
       </div>
 
-      <button
-        onClick={onViewDetails}
-        className="mt-auto w-full bg-white/15 hover:bg-white/25 border border-white/20
-                   text-white text-sm font-medium py-2.5 rounded-xl transition-all"
-      >
-        View full details →
-      </button>
-    </div>
+        <button
+          onClick={onViewDetails}
+          className="mt-auto w-full bg-white/15 hover:bg-white/25 border border-white/20
+                     text-white text-sm font-medium py-2.5 rounded-xl transition-all"
+        >
+          View full details →
+        </button>
+      </div>
+    </>
   )
 }
 
