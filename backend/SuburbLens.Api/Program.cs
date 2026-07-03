@@ -115,20 +115,24 @@ app.MapGet("/api/suburbs/search", async (IDbConnection db, string q) =>
         SELECT sal_code AS SalCode, sal_name AS SalName,
                state_name AS StateName, gccsa_name AS GccsaName
         FROM geo_sal
-        WHERE sal_name ILIKE @contains
-          AND gccsa_code IN ('1GSYD', '2GMEL')
+        WHERE gccsa_code IN ('1GSYD', '2GMEL')
+          AND (sal_name ILIKE @contains                -- correct spelling: substring match
+               OR similarity(sal_name, @q) >= 0.25)    -- typo tolerance: trigram similarity (pg_trgm)
         ORDER BY
             CASE
-                WHEN sal_name ILIKE @exact  THEN 0   -- exact name match
-                WHEN sal_name ILIKE @prefix THEN 1   -- starts with the query
-                WHEN sal_name ILIKE @word   THEN 2   -- a later word starts with the query
-                ELSE 3                                -- contains the query somewhere
+                WHEN sal_name ILIKE @exact    THEN 0   -- exact name match
+                WHEN sal_name ILIKE @prefix   THEN 1   -- starts with the query
+                WHEN sal_name ILIKE @word     THEN 2   -- a later word starts with the query
+                WHEN sal_name ILIKE @contains THEN 3   -- contains the query somewhere
+                ELSE 4                                 -- fuzzy-only match (typo)
             END,
-            length(sal_name),   -- within a tier, shorter names rank as closer matches
-            sal_name            -- alphabetical tie-breaker
+            similarity(sal_name, @q) DESC,  -- within a tier, closest spelling ranks first
+            length(sal_name),               -- then shorter names rank as closer matches
+            sal_name                        -- alphabetical tie-breaker
         LIMIT 10",
         new
         {
+            q,
             exact    = q,
             prefix   = $"{q}%",
             word     = $"% {q}%",
