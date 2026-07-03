@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useSuburbSearch } from '../api/suburbs'
+import { useSuburbSearch, maybeWarmup } from '../api/suburbs'
 import type { SuburbSearchResult } from '../types/api'
 
 interface Props {
@@ -55,7 +55,7 @@ export default function SearchBox({ selected, onAdd, onRemove, onCompare, onNear
             setQuery(e.target.value)
             setOpen(true)
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => { setOpen(true); maybeWarmup() }}
           className="flex-1 py-4 bg-transparent text-fg placeholder:text-dim focus:outline-none text-[17px]"
         />
       </div>
