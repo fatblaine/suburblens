@@ -3,12 +3,32 @@ import type { SuburbSearchResult, TenureResponse, NearbySuburbsResponse, Languag
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
+// —— Lambda 冷启动预热：时间自愈守卫 ——
+// lastRequestAt：最后一次真正打到 Lambda 的请求时间戳（毫秒）。真实搜索与预热都刷新它。
+// 模块作用域共享（不放组件 state / localStorage）——刷新页面自然归零，保证首进必预热。
+let lastRequestAt = 0
+const WARM_WINDOW_MS = 4 * 60 * 1000  // < Lambda 热窗口(~5-15min)，留安全余量
+
+// 任何唤醒 Lambda 的请求（真实搜索 / 预热）回来后调它「保存」时间戳
+function markRequest() {
+    lastRequestAt = Date.now()
+}
+
+// focus 时调用：只有超过热窗口（= 冷启动真会发生时）才发一条预热请求，结果丢弃
+export function maybeWarmup() {
+    if (Date.now() - lastRequestAt < WARM_WINDOW_MS) return  // 还热 → 跳过，零浪费
+    markRequest()                                            // 预热也算一次唤醒
+    // 复用搜索端点做预热；keepalive 让请求不被页面卸载打断；结果不进缓存
+    fetch(`${API_BASE}/api/suburbs/search?q=sy`, { keepalive: true }).catch(() => {})
+}
+
 // Search for suburbs by name
 export function useSuburbSearch(query: string) {
     return useQuery<SuburbSearchResult[]>({
         queryKey: ['suburbSearch', query],
         queryFn: async () => {
             const res = await fetch(`${API_BASE}/api/suburbs/search?q=${encodeURIComponent(query)}`)
+            markRequest()  // fetch 返回即视为 Lambda 已唤醒，刷新时间戳
             if (!res.ok) throw new Error('Failed to search suburbs.')
             return res.json()
         },
