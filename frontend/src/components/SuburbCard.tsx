@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { useSuburbTenure, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation } from '../api/suburbs'
+import { useSuburbTenure, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation, useSuburbCrime } from '../api/suburbs'
 import ShiftIndexCard from './ShiftIndexCard'
 import TenureChart from './TenureChart'
 import LanguageChart from './LanguageChart'
 import BirthCountryChart from './BirthCountryChart'
 import EducationChart from './EducationChart'
+import CrimeChart from './CrimeChart'
 import LoadingSkeleton from './LoadingSkeleton'
 import NearbySuburbs from './NearbySuburbs'
 
@@ -145,6 +146,39 @@ function EducationSection({ salCode }: { salCode: string }) {
   )
 }
 
+function CrimeSection({ salCode }: { salCode: string }) {
+  const { data, isPending, isError } = useSuburbCrime(salCode)
+
+  // 404 (non-Melbourne / no data) → silently render nothing
+  if (isError) return null
+
+  if (isPending) return (
+    <div className={GLASS_CARD + ' p-6'}>
+      <div className="animate-pulse space-y-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="w-28 h-3 bg-white/10 rounded" />
+            <div className="flex-1 h-4 bg-white/10 rounded-full" />
+            <div className="w-10 h-3 bg-white/10 rounded" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
+  if (!data) return null
+
+  return (
+    <CollapsibleSection
+      title="Crime"
+      subtitle="Recorded incidents · year ending March · Greater Melbourne"
+    >
+      <CrimeChart response={data} />
+      <p className="mt-5 text-xs text-white/40">&#9432; {data.dataNote}</p>
+    </CollapsibleSection>
+  )
+}
+
 export default function SuburbCard({ salCode, onAdd, onRemove, defaultNearbyExpanded = false }: Props) {
   const { data, isPending, isError } = useSuburbTenure(salCode)
 
@@ -206,6 +240,8 @@ export default function SuburbCard({ salCode, onAdd, onRemove, defaultNearbyExpa
       <CommunitySection salCode={salCode} />
 
       <EducationSection salCode={salCode} />
+
+      <CrimeSection salCode={salCode} />
 
       <div className="bg-white/10 border border-amber-300/30 rounded-xl p-4 text-sm text-amber-200">
         <strong>Note:</strong> The Residency Shift Index is a SuburbLens custom heuristic based on

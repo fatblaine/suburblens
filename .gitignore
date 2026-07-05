@@ -2,6 +2,7 @@
 data/raw/
 data/extracted/
 data/sql/
+data/crime
 
 # Backend
 backend/**/bin/
