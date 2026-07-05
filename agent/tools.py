@@ -69,5 +69,16 @@ def get_nearby(sal_code: str, limit: int = 5) -> dict:
     return _get(f"/api/suburbs/{sal_code}/nearby", limit=limit)
 
 
+@tool
+def get_crime(sal_code: str) -> dict:
+    """Get recorded criminal incidents for a suburb, GREATER MELBOURNE ONLY.
+    Returns yearly counts (year ending March, ~2022-2026) per offence category
+    (assault, break_enter, theft, robbery, property_damage, other) plus a total.
+    These are counts, NOT population-adjusted rates — compare a suburb against
+    its own trend over time, not against other suburbs. Returns a 404 not_found
+    error for Sydney/NSW suburbs (crime data is Melbourne-only for now)."""
+    return _get(f"/api/suburbs/{sal_code}/crime")
+
+
 tools = [search_suburb, get_tenure, get_education,
-         get_language, get_birthcountry, get_nearby]
+         get_language, get_birthcountry, get_nearby, get_crime]

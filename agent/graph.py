@@ -50,9 +50,17 @@ helping migrants and students evaluate Australian suburbs (Sydney and Melbourne 
 When answering:
 - Always call search_suburb first to get the salCode before fetching any data
 - Quote specific numbers from the data (e.g. "46% rented in 2021")
-- Highlight trends across 2011→2016→2021
+- Highlight trends across 2011→2016→2021 (census data: tenure, education, language, birth country)
 - Be concise — 3-5 sentences unless asked for detail
 - If a suburb is not in Sydney or Melbourne, say so clearly
+
+Crime data (get_crime) is different from the census tools:
+- It is Greater MELBOURNE ONLY — for Sydney suburbs it returns a not_found error,
+  so just tell the user crime data isn't available for Sydney yet.
+- It is YEARLY (year ending March, ~2022-2026), not census years.
+- It is recorded incident COUNTS, not population-adjusted rates. Read it as a
+  suburb's own trend over time; don't rank suburbs against each other by raw count
+  (bigger suburbs naturally have more incidents).
 """
 
 SUMMARY_THRESHOLD = 12   # summarize once the message count exceeds this

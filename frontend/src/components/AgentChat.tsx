@@ -17,6 +17,7 @@ const SUGGESTIONS = [
   'What is the tenure trend in Glebe?',
   'What is the education level in Carlton?',
   'Top languages spoken at home in Box Hill?',
+  'How has crime changed in Dandenong?',
   'Which suburbs are near Newtown?',
 ]
 
@@ -25,7 +26,7 @@ const SUGGESTIONS = [
 const FAQ: { q: string; a: string }[] = [
   {
     q: 'What data can you look up?',
-    a: 'I can pull ABS Census data for a suburb across 2011, 2016 and 2021:\n• Tenure trends (owned / mortgage / rented) + the SuburbLens Residency Shift Index\n• Education qualification levels\n• Languages spoken at home\n• Country of birth\n• Nearby suburbs (within ~20km)\n\nJust name a Sydney or Melbourne suburb.',
+    a: 'I can pull ABS Census data for a suburb across 2011, 2016 and 2021:\n• Tenure trends (owned / mortgage / rented) + the SuburbLens Residency Shift Index\n• Education qualification levels\n• Languages spoken at home\n• Country of birth\n• Nearby suburbs (within ~20km)\n\nPlus recorded crime incidents (yearly counts, Greater Melbourne only for now).\n\nJust name a Sydney or Melbourne suburb.',
   },
   {
     q: 'Where does the data come from?',
