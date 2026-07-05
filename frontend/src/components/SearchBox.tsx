@@ -44,53 +44,66 @@ export default function SearchBox({ selected, onAdd, onRemove, onCompare, onNear
   const showDropdown = open && debouncedQuery.trim().length >= 2
 
   return (
-    <div ref={wrapperRef} className="relative w-full">
-      <div className="flex items-center gap-3 bg-surface-2 border border-white/12 rounded-xl px-5 focus-within:border-lemon/60 transition-colors">
-        <span className="text-dim select-none">⌕</span>
-        <input
-          type="text"
-          value={query}
-          placeholder="Search a suburb, e.g. Glebe…"
-          onChange={(e) => {
-            setQuery(e.target.value)
-            setOpen(true)
-          }}
-          onFocus={() => { setOpen(true); maybeWarmup() }}
-          className="flex-1 py-4 bg-transparent text-fg placeholder:text-dim focus:outline-none text-[17px]"
-        />
-      </div>
-
-      {showDropdown && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-surface-2 border border-white/12 rounded-xl shadow-2xl shadow-black/50 z-20 overflow-hidden">
-          {isPending && (
-            <div className="px-4 py-3 text-sm text-faint">Searching…</div>
-          )}
-
-          {!isPending && results?.length === 0 && (
-            <div className="px-4 py-3 text-sm text-faint">No suburbs found.</div>
-          )}
-
-          {results?.map((suburb) => {
-            const alreadyAdded = selectedCodes.has(suburb.salCode)
-            return (
-              <button
-                key={suburb.salCode}
-                onClick={() => handleSelect(suburb)}
-                disabled={alreadyAdded}
-                className="w-full text-left px-4 py-3 hover:bg-white/5 transition-colors border-b border-white/[0.06] last:border-0 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <span className="font-medium text-fg">{suburb.salName}</span>
-                <span className="ml-2 text-sm text-faint">
-                  {suburb.stateName} · {suburb.gccsaName}
-                </span>
-                {alreadyAdded && (
-                  <span className="ml-2 font-mono text-xs text-lemon">Added</span>
-                )}
-              </button>
-            )
-          })}
+    <div ref={wrapperRef} className="w-full">
+      {/* Positioning context for the dropdown: anchor it to the input, not the whole box */}
+      <div className="relative">
+        <div className="flex items-center gap-3 bg-surface-2 border border-white/12 rounded-xl px-5 focus-within:border-lemon/60 transition-colors">
+          <span className="text-dim select-none">⌕</span>
+          <input
+            type="text"
+            value={query}
+            placeholder="Search a suburb, e.g. Glebe…"
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setOpen(true)
+            }}
+            onKeyDown={(e) => {
+              // With a single result, Enter selects it directly — no mouse needed.
+              if (e.key === 'Enter' && showDropdown && !isPending && results?.length === 1) {
+                const only = results[0]
+                if (!selectedCodes.has(only.salCode)) {
+                  e.preventDefault()
+                  handleSelect(only)
+                }
+              }
+            }}
+            onFocus={() => { setOpen(true); maybeWarmup() }}
+            className="flex-1 py-4 bg-transparent text-fg placeholder:text-dim focus:outline-none text-[17px]"
+          />
         </div>
-      )}
+
+        {showDropdown && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-surface-2 border border-white/12 rounded-xl shadow-2xl shadow-black/50 z-20 overflow-hidden">
+            {isPending && (
+              <div className="px-4 py-3 text-sm text-faint">Searching…</div>
+            )}
+
+            {!isPending && results?.length === 0 && (
+              <div className="px-4 py-3 text-sm text-faint">No suburbs found.</div>
+            )}
+
+            {results?.map((suburb) => {
+              const alreadyAdded = selectedCodes.has(suburb.salCode)
+              return (
+                <button
+                  key={suburb.salCode}
+                  onClick={() => handleSelect(suburb)}
+                  disabled={alreadyAdded}
+                  className="w-full text-left px-4 py-3 hover:bg-white/5 transition-colors border-b border-white/[0.06] last:border-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <span className="font-medium text-fg">{suburb.salName}</span>
+                  <span className="ml-2 text-sm text-faint">
+                    {suburb.stateName} · {suburb.gccsaName}
+                  </span>
+                  {alreadyAdded && (
+                    <span className="ml-2 font-mono text-xs text-lemon">Added</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
       {selected.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2.5">
