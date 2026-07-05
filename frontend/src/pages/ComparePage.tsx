@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { useSuburbTenureBatch, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation } from '../api/suburbs'
+import { useSuburbTenureBatch, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation, useSuburbCrime } from '../api/suburbs'
 import ShiftIndexCard from '../components/ShiftIndexCard'
 import TenureChart from '../components/TenureChart'
 import LanguageChart from '../components/LanguageChart'
 import BirthCountryChart from '../components/BirthCountryChart'
 import EducationChart from '../components/EducationChart'
+import CrimeChart from '../components/CrimeChart'
 import LoadingSkeleton from '../components/LoadingSkeleton'
 
 type CommunityTab = 'language' | 'birthcountry'
@@ -74,6 +75,39 @@ function EducationSection({ salCode }: { salCode: string }) {
       subtitle="Highest qualification · 2011 / 2016 / 2021"
     >
       <EducationChart response={data} />
+      <p className="mt-5 text-xs text-white/40">&#9432; {data.dataNote}</p>
+    </CollapsibleSection>
+  )
+}
+
+function CrimeSection({ salCode }: { salCode: string }) {
+  const { data, isPending, isError } = useSuburbCrime(salCode)
+
+  // 404 (non-Melbourne / no data) → silently render nothing
+  if (isError) return null
+
+  if (isPending) return (
+    <div className={GLASS_CARD + ' p-6'}>
+      <div className="animate-pulse space-y-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="w-28 h-3 bg-white/10 rounded" />
+            <div className="flex-1 h-4 bg-white/10 rounded-full" />
+            <div className="w-10 h-3 bg-white/10 rounded" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
+  if (!data) return null
+
+  return (
+    <CollapsibleSection
+      title="Crime"
+      subtitle="Recorded incidents · year ending March · Greater Melbourne"
+    >
+      <CrimeChart response={data} />
       <p className="mt-5 text-xs text-white/40">&#9432; {data.dataNote}</p>
     </CollapsibleSection>
   )
@@ -206,6 +240,8 @@ export default function ComparePage() {
                 <CommunitySection salCode={suburb.salCode} />
 
                 <EducationSection salCode={suburb.salCode} />
+
+                <CrimeSection salCode={suburb.salCode} />
               </div>
             ))}
           </div>
