@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import type { SuburbSearchResult, TenureResponse, NearbySuburbsResponse, LanguageResponse, BirthCountryResponse, EducationResponse } from '../types/api'
+import type { SuburbSearchResult, TenureResponse, NearbySuburbsResponse, LanguageResponse, BirthCountryResponse, EducationResponse, CrimeResponse } from '../types/api'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
@@ -102,6 +102,21 @@ export function useSuburbEducation(salCode: string | undefined) {
         queryFn: async () => {
             const res = await fetch(`${API_BASE}/api/suburbs/${salCode}/education`)
             if (!res.ok) throw new Error('Failed to fetch suburb education data.')
+            return res.json()
+        },
+        enabled: !!salCode,
+        staleTime: 5 * 60 * 1000,
+        retry: 0,
+    })
+}
+
+// Fetch recorded crime incidents for a suburb (Greater Melbourne only; 404 elsewhere)
+export function useSuburbCrime(salCode: string | undefined) {
+    return useQuery<CrimeResponse>({
+        queryKey: ['suburb-crime', salCode],
+        queryFn: async () => {
+            const res = await fetch(`${API_BASE}/api/suburbs/${salCode}/crime`)
+            if (!res.ok) throw new Error('Failed to fetch suburb crime data.')
             return res.json()
         },
         enabled: !!salCode,

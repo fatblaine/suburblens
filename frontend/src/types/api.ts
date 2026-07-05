@@ -102,6 +102,27 @@ export interface EducationResponse {
   dataNote: string
 }
 
+// Crime — matches GET /api/suburbs/:salCode/crime  (Greater Melbourne only; 404 elsewhere)
+export interface CrimeCategory {
+  category: string   // assault | break_enter | theft | robbery | property_damage | other
+  incidents: number
+}
+
+export interface CrimePeriod {
+  yearEnding: number
+  total: number
+  categories: CrimeCategory[]  // sorted by incidents desc
+}
+
+export interface CrimeResponse {
+  salCode: string
+  salName: string
+  stateName: string
+  gccsaName: string
+  periods: CrimePeriod[]       // ascending by yearEnding
+  dataNote: string
+}
+
 // Language at home — matches GET /api/suburbs/:salCode/language
 export interface LanguageEntry {
   language: string

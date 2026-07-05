@@ -133,9 +133,9 @@ app.MapGet("/api/suburbs/search", async (IDbConnection db, string q) =>
         new
         {
             q,
-            exact    = q,
-            prefix   = $"{q}%",
-            word     = $"% {q}%",
+            exact = q,
+            prefix = $"{q}%",
+            word = $"% {q}%",
             contains = $"%{q}%",
         });
 
@@ -556,6 +556,46 @@ app.MapGet("/api/suburbs/{salCode}/education", async (IDbConnection db, string s
     ));
 });
 
+// crime — recorded criminal incidents (VIC CSA), Greater Melbourne only. The view
+// filters to gccsa_code='2GMEL' and the last 5 year-endings, so a non-Melbourne
+// salCode returns 0 rows → 404 (the frontend card then just doesn't render).
+app.MapGet("/api/suburbs/{salCode}/crime", async (IDbConnection db, string salCode) =>
+{
+    var rows = await db.QueryAsync<CrimeRow>(@"
+        SELECT sal_code AS SalCode, sal_name AS SalName,
+               state_name AS StateName, gccsa_name AS GccsaName,
+               year_ending AS YearEnding,
+               offence_category AS OffenceCategory, incidents AS Incidents
+        FROM v_crime_profile
+        WHERE sal_code = @salCode
+        ORDER BY year_ending, offence_category",
+        new { salCode });
+
+    var rowList = rows.ToList();
+    if (rowList.Count == 0)
+        return Results.NotFound(new { error = $"Crime data not available for: {salCode}" });
+
+    var first = rowList[0];
+
+    // reshape the flat rows into { yearEnding, total, categories[] } per year
+    var periods = rowList
+        .GroupBy(r => r.YearEnding)
+        .OrderBy(g => g.Key)
+        .Select(g => new CrimePeriod(
+            YearEnding: g.Key,
+            Total: g.Sum(r => r.Incidents),
+            Categories: g.Select(r => new CrimeCategory(r.OffenceCategory, r.Incidents))
+                         .OrderByDescending(c => c.Incidents).ToArray()))
+        .ToArray();
+
+    return Results.Ok(new CrimeResponse(
+        SalCode: first.SalCode, SalName: first.SalName,
+        StateName: first.StateName, GccsaName: first.GccsaName,
+        Periods: periods,
+        DataNote: "Recorded criminal incidents in Greater Melbourne (VIC CSA), " +
+                  "year ending March. Counts, not population-adjusted."));
+});
+
 // heatmap — full GeoJSON FeatureCollection, aggregated in Postgres and cached in
 // Redis (fail-open). Census data is static, so it's also marked cacheable for
 // browsers/CDN via Cache-Control.
@@ -563,9 +603,9 @@ app.MapGet("/api/suburbs/heatmap", async (IDbConnection db, HttpContext http, st
 {
     var (cacheKey, gccsaFilter) = city?.ToLower() switch
     {
-        "sydney"    => ("heatmap:v1:sydney",    new[] { "1GSYD" }),
+        "sydney" => ("heatmap:v1:sydney", new[] { "1GSYD" }),
         "melbourne" => ("heatmap:v1:melbourne", new[] { "2GMEL" }),
-        _           => ("heatmap:v1:all",       new[] { "1GSYD", "2GMEL" }),
+        _ => ("heatmap:v1:all", new[] { "1GSYD", "2GMEL" }),
     };
 
     http.Response.Headers.CacheControl = $"public, max-age={(int)heatmapTtl.TotalSeconds}";
@@ -720,5 +760,16 @@ record EducationRow(
     decimal? PostgradDegPct, decimal? GradDipCertPct, decimal? BachDegPct,
     decimal? AdvDipDipPct, decimal? CertIIIIVPct, decimal? CertIIIPct,
     decimal? UniversityPct
+);
+
+record CrimeCategory(string Category, int Incidents);
+record CrimePeriod(short YearEnding, int Total, CrimeCategory[] Categories);
+record CrimeResponse(
+    string SalCode, string SalName, string StateName, string GccsaName,
+    CrimePeriod[] Periods, string DataNote
+);
+record CrimeRow(
+    string SalCode, string SalName, string StateName, string GccsaName,
+    short YearEnding, string OffenceCategory, int Incidents
 );
 
