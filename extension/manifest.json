@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "SuburbLens",
+  "version": "0.1.0",
+  "description": "Overlays SuburbLens tenure insights on realestate.com.au listings.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "SuburbLens",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.realestate.com.au/*"],
+      "js": [
+        "src/config.js",
+        "src/adapters/realestate.js",
+        "src/overlay.js",
+        "src/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": { "service_worker": "src/background.js" },
+  "host_permissions": [
+    "http://localhost:5281/*",
+    "https://*.execute-api.ap-southeast-2.amazonaws.com/*"
+  ]
+}
