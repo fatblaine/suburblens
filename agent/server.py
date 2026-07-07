@@ -66,6 +66,10 @@ server.add_middleware(
 # Each registered user may ask at most this many questions per day (Sydney time).
 DAILY_LIMIT = int(os.environ.get("AI_DAILY_LIMIT", "50"))
 
+# Reject oversized messages before any LLM cost. trim_messages only bounds the
+# HISTORY sent to the model, not the current turn's input, so cap it here.
+MAX_MESSAGE_CHARS = int(os.environ.get("AI_MAX_MESSAGE_CHARS", "2000"))
+
 
 async def check_and_increment_quota(pool, user_id: str) -> int:
     """Atomically bump today's usage for a user and return the new count.
@@ -98,6 +102,15 @@ class ChatRequest(BaseModel):
 async def chat(req: ChatRequest, request: Request, user: dict = Depends(require_registered_user)):
     # require_registered_user rejects missing/invalid tokens (401) and
     # anonymous guests (403) before we reach the graph.
+    message = req.message.strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Message is empty.")
+    if len(message) > MAX_MESSAGE_CHARS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Message too long (max {MAX_MESSAGE_CHARS} characters).",
+        )
+
     pool = request.app.state.pool
     if pool is not None:
         count = await check_and_increment_quota(pool, user["sub"])
@@ -109,7 +122,7 @@ async def chat(req: ChatRequest, request: Request, user: dict = Depends(require_
 
     graph = request.app.state.graph
     config = {"configurable": {"thread_id": req.thread_id}}
-    input_state = {"messages": [HumanMessage(content=req.message)]}
+    input_state = {"messages": [HumanMessage(content=message)]}
 
     async def generate():
         async for event in graph.astream_events(input_state, config, version="v2"):
