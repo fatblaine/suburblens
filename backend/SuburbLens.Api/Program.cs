@@ -588,12 +588,36 @@ app.MapGet("/api/suburbs/{salCode}/crime", async (IDbConnection db, string salCo
                          .OrderByDescending(c => c.Incidents).ToArray()))
         .ToArray();
 
+    // benchmark — this suburb's latest-year total vs all Greater Melbourne suburbs.
+    // percentile_cont can't be a window fn, so median comes from v_crime_benchmark.
+    var bench = await db.QueryFirstOrDefaultAsync<CrimeBenchmarkRow>(@"
+        SELECT total_incidents::int  AS TotalIncidents,
+               pct_rank::float8      AS PctRank,
+               median_total::float8  AS MedianTotal,
+               cohort_max::int       AS CohortMax,
+               cohort_count::int     AS CohortCount
+        FROM v_crime_benchmark
+        WHERE sal_code = @salCode
+          AND year_ending = (SELECT MAX(year_ending)
+                             FROM v_crime_benchmark WHERE sal_code = @salCode)",
+        new { salCode });
+
+    var benchmark = bench is null ? null : new CrimeBenchmark(
+        Total: bench.TotalIncidents,
+        PercentileRank: bench.PctRank,
+        MedianTotal: bench.MedianTotal,
+        CohortMax: bench.CohortMax,
+        CohortCount: bench.CohortCount);
+
     return Results.Ok(new CrimeResponse(
         SalCode: first.SalCode, SalName: first.SalName,
         StateName: first.StateName, GccsaName: first.GccsaName,
         Periods: periods,
+        Benchmark: benchmark,
         DataNote: "Recorded criminal incidents in Greater Melbourne (VIC CSA), " +
-                  "year ending March. Counts, not population-adjusted."));
+                  "year ending March. Benchmarks rank suburbs by total incident " +
+                  "count, not per person — larger and inner-city suburbs sit " +
+                  "higher by nature."));
 });
 
 // heatmap — full GeoJSON FeatureCollection, aggregated in Postgres and cached in
@@ -764,9 +788,13 @@ record EducationRow(
 
 record CrimeCategory(string Category, int Incidents);
 record CrimePeriod(short YearEnding, int Total, CrimeCategory[] Categories);
+record CrimeBenchmark(
+    int Total, double PercentileRank, double MedianTotal, int CohortMax, int CohortCount);
+record CrimeBenchmarkRow(
+    int TotalIncidents, double PctRank, double MedianTotal, int CohortMax, int CohortCount);
 record CrimeResponse(
     string SalCode, string SalName, string StateName, string GccsaName,
-    CrimePeriod[] Periods, string DataNote
+    CrimePeriod[] Periods, CrimeBenchmark? Benchmark, string DataNote
 );
 record CrimeRow(
     string SalCode, string SalName, string StateName, string GccsaName,

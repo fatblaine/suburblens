@@ -74,9 +74,13 @@ def get_crime(sal_code: str) -> dict:
     """Get recorded criminal incidents for a suburb, GREATER MELBOURNE ONLY.
     Returns yearly counts (year ending March, ~2022-2026) per offence category
     (assault, break_enter, theft, robbery, property_damage, other) plus a total.
-    These are counts, NOT population-adjusted rates — compare a suburb against
-    its own trend over time, not against other suburbs. Returns a 404 not_found
-    error for Sydney/NSW suburbs (crime data is Melbourne-only for now)."""
+    Also returns a `benchmark` object comparing this suburb's latest-year total
+    against ALL Greater Melbourne suburbs: percentileRank (0-1 = share of suburbs
+    it exceeds), medianTotal, cohortMax, cohortCount. These are incident COUNTS,
+    NOT population-adjusted — the benchmark ranks by raw volume, so larger and
+    inner-city suburbs sit higher by nature; use it as a rough position, not a
+    per-person safety measure. Returns a 404 not_found error for Sydney/NSW
+    suburbs (crime data is Melbourne-only for now)."""
     return _get(f"/api/suburbs/{sal_code}/crime")
 
 

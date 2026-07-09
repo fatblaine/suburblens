@@ -114,12 +114,21 @@ export interface CrimePeriod {
   categories: CrimeCategory[]  // sorted by incidents desc
 }
 
+export interface CrimeBenchmark {
+  total: number            // this suburb's latest-year total (== latest period total)
+  percentileRank: number   // 0..1, share of Greater Melbourne suburbs it exceeds
+  medianTotal: number      // cohort median for the same year
+  cohortMax: number        // busiest suburb's total that year
+  cohortCount: number      // suburbs in the cohort
+}
+
 export interface CrimeResponse {
   salCode: string
   salName: string
   stateName: string
   gccsaName: string
   periods: CrimePeriod[]       // ascending by yearEnding
+  benchmark: CrimeBenchmark | null
   dataNote: string
 }
 
