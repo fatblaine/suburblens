@@ -542,6 +542,29 @@ app.MapGet("/api/suburbs/{salCode}/education", async (IDbConnection db, string s
         return new EducationYearData(r.TotalPersons, r.UniversityPct, levels);
     }
 
+    // benchmark — this suburb's university_pct vs same-city suburbs, latest census year.
+    // university_pct is already per-person, so no "by count" caveat here (unlike crime).
+    var eduBench = await db.QueryFirstOrDefaultAsync<EducationBenchmarkRow>(@"
+        SELECT university_pct::float8 AS UniversityPct,
+               pct_rank::float8       AS PctRank,
+               median_pct::float8     AS MedianPct,
+               cohort_max::float8     AS CohortMax,
+               cohort_count::int      AS CohortCount,
+               gccsa_name             AS GccsaName
+        FROM v_education_benchmark
+        WHERE sal_code = @salCode
+          AND census_year = (SELECT MAX(census_year)
+                             FROM v_education_benchmark WHERE sal_code = @salCode)",
+        new { salCode });
+
+    var eduBenchmark = eduBench is null ? null : new EducationBenchmark(
+        UniversityPct: eduBench.UniversityPct,
+        PercentileRank: eduBench.PctRank,
+        MedianPct: eduBench.MedianPct,
+        CohortMax: eduBench.CohortMax,
+        CohortCount: eduBench.CohortCount,
+        CohortName: eduBench.GccsaName);
+
     return Results.Ok(new EducationResponse(
         SalCode: first.SalCode,
         SalName: first.SalName,
@@ -552,6 +575,7 @@ app.MapGet("/api/suburbs/{salCode}/education", async (IDbConnection db, string s
         Y2011: ToYearData(byYear, 2011),
         Y2016: ToYearData(byYear, 2016),
         Y2021: ToYearData(byYear, 2021),
+        Benchmark: eduBenchmark,
         DataNote: $"Education data is based on the ABS SA2 '{first.Sa2Name}', which may include nearby suburbs."
     ));
 });
@@ -770,12 +794,18 @@ record BirthCountryRow(
 
 record EducationLevel(string Label, decimal? Pct);
 record EducationYearData(int? TotalPersons, decimal? UniversityPct, EducationLevel[] Levels);
+record EducationBenchmark(
+    double UniversityPct, double PercentileRank, double MedianPct,
+    double CohortMax, int CohortCount, string CohortName);
+record EducationBenchmarkRow(
+    double UniversityPct, double PctRank, double MedianPct,
+    double CohortMax, int CohortCount, string GccsaName);
 
 record EducationResponse(
     string SalCode, string SalName, string StateName, string GccsaName,
     string Sa2Code, string Sa2Name,
     EducationYearData? Y2011, EducationYearData? Y2016, EducationYearData? Y2021,
-    string DataNote
+    EducationBenchmark? Benchmark, string DataNote
 );
 
 record EducationRow(

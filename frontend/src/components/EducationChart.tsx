@@ -180,6 +180,41 @@ export default function EducationChart({ response }: { response: EducationRespon
           pct2021={response.y2021?.universityPct ?? null}
         />
 
+        {/* Benchmark vs same city — university-qualified share (already per-person) */}
+        {response.benchmark && response.benchmark.cohortCount > 1 && (() => {
+          const bm = response.benchmark!
+          const max = bm.cohortMax || 1
+          const pct = Math.round(bm.percentileRank * 100)
+          return (
+            <div className="rounded-lg bg-surface-2 border border-white/[0.07] p-4 space-y-3 mb-4">
+              <p className="font-mono text-xs uppercase tracking-wider text-faint">
+                University rank vs {bm.cohortName} · 2021
+              </p>
+              <p className="text-sm text-muted">
+                More university-qualified than{' '}
+                <span className="font-display text-[#5aa9ff] text-base">{pct}%</span>{' '}
+                of {bm.cohortCount.toLocaleString()} suburbs
+              </p>
+              {/* 0 -> most-qualified scale; white tick = city median */}
+              <div className="relative h-2">
+                <div className="absolute inset-0 rounded-full bg-surface-3 overflow-hidden">
+                  <div className="h-full"
+                       style={{ width: `${Math.min(100, (bm.universityPct / max) * 100)}%`,
+                                background: '#5aa9ff' }} />
+                </div>
+                <span className="absolute top-1/2 -translate-y-1/2 h-3 w-0.5 rounded bg-white/50"
+                      style={{ left: `${Math.min(100, (bm.medianPct / max) * 100)}%` }}
+                      title={`${bm.cohortName} median`} />
+              </div>
+              <p className="font-mono text-xs text-muted flex flex-wrap gap-x-4 gap-y-0.5">
+                <span>median {bm.medianPct.toFixed(1)}%</span>
+                <span>this suburb {bm.universityPct.toFixed(1)}%</span>
+                <span>highest {bm.cohortMax.toFixed(1)}%</span>
+              </p>
+            </div>
+          )
+        })()}
+
         {yearData
           ? <SnapshotBars yearData={yearData} />
           : <p className="text-sm text-white/40">No data available.</p>

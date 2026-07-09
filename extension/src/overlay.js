@@ -40,10 +40,56 @@ function renderOverlay({ suburb, tenure, crime, education }) {
     ? statRow('Crime incidents', num(period.total), `yr ending ${period.yearEnding}`)
     : ''
 
+  // Crime benchmark: where this suburb sits among all Greater Melbourne suburbs.
+  // Gradient track (green = fewer incidents → red = more); thumb marks the
+  // percentile. Ranked by raw count, not per person — kept as a rough position.
+  const bm = crime?.benchmark
+  const benchmarkBlock = bm && bm.cohortCount > 1
+    ? (() => {
+        const pct = Math.max(0, Math.min(100, Math.round(bm.percentileRank * 100)))
+        return `
+      <div class="bench">
+        <div class="bench-head">
+          <span class="bench-label">Crime rank vs Greater Melbourne</span>
+          <span class="bench-pct">More than ${pct}%</span>
+        </div>
+        <div class="bench-track"><span class="bench-thumb" style="left:${pct}%"></span></div>
+        <div class="bench-scale">
+          <span>fewer</span>
+          <span>${num(bm.cohortCount)} suburbs · by count</span>
+          <span>more</span>
+        </div>
+      </div>`
+      })()
+    : ''
+
   // Education: latest-year (2021) university qualification share.
   const uniPct = education?.y2021?.universityPct
   const eduRow = uniPct != null
     ? statRow('University-qualified', fmt(uniPct), '2021')
+    : ''
+
+  // Education benchmark: university-qualified rank among same-city suburbs.
+  // Neutral blue gradient (not green→red) — higher qualification isn't good/bad.
+  // Metric is already per-person, so no "by count" caveat needed.
+  const eduBm = education?.benchmark
+  const eduBenchBlock = eduBm && eduBm.cohortCount > 1
+    ? (() => {
+        const pct = Math.max(0, Math.min(100, Math.round(eduBm.percentileRank * 100)))
+        return `
+      <div class="bench">
+        <div class="bench-head">
+          <span class="bench-label">University rank vs ${eduBm.cohortName}</span>
+          <span class="bench-pct">More than ${pct}%</span>
+        </div>
+        <div class="bench-track edu"><span class="bench-thumb" style="left:${pct}%"></span></div>
+        <div class="bench-scale">
+          <span>fewer</span>
+          <span>${num(eduBm.cohortCount)} suburbs</span>
+          <span>more</span>
+        </div>
+      </div>`
+      })()
     : ''
 
   const host = document.createElement('div')
@@ -82,6 +128,25 @@ function renderOverlay({ suburb, tenure, crime, education }) {
       .label { font-size: 12px; color: #9aa0ad; }
       .value { font-size: 13px; font-weight: 600; color: #eef1f6; text-align: right; white-space: nowrap; }
       .dim { font-weight: 400; font-size: 11.5px; color: #5b606d; }
+      .bench { margin: 0 0 16px; }
+      .bench-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+      .bench-label { font-size: 12px; color: #9aa0ad; }
+      .bench-pct { font-size: 12.5px; font-weight: 700; color: #eef1f6; }
+      .bench-track {
+        position: relative; height: 8px; border-radius: 999px;
+        background: linear-gradient(90deg, #3fb97f 0%, #f2c14e 55%, #f2685c 100%);
+      }
+      .bench-track.edu { background: linear-gradient(90deg, #1d212c 0%, #5aa9ff 100%); }
+      .bench-thumb {
+        position: absolute; top: 50%; transform: translate(-50%, -50%);
+        width: 14px; height: 14px; border-radius: 50%;
+        background: #eef1f6; border: 2px solid #13161d;
+        box-shadow: 0 0 0 1px rgba(255,255,255,.3);
+      }
+      .bench-scale {
+        display: flex; justify-content: space-between; margin-top: 6px;
+        font-size: 10.5px; color: #5b606d;
+      }
       a.cta {
         display: flex; justify-content: center; align-items: center; gap: 6px;
         width: 100%; background: #c6f24e; color: #0d0f14; text-decoration: none;
@@ -100,9 +165,11 @@ function renderOverlay({ suburb, tenure, crime, education }) {
       <div class="stats">
         ${statRow('Renting share', `${fmt(rent.y2016)} → ${fmt(rent.y2021)}`, '2016→2021')}
         ${statRow('Residency Shift Index', tenure.residencyShiftIndex ?? '—', 'SuburbLens custom')}
-        ${crimeRow}
         ${eduRow}
       </div>
+      ${eduBenchBlock}
+      ${crimeRow ? `<div class="stats">${crimeRow}</div>` : ''}
+      ${benchmarkBlock}
       <a class="cta" target="_blank" rel="noopener"
          href="${SITE_URL}/suburb/${suburb.salCode}?ref=extension">View full analysis →</a>
     </div>`
