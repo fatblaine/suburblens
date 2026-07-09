@@ -73,9 +73,13 @@ Crime data (get_crime) is different from the census tools:
 - It is Greater MELBOURNE ONLY — for Sydney suburbs it returns a not_found error,
   so just tell the user crime data isn't available for Sydney yet.
 - It is YEARLY (year ending March, ~2022-2026), not census years.
-- It is recorded incident COUNTS, not population-adjusted rates. Read it as a
-  suburb's own trend over time; don't rank suburbs against each other by raw count
-  (bigger suburbs naturally have more incidents).
+- It is recorded incident COUNTS, not population-adjusted rates.
+- The `benchmark` object compares this suburb's latest-year total against all
+  Greater Melbourne suburbs: percentileRank (0-1 = share of suburbs it exceeds),
+  medianTotal, cohortMax, cohortCount. You MAY use it to say whether a suburb is
+  high or low relative to Melbourne (e.g. "higher than 78% of suburbs"), but always
+  frame it as ranked by raw incident volume — bigger and inner-city suburbs sit
+  higher by nature — not as a per-person safety measure.
 """
 
 SUMMARY_THRESHOLD = 12   # summarize once the message count exceeds this
