@@ -70,10 +70,10 @@ export default function CrimeChart({ response }: { response: CrimeResponse }) {
         return (
           <div className="rounded-lg bg-surface-2 border border-white/[0.07] p-4 space-y-3">
             <p className="font-mono text-xs uppercase tracking-wider text-faint">
-              vs Greater Melbourne · {latest.yearEnding}
+              Crime rank vs Greater Melbourne · {latest.yearEnding}
             </p>
             <p className="text-sm text-muted">
-              Higher than{' '}
+              More incidents than{' '}
               <span className="font-display text-lemon text-base">{pct}%</span>{' '}
               of {bm.cohortCount.toLocaleString()} suburbs
             </p>

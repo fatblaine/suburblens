@@ -89,6 +89,15 @@ export interface EducationYearData {
   levels: EducationLevel[]
 }
 
+export interface EducationBenchmark {
+  universityPct: number    // this suburb's latest-year university-qualified share
+  percentileRank: number   // 0..1, share of same-city suburbs it exceeds
+  medianPct: number        // cohort median for the same year
+  cohortMax: number        // most-qualified suburb's share that year
+  cohortCount: number      // suburbs in the cohort
+  cohortName: string       // "Greater Sydney" | "Greater Melbourne"
+}
+
 export interface EducationResponse {
   salCode: string
   salName: string
@@ -99,6 +108,7 @@ export interface EducationResponse {
   y2011: EducationYearData | null
   y2016: EducationYearData | null
   y2021: EducationYearData | null
+  benchmark: EducationBenchmark | null
   dataNote: string
 }
 
