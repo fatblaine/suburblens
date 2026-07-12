@@ -10,7 +10,8 @@ interface AuthContextValue {
   isGuest: boolean
   loading: boolean
   signInWithPassword: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string) => Promise<void>
+  /** Resolves with needsConfirmation=true when Supabase's "Confirm email" is on (no session yet). */
+  signUp: (email: string, password: string) => Promise<{ needsConfirmation: boolean }>
   signInAsGuest: () => Promise<void>
   signOut: () => Promise<void>
 }
@@ -41,8 +42,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error
   }
   async function signUp(email: string, password: string) {
-    const { error } = await supabase.auth.signUp({ email, password })
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      // Where the confirmation link lands the user; must be whitelisted in
+      // Supabase → Authentication → URL Configuration → Redirect URLs.
+      options: { emailRedirectTo: `${window.location.origin}/login` },
+    })
     if (error) throw error
+    // With "Confirm email" enabled, Supabase returns no session until the user
+    // clicks the link. Absence of a session is our signal to prompt for it.
+    return { needsConfirmation: !data.session }
   }
   async function signInAsGuest() {
     const { error } = await supabase.auth.signInAnonymously()
