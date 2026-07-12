@@ -33,8 +33,36 @@ const num = (v) => (v == null ? '—' : v.toLocaleString('en-AU'))
 const svgIcon = (paths) =>
   `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`
 
+// Chrome shared by the loading + data cards (position, frame, header, title),
+// so the spinner card and the real card are pixel-identical around the content.
+const BASE_CSS = `
+  :host { all: initial; }
+  * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+  .card {
+    position: fixed; bottom: 20px; right: 20px; z-index: 2147483647;
+    width: 340px; background: #13161d; color: #eef1f6;
+    border: 1px solid rgba(255,255,255,.08); border-radius: 16px;
+    padding: 16px 18px 18px; box-shadow: 0 12px 40px rgba(0,0,0,.5);
+  }
+  .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #c6f24e; }
+  .x {
+    cursor: pointer; color: #6b7080; background: none; border: 0; font-size: 15px;
+    line-height: 1; padding: 4px; border-radius: 6px; margin: -4px;
+  }
+  .x:hover { color: #9aa0ad; background: rgba(255,255,255,.06); }
+  .suburb { font-size: 17px; font-weight: 700; color: #eef1f6; margin-bottom: 8px; line-height: 1.3; }
+`
+
+// 'st kilda' → 'St Kilda' — pretty-print the raw URL name for the loading state,
+// before the API returns the canonical salName.
+const titleCase = (s) => s.replace(/\b\w/g, (c) => c.toUpperCase())
+
 function removeOverlay() {
-  document.getElementById(SL_HOST_ID)?.remove()
+  const existing = document.getElementById(SL_HOST_ID)
+  if (!existing) return
+  existing.dispatchEvent(new Event('sl-teardown'))   // cancel any pending loading timer
+  existing.remove()
 }
 
 // One row of the stat list: icon + label left, value right, optional dim qualifier.
@@ -64,6 +92,69 @@ function benchRow({ label, color, gradient, pct, scaleMid }) {
         <span>fewer</span><span class="scale-mid">${scaleMid}</span><span>more</span>
       </div>
     </div>`
+}
+
+// Loading state — same chrome as the data card, with a spinner + shimmer skeleton
+// rows standing in for the stats. Shown the instant a suburb page is detected so
+// the corner isn't blank during the API round-trip.
+function renderLoading(name) {
+  removeOverlay()
+  const host = document.createElement('div')
+  host.id = SL_HOST_ID
+  const shadow = host.attachShadow({ mode: 'open' })
+  shadow.innerHTML = `
+    <style>
+      ${BASE_CSS}
+      .loading { display: flex; align-items: center; gap: 10px; margin: 4px 0 2px; }
+      .spinner {
+        width: 18px; height: 18px; flex: none; border-radius: 50%;
+        border: 2.5px solid rgba(255,255,255,.14); border-top-color: #c6f24e;
+        animation: sl-spin .7s linear infinite;
+      }
+      .loading-text { font-size: 13px; color: #9aa0ad; }
+      @keyframes sl-spin { to { transform: rotate(360deg); } }
+      .skeleton {
+        margin-top: 16px; padding-top: 14px; display: flex; flex-direction: column; gap: 13px;
+        border-top: 1px solid rgba(255,255,255,.07);
+      }
+      .sk-line {
+        height: 10px; border-radius: 6px;
+        background: linear-gradient(90deg, #1d212c 25%, #262b38 37%, #1d212c 63%);
+        background-size: 400% 100%; animation: sl-shimmer 1.4s ease infinite;
+      }
+      .sk-line.short { width: 55%; }
+      @keyframes sl-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+      @media (prefers-reduced-motion: reduce) {
+        .spinner, .sk-line { animation: none; }
+      }
+    </style>
+    <div class="card">
+      <div class="head">
+        <span class="eyebrow">SuburbLens</span>
+        <button class="x" title="Close">✕</button>
+      </div>
+      <div class="suburb">${name ? titleCase(name) : 'Loading…'}</div>
+      <div class="loading">
+        <span class="spinner"></span>
+        <span class="loading-text">Fetching suburb data…</span>
+      </div>
+      <div class="skeleton">
+        <div class="sk-line"></div>
+        <div class="sk-line short"></div>
+        <div class="sk-line"></div>
+      </div>
+    </div>`
+  shadow.querySelector('.x').addEventListener('click', removeOverlay)
+
+  // Cold starts can take a few seconds — after a beat, reassure the user it's
+  // the server waking up, not a hang. Cleared when the card is replaced/removed.
+  const textEl = shadow.querySelector('.loading-text')
+  const slowTimer = setTimeout(() => {
+    if (textEl.isConnected) textEl.textContent = 'Still loading — waking up the server…'
+  }, 2500)
+  host.addEventListener('sl-teardown', () => clearTimeout(slowTimer))
+
+  document.body.appendChild(host)
 }
 
 function renderOverlay({ suburb, tenure, crime, education }) {
@@ -112,22 +203,7 @@ function renderOverlay({ suburb, tenure, crime, education }) {
   const shadow = host.attachShadow({ mode: 'open' })   // isolate from host CSS
   shadow.innerHTML = `
     <style>
-      :host { all: initial; }
-      * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
-      .card {
-        position: fixed; bottom: 20px; right: 20px; z-index: 2147483647;
-        width: 340px; background: #13161d; color: #eef1f6;
-        border: 1px solid rgba(255,255,255,.08); border-radius: 16px;
-        padding: 16px 18px 18px; box-shadow: 0 12px 40px rgba(0,0,0,.5);
-      }
-      .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-      .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #c6f24e; }
-      .x {
-        cursor: pointer; color: #6b7080; background: none; border: 0; font-size: 15px;
-        line-height: 1; padding: 4px; border-radius: 6px; margin: -4px;
-      }
-      .x:hover { color: #9aa0ad; background: rgba(255,255,255,.06); }
-      .suburb { font-size: 17px; font-weight: 700; color: #eef1f6; margin-bottom: 8px; line-height: 1.3; }
+      ${BASE_CSS}
       .badge {
         display: inline-flex; align-items: center; gap: 6px;
         font-size: 12.5px; font-weight: 600; padding: 4px 10px 4px 8px;
