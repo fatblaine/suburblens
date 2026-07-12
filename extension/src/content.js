@@ -10,6 +10,9 @@ function runSuburbLens() {
   const info = extractSuburb()            // from realestate.js
   if (!info) { removeOverlay(); return }  // not a suburb list page
 
+  renderLoading(info.name)                // spinner up front — the API round-trip
+                                          // can be slow on a Lambda cold start
+
   chrome.runtime.sendMessage(
     {
       type: 'SUBURBLENS_LOOKUP',
