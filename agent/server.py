@@ -121,7 +121,8 @@ async def chat(req: ChatRequest, request: Request, user: dict = Depends(require_
             )
 
     graph = request.app.state.graph
-    config = {"configurable": {"thread_id": req.thread_id}}
+    safe_thread = f'{user["sub"]}::{req.thread_id[:64]}'
+    config = {"configurable": {"thread_id": safe_thread}}
     input_state = {"messages": [HumanMessage(content=message)]}
 
     async def generate():
