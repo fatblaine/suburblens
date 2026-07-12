@@ -36,11 +36,22 @@ export default function LoginPage() {
       if (mode === 'login') {
         await signInWithPassword(email, password)
       } else {
-        await signUp(email, password)
-        setInfo('Account created. If email confirmation is enabled, check your inbox — otherwise you are signed in.')
+        const { needsConfirmation } = await signUp(email, password)
+        if (needsConfirmation) {
+          // "Confirm email" is on: no session yet — send them to verify, don't redirect.
+          setInfo('Account created. We sent a confirmation link to your email — click it to activate your account, then sign in.')
+          setMode('login')
+        }
+        // Otherwise confirmation is off and the session lands automatically → the
+        // redirect effect takes them home.
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.')
+      const msg = err instanceof Error ? err.message : 'Something went wrong.'
+      setError(
+        msg.includes('Email not confirmed')
+          ? 'Your email is not verified yet. Please click the confirmation link we sent you first.'
+          : msg,
+      )
     } finally {
       setBusy(false)
     }

@@ -1,18 +1,17 @@
+from tools import tools
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.prebuilt import ToolNode
+from langgraph.graph.message import add_messages
+from langgraph.graph import StateGraph, END
+from langchain_openai import ChatOpenAI
+from langchain_core.messages.utils import trim_messages, count_tokens_approximately
+from langchain_core.messages import SystemMessage, HumanMessage, RemoveMessage
+from typing_extensions import TypedDict
+from typing import Annotated
 import os
 from dotenv import load_dotenv
 load_dotenv()
 
-from typing import Annotated
-from typing_extensions import TypedDict
-from langchain_core.messages import SystemMessage, HumanMessage, RemoveMessage
-from langchain_core.messages.utils import trim_messages, count_tokens_approximately
-from langchain_openai import ChatOpenAI
-from langgraph.graph import StateGraph, END
-from langgraph.graph.message import add_messages
-from langgraph.prebuilt import ToolNode
-from langgraph.checkpoint.memory import MemorySaver
-
-from tools import tools
 
 # --- State ---
 
@@ -40,9 +39,12 @@ _base_llm = ChatOpenAI(
     openai_api_base="https://openrouter.ai/api/v1",
     default_headers={"HTTP-Referer": "http://localhost:5000"},
     extra_body={"provider": _OPENROUTER_PROVIDER},
+    max_tokens=800
 )
-llm = _base_llm.bind_tools(tools)   # tool-aware, used for the main reasoning step
-llm_plain = _base_llm               # no tools, used for summarizing (won't call tools)
+# tool-aware, used for the main reasoning step
+llm = _base_llm.bind_tools(tools)
+# no tools, used for summarizing (won't call tools)
+llm_plain = _base_llm
 
 SYSTEM_PROMPT = """You are a suburb intelligence analyst for SuburbLens,
 helping migrants and students evaluate Australian suburbs (Sydney and Melbourne only).
@@ -122,7 +124,8 @@ def summarize_node(state: AgentState):
         state["messages"] + [HumanMessage(content=instruction)]
     ).content
     # Delete every message except the most recent KEEP_RECENT.
-    deletions = [RemoveMessage(id=m.id) for m in state["messages"][:-KEEP_RECENT]]
+    deletions = [RemoveMessage(id=m.id)
+                 for m in state["messages"][:-KEEP_RECENT]]
     return {"summary": summary, "messages": deletions}
 
 # --- Routing ---
