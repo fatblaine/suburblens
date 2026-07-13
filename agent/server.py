@@ -1,4 +1,4 @@
-from graph import build_graph
+from graph import build_graph, CANARY
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from psycopg_pool import AsyncConnectionPool
@@ -8,6 +8,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request, Depends, HTTPException
 from auth import require_registered_user
+from guard import allow_message
 import os
 import sys
 import asyncio
@@ -111,6 +112,17 @@ async def chat(req: ChatRequest, request: Request, user: dict = Depends(require_
             detail=f"Message too long (max {MAX_MESSAGE_CHARS} characters).",
         )
 
+    # Off-topic / prompt-injection gate (Layers 0-2). Runs before the quota
+    # bump and the graph so obvious attacks and off-topic asks cost no LLM
+    # reasoning; rejected turns get a streamed refusal instead.
+    if not await allow_message(message):
+        async def refuse():
+            yield ("I'm the SuburbLens suburb analyst — I can only help with "
+                   "Australian suburbs (Sydney & Melbourne) and their census/crime "
+                   "data. Ask me about a suburb's tenure, rent, education, languages, "
+                   "birth countries, crime, or nearby areas.")
+        return StreamingResponse(refuse(), media_type="text/plain")
+
     pool = request.app.state.pool
     if pool is not None:
         count = await check_and_increment_quota(pool, user["sub"])
@@ -126,11 +138,25 @@ async def chat(req: ChatRequest, request: Request, user: dict = Depends(require_
     input_state = {"messages": [HumanMessage(content=message)]}
 
     async def generate():
+        # Layer 4: scan the stream for the hidden canary (a system-prompt leak
+        # signal). Hold back a `tail` of canary length so the tag can't slip
+        # through split across chunk boundaries; emit only confirmed-clean text.
+        buffer = ""
+        tail = len(CANARY)
         async for event in graph.astream_events(input_state, config, version="v2"):
             if event["event"] == "on_chat_model_stream":
                 chunk = event["data"]["chunk"]
-                if chunk.content:
-                    yield chunk.content
+                if not chunk.content:
+                    continue
+                buffer += chunk.content
+                if CANARY in buffer:                 # prompt leak detected
+                    yield "\n\n[Response withheld.]"
+                    return
+                if len(buffer) > tail:
+                    yield buffer[:-tail]
+                    buffer = buffer[-tail:]
+        if CANARY not in buffer:
+            yield buffer
 
     return StreamingResponse(generate(), media_type="text/plain")
 
