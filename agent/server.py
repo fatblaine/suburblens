@@ -145,6 +145,11 @@ async def chat(req: ChatRequest, request: Request, user: dict = Depends(require_
         tail = len(CANARY)
         async for event in graph.astream_events(input_state, config, version="v2"):
             if event["event"] == "on_chat_model_stream":
+                # Only stream the answer node ("llm"). The "summarize" node is
+                # internal history compression — its tokens (which intentionally
+                # keep salCodes) must never reach the user.
+                if event.get("metadata", {}).get("langgraph_node") != "llm":
+                    continue
                 chunk = event["data"]["chunk"]
                 if not chunk.content:
                     continue
