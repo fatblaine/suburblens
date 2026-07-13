@@ -26,12 +26,14 @@ class AgentState(TypedDict):
 # OpenRouter default routing sometimes lands on a backend that leaks DeepSeek's
 # raw tool-call template tokens (<｜tool▁calls▁begin｜>…) into the text content
 # instead of returning structured tool_calls. Pin to providers that reliably
-# parse tool calls, and require_parameters so routing only picks ones supporting
-# `tools`. allow_fallbacks keeps it resilient if the preferred provider is down.
+# parse tool calls; allow_fallbacks keeps it resilient if the preferred provider
+# is down. NOTE: require_parameters was removed — the SDK now sends a parameter
+# these pinned providers don't advertise, so require_parameters filtered out ALL
+# of them and OpenRouter returned 404 "No endpoints found". The order whitelist
+# already restricts routing to tool-capable providers, so the guard still holds.
 _OPENROUTER_PROVIDER = {
     "order": ["DeepInfra", "Novita", "StreamLake"],
     "allow_fallbacks": True,
-    "require_parameters": True,
 }
 
 _base_llm = ChatOpenAI(

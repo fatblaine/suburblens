@@ -40,7 +40,7 @@ _DOMAIN_RE = re.compile(
 
 # --- Layer 2: multilingual classifier (the real security boundary) ----------
 _classifier_llm = ChatOpenAI(
-    model=os.getenv("GUARD_MODEL", "google/gemini-2.0-flash-lite-001"),
+    model=os.getenv("GUARD_MODEL", "google/gemini-2.5-flash-lite"),
     openai_api_key=os.environ["OPENROUTER_API_KEY"],
     openai_api_base="https://openrouter.ai/api/v1",
     max_tokens=4,
@@ -71,8 +71,16 @@ async def allow_message(raw: str) -> bool:
     # Domain fast-path, but never trust it when an encoded blob is hidden inside.
     if _DOMAIN_RE.search(text) and not looks_encoded(raw):
         return True
-    out = (await _classifier_llm.ainvoke(
-        [SystemMessage(content=_CLASSIFIER_SYSTEM), HumanMessage(content=text)]
-    )).content.strip().upper()
+    try:
+        out = (await _classifier_llm.ainvoke(
+            [SystemMessage(content=_CLASSIFIER_SYSTEM), HumanMessage(content=text)]
+        )).content.strip().upper()
+    except Exception as e:
+        # Classifier outage / misconfig must not 500 the whole request. Fail
+        # OPEN (allow) so a provider blip doesn't block legitimate users — the
+        # hardened prompt (L3), canary scan (L4) and read-only tools (L5) remain
+        # the backstop. Logged so the failure is visible, not silent.
+        print(f"[guard] classifier call failed, failing open (ALLOW): {e!r}")
+        return True
     # Lean ALLOW on any unexpected output — Layer 3/4 are the backstop.
     return not out.startswith("REJECT")
