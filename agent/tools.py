@@ -1,6 +1,13 @@
 import os
 import httpx
 from langchain_core.tools import tool
+from dotenv import load_dotenv
+
+# tools is imported (via graph) BEFORE server/graph call load_dotenv(), so load
+# .env here too — otherwise BASE resolves to the default before .env is read and
+# the agent silently hits the wrong port ("connection issue"). load_dotenv is
+# idempotent, so calling it again in the other modules is harmless.
+load_dotenv()
 
 BASE = os.environ.get("SUBURBLENS_API_BASE", "http://localhost:5000")
 
