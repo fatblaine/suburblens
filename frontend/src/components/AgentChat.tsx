@@ -46,7 +46,7 @@ function lookupFaq(text: string): string | null {
 }
 
 export default function AgentChat() {
-  const { isGuest, user } = useAuth()
+  const { session, isGuest, user } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
@@ -58,9 +58,10 @@ export default function AgentChat() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Guests can't use the AI assistant — the agent rejects anonymous users
-  // server-side, so here we just hide the chat and invite them to log in.
-  if (isGuest) {
+  // The agent rejects anonymous and signed-out callers server-side, so here we
+  // just hide the chat and invite them in. !session is a separate case from
+  // isGuest — a signed-out visitor is neither.
+  if (!session || isGuest) {
     return (
       <div className="w-full">
         <button
