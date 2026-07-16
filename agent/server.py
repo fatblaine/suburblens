@@ -9,6 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request, Depends, HTTPException
 from auth import require_registered_user
 from guard import allow_message
+from audit import log_security_event
+from normalize import normalize
 import os
 import sys
 import asyncio
@@ -112,10 +114,20 @@ async def chat(req: ChatRequest, request: Request, user: dict = Depends(require_
             detail=f"Message too long (max {MAX_MESSAGE_CHARS} characters).",
         )
 
+    # Fetched up front so the guard's reject/fail_open paths can audit-log too.
+    pool = request.app.state.pool
+
     # Off-topic / prompt-injection gate (Layers 0-2). Runs before the quota
     # bump and the graph so obvious attacks and off-topic asks cost no LLM
     # reasoning; rejected turns get a streamed refusal instead.
-    if not await allow_message(message):
+    guard = await allow_message(message)
+    if not guard.allowed:
+        # Audit point 1: blocked by regex (L1) or classifier (L2).
+        await log_security_event(
+            pool, user_id=user["sub"], thread_id=req.thread_id,
+            layer=guard.layer, snippet=normalize(message),
+        )
+
         async def refuse():
             yield ("I'm the SuburbLens suburb analyst — I can only help with "
                    "Australian suburbs (Sydney & Melbourne) and their census/crime "
@@ -123,7 +135,14 @@ async def chat(req: ChatRequest, request: Request, user: dict = Depends(require_
                    "birth countries, crime, or nearby areas.")
         return StreamingResponse(refuse(), media_type="text/plain")
 
-    pool = request.app.state.pool
+    # Audit point 2: classifier errored and we failed OPEN — request proceeds,
+    # but record the security exposure so it's visible, not silent.
+    if guard.layer == "fail_open":
+        await log_security_event(
+            pool, user_id=user["sub"], thread_id=req.thread_id,
+            layer="fail_open", snippet=normalize(message),
+        )
+
     if pool is not None:
         count = await check_and_increment_quota(pool, user["sub"])
         if count > DAILY_LIMIT:
@@ -155,6 +174,12 @@ async def chat(req: ChatRequest, request: Request, user: dict = Depends(require_
                     continue
                 buffer += chunk.content
                 if CANARY in buffer:                 # prompt leak detected
+                    # Audit point 3: canary hit — Layers 0-3 may have been
+                    # bypassed. Highest-priority signal; should be rare/zero.
+                    await log_security_event(
+                        pool, user_id=user["sub"], thread_id=req.thread_id,
+                        layer="canary", snippet=normalize(message),
+                    )
                     yield "\n\n[Response withheld.]"
                     return
                 if len(buffer) > tail:
