@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
   "name": "SuburbLens",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Overlays SuburbLens tenure insights on realestate.com.au and domain.com.au listings.",
+  "homepage_url": "https://main.d1yrvhzuhaioqy.amplifyapp.com",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -40,7 +41,6 @@
   ],
   "background": { "service_worker": "src/background.js" },
   "host_permissions": [
-    "http://localhost:5281/*",
-    "https://*.execute-api.ap-southeast-2.amazonaws.com/*"
+    "https://s5120jvyf4.execute-api.ap-southeast-2.amazonaws.com/*"
   ]
 }

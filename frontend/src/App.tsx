@@ -5,6 +5,7 @@ import SuburbDetailPage from './pages/SuburbDetailPage'
 import ComparePage from './pages/ComparePage'
 import MapPage from './pages/MapPage'
 import LoginPage from './pages/LoginPage'
+import PrivacyPage from './pages/PrivacyPage'
 import AuthBadge from './components/AuthBadge'
 
 const queryClient = new QueryClient()
@@ -24,6 +25,10 @@ export default function App() {
           <Route path="/suburb/:salCode" element={<SuburbDetailPage />} />
           <Route path="/compare" element={<ComparePage />} />
           <Route path="/map" element={<MapPage />} />
+
+          {/* Must stay reachable signed-out: the Chrome Web Store listing links
+              here, and reviewers open it without an account. */}
+          <Route path="/privacy" element={<PrivacyPage />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
