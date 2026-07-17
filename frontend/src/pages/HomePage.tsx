@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import SearchBox from '../components/SearchBox'
 import AgentChat from '../components/AgentChat'
 import type { SuburbSearchResult } from '../types/api'
@@ -73,9 +73,13 @@ export default function HomePage() {
           <AgentChat />
         </div>
 
-        <p className="mt-8 font-mono text-xs text-dim">
-          Covers Sydney &amp; Melbourne suburbs only.
-        </p>
+        <footer className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-dim">
+          <span>Covers Sydney &amp; Melbourne suburbs only.</span>
+          <span aria-hidden="true" className="text-white/15">·</span>
+          <Link to="/privacy" className="transition-colors hover:text-lemon">
+            Privacy
+          </Link>
+        </footer>
       </div>
     </main>
   )
