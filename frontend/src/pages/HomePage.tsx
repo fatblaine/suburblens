@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import SearchBox from '../components/SearchBox'
 import AgentChat from '../components/AgentChat'
+import PageMeta from '../components/PageMeta'
 import type { SuburbSearchResult } from '../types/api'
 
 export default function HomePage() {
@@ -32,6 +33,10 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-ink animate-fade-in">
+      <PageMeta
+        title="SuburbLens — see what a Sydney or Melbourne suburb is actually like"
+        description="Compare suburbs using ABS Census data: who owns, who rents, and how that has shifted since 2011 — plus community languages, countries of birth, and education levels."
+      />
       {/* ── Header ─────────────────────────────────────── */}
       <header className="flex items-center px-6 sm:px-10 py-5 border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5 font-display font-bold text-lg text-white">

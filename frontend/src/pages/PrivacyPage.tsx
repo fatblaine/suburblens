@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { CARD } from '../lib/theme'
+import PageMeta from '../components/PageMeta'
 
 // Chrome Web Store requires a reachable contact for the listing's privacy tab.
 const CONTACT_EMAIL = 'suburblens@outlook.com'
@@ -26,6 +27,10 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-ink">
+      <PageMeta
+        title="Privacy Policy | SuburbLens"
+        description="What SuburbLens collects, what it does not, and who processes it — for the browser extension, the website, and the AI assistant."
+      />
       <div className="mx-auto max-w-3xl px-5 py-14 sm:py-20">
         <Link
           to="/"
