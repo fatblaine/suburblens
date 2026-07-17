@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import maplibregl from 'maplibre-gl'
+import PageMeta from '../components/PageMeta'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
@@ -170,6 +171,10 @@ export default function MapPage() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden">
+      <PageMeta
+        title="Ownership-to-rental map of Sydney & Melbourne | SuburbLens"
+        description="Browse every Sydney and Melbourne suburb on a map, shaded by how far it has shifted between owner-occupied and rented since 2011."
+      />
 
       {/* Map container. Inline position/inset because MapLibre's own
           `.maplibregl-map { position: relative }` (added to this element) would

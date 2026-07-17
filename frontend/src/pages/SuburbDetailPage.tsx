@@ -1,12 +1,42 @@
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import SuburbCard from '../components/SuburbCard'
+import PageMeta from '../components/PageMeta'
+import { useSuburbTenure } from '../api/suburbs'
+
+const FALLBACK_DESC =
+  'Compare Sydney and Melbourne suburbs using ABS Census data — tenure trends, community languages, and education levels.'
+
+// Title/description for the suburb the URL points at. Reuses the query
+// SuburbCard already issues for the same salCode, so this costs no extra
+// request — it reads the same TanStack cache entry.
+function useSuburbMeta(salCode: string | undefined) {
+  const { data } = useSuburbTenure(salCode)
+  if (!data) return null
+
+  const where = data.stateName ? `${data.salName}, ${data.stateName}` : data.salName
+  const now = data.tenure?.rent?.y2021
+  const then = data.tenure?.rent?.y2016
+
+  let sentence = `${where}: ABS Census tenure, language, origin and education data.`
+  if (now != null) {
+    const trend =
+      then == null ? ''
+        : now > then ? `, up from ${then.toFixed(1)}% in 2016`
+        : now < then ? `, down from ${then.toFixed(1)}% in 2016`
+        : `, unchanged since 2016`
+    sentence = `${where}: ${now.toFixed(1)}% of homes were rented in 2021${trend}. Census tenure, language, origin and education data.`
+  }
+
+  return { title: `${data.salName} — tenure & Census data | SuburbLens`, description: sentence }
+}
 
 export default function SuburbDetailPage() {
   const { salCode: urlSalCode } = useParams<{ salCode: string }>()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const defaultNearbyExpanded = searchParams.get('nearby') === '1'
+  const meta = useSuburbMeta(urlSalCode)
 
   // 页面上显示的 suburb 列表，从 URL 的那个开始
   const [salCodes, setSalCodes] = useState<string[]>([urlSalCode!])
@@ -39,6 +69,10 @@ export default function SuburbDetailPage() {
 
   return (
     <div className="min-h-screen bg-transparent">
+      <PageMeta
+        title={meta?.title ?? 'Suburb — SuburbLens'}
+        description={meta?.description ?? FALLBACK_DESC}
+      />
       <div className="max-w-2xl mx-auto px-4 py-10">
 
         <button

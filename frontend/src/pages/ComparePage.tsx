@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useSuburbTenureBatch, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation, useSuburbCrime } from '../api/suburbs'
+import PageMeta from '../components/PageMeta'
 import ShiftIndexCard from '../components/ShiftIndexCard'
 import TenureChart from '../components/TenureChart'
 import LanguageChart from '../components/LanguageChart'
@@ -175,6 +176,17 @@ export default function ComparePage() {
 
   const { data, isPending, isError } = useSuburbTenureBatch(salCodes)
 
+  // Names arrive with the batch response; before that fall back to a generic
+  // title rather than flashing the salCodes, which mean nothing to a reader.
+  const names = data?.map(d => d.salName) ?? []
+  const shown = names.slice(0, 3).join(' vs ')
+  const compareTitle = names.length
+    ? `${shown}${names.length > 3 ? ` +${names.length - 3} more` : ''} — compare suburbs | SuburbLens`
+    : 'Compare suburbs | SuburbLens'
+  const compareDesc = names.length
+    ? `Side-by-side ABS Census comparison of ${names.join(', ')} — tenure trends, languages, countries of birth, and education.`
+    : 'Compare Sydney and Melbourne suburbs side by side using ABS Census data.'
+
   if (salCodes.length === 0) {
     return (
       <div className="min-h-screen bg-transparent flex flex-col items-center justify-center px-4">
@@ -188,6 +200,7 @@ export default function ComparePage() {
 
   return (
     <div className="min-h-screen bg-transparent">
+      <PageMeta title={compareTitle} description={compareDesc} />
       <div className="max-w-7xl mx-auto px-4 py-10">
 
         <button
