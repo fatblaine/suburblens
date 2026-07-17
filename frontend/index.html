@@ -5,6 +5,20 @@
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SuburbLens</title>
+
+    <!-- Static defaults. Pages override <title>/description at runtime via
+         PageMeta, but social crawlers never run JS, so these og:* tags are the
+         only thing they ever see — every shared link previews as the generic
+         card until per-route HTML exists (docs/planning/seo-and-sharing.md). -->
+    <meta name="description" content="Compare Sydney and Melbourne suburbs using ABS Census data — tenure trends, community languages, and education levels." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SuburbLens" />
+    <meta property="og:title" content="SuburbLens — see what a suburb is actually like" />
+    <meta property="og:description" content="Compare Sydney and Melbourne suburbs using ABS Census data: who owns, who rents, and how that has shifted since 2011." />
+    <meta property="og:image" content="https://main.d1yrvhzuhaioqy.amplifyapp.com/og-default.png" />
+    <meta property="og:url" content="https://main.d1yrvhzuhaioqy.amplifyapp.com/" />
+    <meta name="twitter:card" content="summary_large_image" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
