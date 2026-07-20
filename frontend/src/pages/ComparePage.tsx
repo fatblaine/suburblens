@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { useReactToPrint } from 'react-to-print'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { useSuburbTenureBatch, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation, useSuburbCrime } from '../api/suburbs'
+import { useSuburbTenureBatch, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation, useSuburbCrime, useCompareReport } from '../api/suburbs'
 import PageMeta from '../components/PageMeta'
 import ShiftIndexCard from '../components/ShiftIndexCard'
 import TenureChart from '../components/TenureChart'
@@ -8,6 +9,7 @@ import LanguageChart from '../components/LanguageChart'
 import BirthCountryChart from '../components/BirthCountryChart'
 import EducationChart from '../components/EducationChart'
 import CrimeChart from '../components/CrimeChart'
+import CompareReport from '../components/CompareReport'
 import LoadingSkeleton from '../components/LoadingSkeleton'
 
 type CommunityTab = 'language' | 'birthcountry'
@@ -176,6 +178,10 @@ export default function ComparePage() {
 
   const { data, isPending, isError } = useSuburbTenureBatch(salCodes)
 
+  // Data + DOM node for the print-only PDF report (see CompareReport.tsx).
+  const report = useCompareReport(salCodes, data)
+  const printRef = useRef<HTMLDivElement>(null)
+
   // Names arrive with the batch response; before that fall back to a generic
   // title rather than flashing the salCodes, which mean nothing to a reader.
   const names = data?.map(d => d.salName) ?? []
@@ -186,6 +192,23 @@ export default function ComparePage() {
   const compareDesc = names.length
     ? `Side-by-side ABS Census comparison of ${names.join(', ')} — tenure trends, languages, countries of birth, and education.`
     : 'Compare Sydney and Melbourne suburbs side by side using ABS Census data.'
+
+  // Default PDF file name. Cap at 3 names so it never grows unwieldy.
+  const documentTitle = names.length
+    ? `SuburbLens — ${names.slice(0, 3).join(' vs ')}${names.length > 3 ? ` +${names.length - 3} more` : ''}`
+    : 'SuburbLens Comparison'
+
+  // 3+ suburbs get wide fast, so print those in landscape. Width below is the
+  // A4 printable area (page − 2×12mm margin) at 96dpi, so the report fills the
+  // page without overflowing/clipping. `html/body` is forced white because the
+  // app's global dark background would otherwise print behind the report.
+  const landscape = (data?.length ?? 0) >= 3
+  const reportWidthPx = landscape ? 1024 : 700
+  const pageStyle = `
+    @page { size: A4 ${landscape ? 'landscape' : 'portrait'}; margin: 12mm; }
+    html, body { background: #ffffff !important; }
+  `
+  const handleExport = useReactToPrint({ contentRef: printRef, documentTitle, pageStyle })
 
   if (salCodes.length === 0) {
     return (
@@ -210,7 +233,18 @@ export default function ComparePage() {
           ← Search again
         </button>
 
-        <h1 className="font-display text-3xl font-bold tracking-tight text-fg mb-8">Suburb Comparison</h1>
+        <div className="flex items-center justify-between gap-4 mb-8">
+          <h1 className="font-display text-3xl font-bold tracking-tight text-fg">Suburb Comparison</h1>
+          {data && (
+            <button
+              onClick={() => handleExport()}
+              disabled={report.isPending}
+              className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-lemon px-4 py-2 text-sm font-semibold text-ink transition-colors hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {report.isPending ? 'Preparing…' : 'Export PDF'}
+            </button>
+          )}
+        </div>
 
         {isPending && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -266,6 +300,16 @@ export default function ComparePage() {
         </div>
 
       </div>
+
+      {/* Print-only PDF report: rendered off-screen (has real layout so
+          react-to-print can measure it) and printed on its own via handleExport. */}
+      {data && (
+        <div aria-hidden className="pointer-events-none fixed left-[-10000px] top-0">
+          <div ref={printRef}>
+            <CompareReport rows={report.rows} widthPx={reportWidthPx} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
