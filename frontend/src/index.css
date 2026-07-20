@@ -132,6 +132,20 @@
   font-weight: 600;
 }
 
+/* ===== Print / PDF export (Compare page) =====
+   The Compare page exports a dedicated light report (see CompareReport.tsx),
+   printed in isolation via react-to-print. Page size / orientation and the
+   white page background are injected per-export via `pageStyle` in
+   ComparePage (they depend on how many suburbs are being compared).
+   Here we only force background colours to actually render, otherwise
+   Chrome/Edge drop the section-header row fills and print them white. */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
 html {
   background: var(--color-ink);
 }

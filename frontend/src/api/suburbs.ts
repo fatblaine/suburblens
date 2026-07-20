@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueries } from '@tanstack/react-query'
 import type { SuburbSearchResult, TenureResponse, NearbySuburbsResponse, LanguageResponse, BirthCountryResponse, EducationResponse, CrimeResponse } from '../types/api'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -123,6 +123,102 @@ export function useSuburbCrime(salCode: string | undefined) {
         staleTime: 5 * 60 * 1000,
         retry: 0,
     })
+}
+
+// —— PDF comparison report ——
+// Gathers language / country-of-birth / education / crime for EVERY suburb in
+// one place so the print-only <CompareReport> table can render its rows.
+// Uses the same queryKeys / staleTime as the per-suburb hooks above, so it
+// shares the TanStack cache with the on-screen sections — no extra network.
+export interface CompareReportRow {
+    tenure: TenureResponse
+    language?: LanguageResponse
+    birthCountry?: BirthCountryResponse
+    education?: EducationResponse
+    crime?: CrimeResponse
+}
+
+export function useCompareReport(
+    salCodes: string[],
+    tenure: TenureResponse[] | undefined,
+) {
+    const language = useQueries({
+        queries: salCodes.map(code => ({
+            queryKey: ['suburb-language', code],
+            queryFn: async () => {
+                const res = await fetch(`${API_BASE}/api/suburbs/${code}/language`)
+                if (!res.ok) throw new Error('Failed to fetch suburb language data.')
+                return res.json() as Promise<LanguageResponse>
+            },
+            enabled: !!code,
+            staleTime: 5 * 60 * 1000,
+        })),
+    })
+
+    const birthCountry = useQueries({
+        queries: salCodes.map(code => ({
+            queryKey: ['suburb-birthcountry', code],
+            queryFn: async () => {
+                const res = await fetch(`${API_BASE}/api/suburbs/${code}/birthcountry`)
+                if (!res.ok) throw new Error('Failed to fetch suburb birth country data.')
+                return res.json() as Promise<BirthCountryResponse>
+            },
+            enabled: !!code,
+            staleTime: 5 * 60 * 1000,
+            retry: 0,
+        })),
+    })
+
+    const education = useQueries({
+        queries: salCodes.map(code => ({
+            queryKey: ['suburb-education', code],
+            queryFn: async () => {
+                const res = await fetch(`${API_BASE}/api/suburbs/${code}/education`)
+                if (!res.ok) throw new Error('Failed to fetch suburb education data.')
+                return res.json() as Promise<EducationResponse>
+            },
+            enabled: !!code,
+            staleTime: 5 * 60 * 1000,
+            retry: 0,
+        })),
+    })
+
+    const crime = useQueries({
+        queries: salCodes.map(code => ({
+            queryKey: ['suburb-crime', code],
+            queryFn: async () => {
+                const res = await fetch(`${API_BASE}/api/suburbs/${code}/crime`)
+                if (!res.ok) throw new Error('Failed to fetch suburb crime data.')
+                return res.json() as Promise<CrimeResponse>
+            },
+            enabled: !!code,
+            staleTime: 5 * 60 * 1000,
+            retry: 0,  // Sydney suburbs 404 — treat as "no data", not a failure
+        })),
+    })
+
+    // Align each tenure row to its side queries by salCode (the batch endpoint
+    // does not guarantee the same order as the requested codes).
+    const rows: CompareReportRow[] = (tenure ?? []).map(t => {
+        const i = salCodes.indexOf(t.salCode)
+        return {
+            tenure: t,
+            language: i >= 0 ? language[i]?.data : undefined,
+            birthCountry: i >= 0 ? birthCountry[i]?.data : undefined,
+            education: i >= 0 ? education[i]?.data : undefined,
+            crime: i >= 0 ? crime[i]?.data : undefined,
+        }
+    })
+
+    // Ready once every side query has settled (success OR error — a 404 crime
+    // query is "settled", just empty). Guards against printing half-loaded rows.
+    const isPending =
+        language.some(q => q.isPending) ||
+        birthCountry.some(q => q.isPending) ||
+        education.some(q => q.isPending) ||
+        crime.some(q => q.isPending)
+
+    return { rows, isPending }
 }
 
 // Fetch tenure data for multiple suburbs by their salCodes
