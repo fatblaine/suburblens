@@ -5,6 +5,9 @@ import AgentChat from '../components/AgentChat'
 import PageMeta from '../components/PageMeta'
 import type { SuburbSearchResult } from '../types/api'
 
+const CHROME_STORE_URL =
+  'https://chromewebstore.google.com/detail/suburblens/ipibeapbfhilcffdbaeihcholjjdchej'
+
 export default function HomePage() {
   const [selected, setSelected] = useState<SuburbSearchResult[]>([])
   const navigate = useNavigate()
@@ -74,12 +77,37 @@ export default function HomePage() {
           </div>
         </button>
 
+        {/* Chrome extension */}
+        <a
+          href={CHROME_STORE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 flex items-center gap-3 rounded-xl px-5 py-3.5 bg-surface border border-white/[0.07] transition-colors hover:border-lemon/40 group"
+        >
+          <span className="font-mono text-[10px] tracking-[0.16em] uppercase text-lemon shrink-0">
+            Chrome
+          </span>
+          <span className="text-[13px] text-muted flex-1">
+            Get the extension — check any suburb while you browse listings.
+          </span>
+          <span className="text-dim transition-colors group-hover:text-lemon shrink-0">→</span>
+        </a>
+
         <div className="mt-8">
           <AgentChat />
         </div>
 
         <footer className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-dim">
           <span>Covers Sydney &amp; Melbourne suburbs only.</span>
+          <span aria-hidden="true" className="text-white/15">·</span>
+          <a
+            href={CHROME_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-colors hover:text-lemon"
+          >
+            Chrome extension
+          </a>
           <span aria-hidden="true" className="text-white/15">·</span>
           <Link to="/privacy" className="transition-colors hover:text-lemon">
             Privacy
