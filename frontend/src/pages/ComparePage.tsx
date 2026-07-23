@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useSuburbTenureBatch, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation, useSuburbCrime, useCompareReport } from '../api/suburbs'
@@ -11,6 +11,7 @@ import EducationChart from '../components/EducationChart'
 import CrimeChart from '../components/CrimeChart'
 import CompareReport from '../components/CompareReport'
 import LoadingSkeleton from '../components/LoadingSkeleton'
+import { track } from '../lib/analytics'
 
 type CommunityTab = 'language' | 'birthcountry'
 
@@ -210,6 +211,16 @@ export default function ComparePage() {
   `
   const handleExport = useReactToPrint({ contentRef: printRef, documentTitle, pageStyle })
 
+  // Count a comparison once its data resolves — one event per distinct set of
+  // suburbs, not per re-render or refetch.
+  const compareKey = salCodes.join(',')
+  const firedRef = useRef('')
+  useEffect(() => {
+    if (!data || firedRef.current === compareKey) return
+    firedRef.current = compareKey
+    track('compare_run', { count: salCodes.length, codes: compareKey })
+  }, [compareKey, data, salCodes.length])
+
   if (salCodes.length === 0) {
     return (
       <div className="min-h-screen bg-transparent flex flex-col items-center justify-center px-4">
@@ -237,7 +248,10 @@ export default function ComparePage() {
           <h1 className="font-display text-3xl font-bold tracking-tight text-fg">Suburb Comparison</h1>
           {data && (
             <button
-              onClick={() => handleExport()}
+              onClick={() => {
+                track('report_export', { page: 'compare', count: salCodes.length })
+                handleExport()
+              }}
               disabled={report.isPending}
               className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-lemon px-4 py-2 text-sm font-semibold text-ink transition-colors hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
