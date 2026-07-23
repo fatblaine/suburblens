@@ -62,9 +62,10 @@ export default function PrivacyPage() {
               SuburbLens that sends your own words off our servers.
             </li>
             <li>
-              The website uses <strong className="text-fg">Microsoft Clarity</strong> to see how pages are
-              used, which records anonymous session replays and click heatmaps. There is no advertising, and
-              nothing is sold to anyone.
+              The website uses <strong className="text-fg">Microsoft Clarity</strong> and{' '}
+              <strong className="text-fg">Google Analytics</strong> to see how pages are used — anonymous
+              session replays, click heatmaps, and visit counts. There is no advertising, and nothing is sold
+              to anyone.
             </li>
           </ul>
         </div>
@@ -110,22 +111,34 @@ export default function PrivacyPage() {
 
             <h3 className="font-display text-base font-semibold text-fg pt-2">Analytics</h3>
             <p>
-              To understand how the site is used and where people get stuck, we run{' '}
-              <strong className="text-fg">Microsoft Clarity</strong>, an analytics tool from Microsoft. It
-              records anonymous <strong className="text-fg">session replays</strong> (how the page was
-              scrolled and clicked) and aggregate <strong className="text-fg">heatmaps</strong>. Clarity masks
-              text you type into fields by default, and we do not use it to identify individual people.
+              To understand how the site is used and where people get stuck, we run two analytics tools:
             </p>
+            <ul className="ml-4 list-disc space-y-1.5">
+              <li>
+                <strong className="text-fg">Microsoft Clarity</strong> (from Microsoft) — records anonymous{' '}
+                <strong className="text-fg">session replays</strong> (how the page was scrolled and clicked)
+                and aggregate <strong className="text-fg">heatmaps</strong>. It masks text you type into fields
+                by default.
+              </li>
+              <li>
+                <strong className="text-fg">Google Analytics</strong> (from Google) — counts{' '}
+                <strong className="text-fg">page visits</strong> and a few in-app actions (such as running a
+                comparison) so we can see which features are used.
+              </li>
+            </ul>
+            <p>Neither tool is used to identify individual people.</p>
             <div className="divide-y divide-white/[0.07] border-y border-white/[0.07] my-4">
               <Row label="What is collected">
                 Pages visited, clicks, scrolling and mouse movement, device and browser type, and approximate
                 (non-precise) location derived from your IP address.
               </Row>
               <Row label="What is not">Your name, email, or the text you type into fields.</Row>
-              <Row label="Where it goes">Microsoft, which processes Clarity data outside Australia.</Row>
+              <Row label="Where it goes">
+                Microsoft and Google, both of which process this data outside Australia.
+              </Row>
               <Row label="How to opt out">
-                Use your browser's <em>Do Not Track</em> setting, or a content/ad blocker — Clarity honours Do
-                Not Track and will not record your session.
+                Use your browser's <em>Do Not Track</em> setting, or a content/ad blocker — both tools are
+                blocked by common ad blockers, and Clarity honours Do Not Track.
               </Row>
             </div>
           </Section>
@@ -169,6 +182,7 @@ export default function PrivacyPage() {
             <div className="divide-y divide-white/[0.07] border-y border-white/[0.07] my-4">
               <Row label="Amazon Web Services">Runs our API. Sydney, Australia.</Row>
               <Row label="Microsoft Clarity">Website analytics and session replay. Outside Australia.</Row>
+              <Row label="Google Analytics">Website visit and event analytics. Outside Australia.</Row>
               <Row label="Supabase">Database and accounts. Sydney, Australia.</Row>
               <Row label="Upstash">Caches map data. Contains no personal data.</Row>
               <Row label="Fly.io">Runs the AI assistant service.</Row>

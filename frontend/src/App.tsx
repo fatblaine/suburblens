@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import HomePage from './pages/HomePage'
 import SuburbDetailPage from './pages/SuburbDetailPage'
@@ -7,13 +8,28 @@ import MapPage from './pages/MapPage'
 import LoginPage from './pages/LoginPage'
 import PrivacyPage from './pages/PrivacyPage'
 import AuthBadge from './components/AuthBadge'
+import { trackPageView } from './lib/analytics'
 
 const queryClient = new QueryClient()
+
+// GA4 is loaded with send_page_view:false, so in-app navigations report nothing
+// unless we send page_view ourselves. Must live inside BrowserRouter (uses
+// useLocation). The setTimeout defers one tick so PageMeta has swapped
+// document.title for the new route before we read it.
+function RouteTracker() {
+  const { pathname, search } = useLocation()
+  useEffect(() => {
+    const id = setTimeout(() => trackPageView(pathname + search), 0)
+    return () => clearTimeout(id)
+  }, [pathname, search])
+  return null
+}
 
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <RouteTracker />
         <AuthBadge />
         <Routes>
           <Route path="/login" element={<LoginPage />} />

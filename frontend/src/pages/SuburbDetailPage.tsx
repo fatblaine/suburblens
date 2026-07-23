@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import SuburbCard from '../components/SuburbCard'
 import PageMeta from '../components/PageMeta'
 import { useSuburbTenure } from '../api/suburbs'
+import { track } from '../lib/analytics'
 
 const FALLBACK_DESC =
   'Compare Sydney and Melbourne suburbs using ABS Census data — tenure trends, community languages, and education levels.'
@@ -37,6 +38,12 @@ export default function SuburbDetailPage() {
   const [searchParams] = useSearchParams()
   const defaultNearbyExpanded = searchParams.get('nearby') === '1'
   const meta = useSuburbMeta(urlSalCode)
+
+  // One view event per suburb the URL points at. page_title already carries the
+  // suburb name, so we only send the code here.
+  useEffect(() => {
+    if (urlSalCode) track('suburb_view', { sal_code: urlSalCode })
+  }, [urlSalCode])
 
   // 页面上显示的 suburb 列表，从 URL 的那个开始
   const [salCodes, setSalCodes] = useState<string[]>([urlSalCode!])

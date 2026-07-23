@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useAuth } from '../auth/AuthProvider'
 import { supabase } from '../lib/supabase'
+import { track } from '../lib/analytics'
 
 interface Message {
   role: 'user' | 'agent'
@@ -86,6 +87,10 @@ export default function AgentChat() {
       setMessages(prev => [...prev, { role: 'user', text }, { role: 'agent', text: canned }])
       return
     }
+
+    // Real LLM question (FAQ short-circuits above never reach here). No text
+    // content is sent — just the fact that a question was asked.
+    track('agent_question')
 
     setLoading(true)
     setMessages(prev => [...prev, { role: 'user', text }])
