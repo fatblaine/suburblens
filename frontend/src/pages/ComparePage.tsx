@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { useSuburbTenureBatch, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation, useSuburbCrime, useCompareReport } from '../api/suburbs'
+import { useSuburbTenureBatch, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation, useSuburbCrime, useCompareReport, recordSuburbView } from '../api/suburbs'
 import PageMeta from '../components/PageMeta'
 import ShiftIndexCard from '../components/ShiftIndexCard'
 import TenureChart from '../components/TenureChart'
@@ -213,13 +213,17 @@ export default function ComparePage() {
 
   // Count a comparison once its data resolves — one event per distinct set of
   // suburbs, not per re-render or refetch.
+  // This is the page the home-page search actually lands on, so it is also where
+  // most suburb views happen — every code in the URL counts as one view for the
+  // popular-suburbs list (recordSuburbView dedupes per tab on its own).
   const compareKey = salCodes.join(',')
   const firedRef = useRef('')
   useEffect(() => {
     if (!data || firedRef.current === compareKey) return
     firedRef.current = compareKey
     track('compare_run', { count: salCodes.length, codes: compareKey })
-  }, [compareKey, data, salCodes.length])
+    salCodes.forEach(recordSuburbView)
+  }, [compareKey, data, salCodes])
 
   if (salCodes.length === 0) {
     return (
