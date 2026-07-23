@@ -4,6 +4,7 @@ import SearchBox from '../components/SearchBox'
 import AgentChat from '../components/AgentChat'
 import PageMeta from '../components/PageMeta'
 import type { SuburbSearchResult } from '../types/api'
+import { track } from '../lib/analytics'
 
 const CHROME_STORE_URL =
   'https://chromewebstore.google.com/detail/suburblens/ipibeapbfhilcffdbaeihcholjjdchej'
@@ -82,6 +83,7 @@ export default function HomePage() {
           href={CHROME_STORE_URL}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => track('extension_click', { placement: 'card' })}
           className="mt-3 flex items-center gap-3 rounded-xl px-5 py-3.5 bg-surface border border-white/[0.07] transition-colors hover:border-lemon/40 group"
         >
           <span className="font-mono text-[10px] tracking-[0.16em] uppercase text-lemon shrink-0">
@@ -104,6 +106,7 @@ export default function HomePage() {
             href={CHROME_STORE_URL}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => track('extension_click', { placement: 'footer' })}
             className="transition-colors hover:text-lemon"
           >
             Chrome extension
