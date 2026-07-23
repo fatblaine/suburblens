@@ -67,8 +67,10 @@ export default function HomePage() {
           onNearby={handleNearby}
         />
 
-        {/* most-viewed suburbs, last 30 days — renders nothing while empty */}
-        <PopularSuburbs />
+        {/* most-viewed suburbs, last 30 days — renders nothing while empty.
+            Clicking one selects it into the search box above, so the user can
+            keep adding suburbs before comparing. */}
+        <PopularSuburbs selected={selected} onSelect={handleAdd} />
 
         {/* feature card */}
         <button
