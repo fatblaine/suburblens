@@ -4,7 +4,7 @@ import PageMeta from '../components/PageMeta'
 
 // Chrome Web Store requires a reachable contact for the listing's privacy tab.
 const CONTACT_EMAIL = 'suburblens@outlook.com'
-const LAST_UPDATED = '17 July 2026'
+const LAST_UPDATED = '23 July 2026'
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
@@ -61,7 +61,11 @@ export default function PrivacyPage() {
               external AI provider and stored so the conversation can continue. This is the only part of
               SuburbLens that sends your own words off our servers.
             </li>
-            <li>There is no advertising, no analytics, and nothing is sold to anyone.</li>
+            <li>
+              The website uses <strong className="text-fg">Microsoft Clarity</strong> to see how pages are
+              used, which records anonymous session replays and click heatmaps. There is no advertising, and
+              nothing is sold to anyone.
+            </li>
           </ul>
         </div>
 
@@ -95,14 +99,35 @@ export default function PrivacyPage() {
 
           <Section id="website" title="The website">
             <p>
-              Browsing suburb data, comparisons, and the map requires no account, and we do not record who
-              looked at what. There is no analytics or tracking software on the site.
+              Browsing suburb data, comparisons, and the map requires no account, and we do not tie what you
+              look at to your name or email.
             </p>
             <p>
               If you create an account, we store your <strong className="text-fg">email address</strong> and a
               securely hashed password through our authentication provider. You may also continue as a guest,
               which creates an anonymous session with no email attached.
             </p>
+
+            <h3 className="font-display text-base font-semibold text-fg pt-2">Analytics</h3>
+            <p>
+              To understand how the site is used and where people get stuck, we run{' '}
+              <strong className="text-fg">Microsoft Clarity</strong>, an analytics tool from Microsoft. It
+              records anonymous <strong className="text-fg">session replays</strong> (how the page was
+              scrolled and clicked) and aggregate <strong className="text-fg">heatmaps</strong>. Clarity masks
+              text you type into fields by default, and we do not use it to identify individual people.
+            </p>
+            <div className="divide-y divide-white/[0.07] border-y border-white/[0.07] my-4">
+              <Row label="What is collected">
+                Pages visited, clicks, scrolling and mouse movement, device and browser type, and approximate
+                (non-precise) location derived from your IP address.
+              </Row>
+              <Row label="What is not">Your name, email, or the text you type into fields.</Row>
+              <Row label="Where it goes">Microsoft, which processes Clarity data outside Australia.</Row>
+              <Row label="How to opt out">
+                Use your browser's <em>Do Not Track</em> setting, or a content/ad blocker — Clarity honours Do
+                Not Track and will not record your session.
+              </Row>
+            </div>
           </Section>
 
           <Section id="assistant" title="The AI assistant">
@@ -143,6 +168,7 @@ export default function PrivacyPage() {
             <p>We run SuburbLens on services operated by other companies. They process data on our behalf:</p>
             <div className="divide-y divide-white/[0.07] border-y border-white/[0.07] my-4">
               <Row label="Amazon Web Services">Runs our API. Sydney, Australia.</Row>
+              <Row label="Microsoft Clarity">Website analytics and session replay. Outside Australia.</Row>
               <Row label="Supabase">Database and accounts. Sydney, Australia.</Row>
               <Row label="Upstash">Caches map data. Contains no personal data.</Row>
               <Row label="Fly.io">Runs the AI assistant service.</Row>
