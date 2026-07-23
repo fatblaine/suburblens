@@ -1,5 +1,6 @@
 import { useQuery, useQueries } from '@tanstack/react-query'
 import type { SuburbSearchResult, TenureResponse, NearbySuburbsResponse, LanguageResponse, BirthCountryResponse, EducationResponse, CrimeResponse } from '../types/api'
+import { supabase } from '../lib/supabase'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
@@ -234,5 +235,51 @@ export function useSuburbTenureBatch(salCodes: string[]) {
         },
         enabled: salCodes.length > 0,
         staleTime: 5 * 60 * 1000
+    })
+}
+
+// —— 热门 suburb 计数（自建，写入 Supabase suburb_views）——
+// GA4 的数据取不回前端，首页要读的"最近 30 天最热"只能存在自己库里。
+// 写入不走 C# 后端（Dapper is query-only），前端直接打 Supabase，受 RLS 约束：
+// suburb_views 只有 insert policy，原始流水读不出去；对外只暴露聚合视图。
+
+// 同一会话同一 suburb 只记一次：既防自刷，也顺带挡掉 StrictMode 的双跑
+// （先写 sessionStorage 再发请求，所以第二次同步调用直接被拦下）。
+export async function recordSuburbView(salCode: string) {
+    const key = `sv:${salCode}`
+    if (sessionStorage.getItem(key)) return
+    sessionStorage.setItem(key, '1')
+
+    const { error } = await supabase.from('suburb_views').insert({ sal_code: salCode })
+    if (error) sessionStorage.removeItem(key)  // 统计失败不该影响页面，下次还能补记
+}
+
+export interface PopularSuburb {
+    salCode: string
+    salName: string
+    stateName: string
+    viewCount: number
+}
+
+export function usePopularSuburbs(limit = 8) {
+    return useQuery<PopularSuburb[]>({
+        queryKey: ['popular-suburbs', limit],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('v_popular_suburbs')
+                .select('sal_code, sal_name, state_name, view_count')
+                .order('view_count', { ascending: false })
+                .limit(limit)
+            if (error) throw error
+            // Supabase 直读拿到的是 snake_case，在边界上转成项目约定的 camelCase
+            return (data ?? []).map(r => ({
+                salCode: r.sal_code as string,
+                salName: r.sal_name as string,
+                stateName: r.state_name as string,
+                viewCount: r.view_count as number,
+            }))
+        },
+        staleTime: 5 * 60 * 1000,
+        retry: 0,  // 表是空的 / 视图没建好都不值得重试，首页静默跳过
     })
 }

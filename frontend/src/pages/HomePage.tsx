@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import SearchBox from '../components/SearchBox'
 import AgentChat from '../components/AgentChat'
+import PopularSuburbs from '../components/PopularSuburbs'
 import PageMeta from '../components/PageMeta'
 import type { SuburbSearchResult } from '../types/api'
 import { track } from '../lib/analytics'
@@ -65,6 +66,9 @@ export default function HomePage() {
           onCompare={handleCompare}
           onNearby={handleNearby}
         />
+
+        {/* most-viewed suburbs, last 30 days — renders nothing while empty */}
+        <PopularSuburbs />
 
         {/* feature card */}
         <button
