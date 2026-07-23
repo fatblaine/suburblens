@@ -247,11 +247,23 @@ export function useSuburbTenureBatch(salCodes: string[]) {
 // （先写 sessionStorage 再发请求，所以第二次同步调用直接被拦下）。
 export async function recordSuburbView(salCode: string) {
     const key = `sv:${salCode}`
-    if (sessionStorage.getItem(key)) return
+    if (sessionStorage.getItem(key)) {
+        if (import.meta.env.DEV) console.log('[suburb_views] skipped, already recorded this tab:', salCode)
+        return
+    }
     sessionStorage.setItem(key, '1')
 
-    const { error } = await supabase.from('suburb_views').insert({ sal_code: salCode })
-    if (error) sessionStorage.removeItem(key)  // 统计失败不该影响页面，下次还能补记
+    try {
+        if (import.meta.env.DEV) console.log('[suburb_views] inserting', salCode)
+        const { error } = await supabase.from('suburb_views').insert({ sal_code: salCode })
+        if (error) throw error
+        if (import.meta.env.DEV) console.log('[suburb_views] ok', salCode)
+    } catch (e) {
+        // 还原标记：返回 error 和直接抛异常两条路都要走到，否则这个 suburb
+        // 在本标签页里会被永久跳过，之后连请求都不再发。
+        sessionStorage.removeItem(key)
+        if (import.meta.env.DEV) console.warn('[suburb_views] insert failed:', e)
+    }
 }
 
 export interface PopularSuburb {
