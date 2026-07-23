@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import SuburbCard from '../components/SuburbCard'
 import PageMeta from '../components/PageMeta'
-import { useSuburbTenure } from '../api/suburbs'
+import { useSuburbTenure, recordSuburbView } from '../api/suburbs'
 import { track } from '../lib/analytics'
 
 const FALLBACK_DESC =
@@ -41,8 +41,13 @@ export default function SuburbDetailPage() {
 
   // One view event per suburb the URL points at. page_title already carries the
   // suburb name, so we only send the code here.
+  // Two sinks: GA4 (for us) and our own suburb_views table (feeds the home
+  // page's "popular this month" list). Only the URL suburb counts — cards the
+  // user later adds to the stack are not a deliberate visit.
   useEffect(() => {
-    if (urlSalCode) track('suburb_view', { sal_code: urlSalCode })
+    if (!urlSalCode) return
+    track('suburb_view', { sal_code: urlSalCode })
+    recordSuburbView(urlSalCode)  // fire-and-forget; stats must never block the page
   }, [urlSalCode])
 
   // 页面上显示的 suburb 列表，从 URL 的那个开始
