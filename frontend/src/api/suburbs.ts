@@ -266,10 +266,8 @@ export async function recordSuburbView(salCode: string) {
     }
 }
 
-export interface PopularSuburb {
-    salCode: string
-    salName: string
-    stateName: string
+// 和搜索结果同形，这样首页可以把一个 pill 直接当成"搜到并选中"来处理
+export interface PopularSuburb extends SuburbSearchResult {
     viewCount: number
 }
 
@@ -279,7 +277,7 @@ export function usePopularSuburbs(limit = 8) {
         queryFn: async () => {
             const { data, error } = await supabase
                 .from('v_popular_suburbs')
-                .select('sal_code, sal_name, state_name, view_count')
+                .select('sal_code, sal_name, state_name, gccsa_name, view_count')
                 .order('view_count', { ascending: false })
                 .limit(limit)
             if (error) throw error
@@ -288,6 +286,7 @@ export function usePopularSuburbs(limit = 8) {
                 salCode: r.sal_code as string,
                 salName: r.sal_name as string,
                 stateName: r.state_name as string,
+                gccsaName: r.gccsa_name as string,
                 viewCount: r.view_count as number,
             }))
         },
