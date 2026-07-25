@@ -78,6 +78,12 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(p => p
         .WithOrigins(
             "http://localhost:5173",
+            // Production domain. www is canonical; the apex 301s to it in Amplify,
+            // but both are listed so a direct apex call is never blocked.
+            "https://www.suburblensapp.com",
+            "https://suburblensapp.com",
+            // Amplify default domains — kept alive during the cutover, safe to
+            // drop once the custom domain has been stable for a couple of weeks.
             "https://main.d1yrvhzuhaioqy.amplifyapp.com",
             "https://dev.d1yrvhzuhaioqy.amplifyapp.com"
         )

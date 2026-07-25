@@ -4,22 +4,23 @@
   Only static routes are listed here. The per-suburb pages
   (/suburb/<salCode>) are dynamic and number in the thousands; those are
   best emitted by a generated sitemap built from the suburb list in the DB
-  (see the note in the AI changelog / SEO plan). Update the domain below if
-  you move off the Amplify URL.
+  (see the note in the AI changelog / SEO plan). Every <loc> must use the
+  canonical host (www) — a URL that redirects here shows up as a warning in
+  Search Console.
 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://main.d1yrvhzuhaioqy.amplifyapp.com/</loc>
+    <loc>https://www.suburblensapp.com/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://main.d1yrvhzuhaioqy.amplifyapp.com/map</loc>
+    <loc>https://www.suburblensapp.com/map</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://main.d1yrvhzuhaioqy.amplifyapp.com/privacy</loc>
+    <loc>https://www.suburblensapp.com/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
