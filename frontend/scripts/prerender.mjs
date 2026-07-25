@@ -19,7 +19,7 @@ import { resolve } from 'node:path'
 // uses. In Amplify's build container it is already set. Locally, pass it:
 //   VITE_API_BASE_URL=https://s5120jvyf4.execute-api.ap-southeast-2.amazonaws.com npm run prerender
 const API = process.env.VITE_API_BASE_URL
-const SITE = process.env.SITE_URL ?? 'https://main.d1yrvhzuhaioqy.amplifyapp.com'
+const SITE = process.env.SITE_URL ?? 'https://www.suburblensapp.com'
 const DIST = resolve('dist')
 
 if (!API) {
