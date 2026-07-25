@@ -72,9 +72,13 @@ for (const { salCode, salName, stateName } of suburbs) {
     .replace(/(<meta property="og:description" content=").*?(")/, `$1${esc(desc)}$2`)
     .replace(/(<meta property="og:url" content=").*?(")/, `$1${esc(url)}$2`)
 
-  const dir = resolve(DIST, 'suburb', String(salCode))
+  // Flat file per suburb, e.g. dist/suburb/12345.html — NOT a subdir index.html.
+  // Amplify's rewrite wildcard <*> cannot be followed by "/", so the rule that
+  // serves these (/suburb/<*> -> /suburb/<*>.html) needs a file extension, not a
+  // directory. The public URL stays clean (/suburb/12345); the rewrite maps it.
+  const dir = resolve(DIST, 'suburb')
   mkdirSync(dir, { recursive: true })
-  writeFileSync(resolve(dir, 'index.html'), html)
+  writeFileSync(resolve(dir, `${String(salCode)}.html`), html)
   urls.push(url)
 }
 
