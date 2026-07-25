@@ -208,6 +208,7 @@ export default function ComparePage() {
   const pageStyle = `
     @page { size: A4 ${landscape ? 'landscape' : 'portrait'}; margin: 12mm; }
     html, body { background: #ffffff !important; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   `
   const handleExport = useReactToPrint({ contentRef: printRef, documentTitle, pageStyle })
 

@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import type { CompareReportRow } from '../api/suburbs'
 import type {
   YearValues,
@@ -10,13 +11,66 @@ import type {
 /**
  * Print-first comparison report — a light, compact <table> built purely for
  * PDF export. It is rendered off-screen and printed on its own via
- * react-to-print, so it deliberately does NOT use the app's dark Nocturne
- * tokens: all colours are literal light values, all numbers monospace.
+ * react-to-print.
  *
- * Layout: metrics as rows, suburbs as columns (the "comparison table" the user
- * picked). Each logical section is its own <tbody> so it never splits across a
- * page break.
+ * IMPORTANT: this component styles itself with INLINE styles, not Tailwind
+ * classes. react-to-print clones this DOM into a separate print document; in a
+ * production build the app's CSS is an external <link> that the print window
+ * does not reliably load, which stripped every Tailwind utility from the PDF
+ * (backgrounds, borders, fonts all gone). Inline styles travel with the cloned
+ * nodes, so they always apply regardless of how/where the app is bundled.
+ *
+ * Layout: metrics as rows, suburbs as columns. Each logical section is its own
+ * <tbody> so it never splits across a page break.
  */
+
+const MONO = "'IBM Plex Mono', ui-monospace, monospace"
+const SANS = "'IBM Plex Sans', system-ui, sans-serif"
+const DISPLAY = "'Space Grotesk', system-ui, sans-serif"
+
+// —— shared inline styles ——
+
+const S = {
+  eyebrow: {
+    fontFamily: MONO,
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: '0.2em',
+    color: '#888',
+  },
+  h1: { fontFamily: DISPLAY, fontSize: 20, fontWeight: 700, lineHeight: 1.1, margin: '4px 0 0' },
+  headerSub: { fontSize: 11, color: '#777', marginTop: 2 },
+  table: { width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' },
+  thBlank: { padding: '8px 12px', textAlign: 'left', verticalAlign: 'bottom', borderBottom: '2px solid #111' },
+  thSuburb: { padding: '8px 12px', textAlign: 'right', verticalAlign: 'bottom', borderBottom: '2px solid #111' },
+  thName: { fontFamily: DISPLAY, fontWeight: 700, fontSize: 13, color: '#111', lineHeight: 1.1 },
+  thMeta: { fontSize: 9, color: '#888', fontWeight: 400, fontFamily: SANS, marginTop: 2 },
+  sectionHead: {
+    padding: '12px 12px 4px',
+    background: '#f4f4f4',
+    color: '#6a6a6a',
+    fontFamily: MONO,
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: '0.12em',
+  },
+  row: { borderBottom: '1px solid #ececec' },
+  label: { padding: '6px 12px', textAlign: 'left', fontSize: 12, color: '#555', verticalAlign: 'top' },
+  value: {
+    padding: '6px 12px',
+    textAlign: 'right',
+    fontSize: 12,
+    color: '#111',
+    fontFamily: MONO,
+    verticalAlign: 'top',
+    wordBreak: 'break-word',
+  },
+  subValue: { fontSize: 10, color: '#777', fontFamily: SANS, fontWeight: 400 },
+  note: { marginTop: 16, fontSize: 10, lineHeight: 1.6, color: '#777' },
+} satisfies Record<string, CSSProperties>
+
+const WIN_MAX: CSSProperties = { background: '#eef7c9', fontWeight: 700 } // lemon — highest value
+const WIN_MIN: CSSProperties = { background: '#dff3e4', fontWeight: 700 } // green — lowest value (crime)
 
 // —— formatting helpers ——
 
@@ -38,7 +92,7 @@ function TenureCell({ vals }: { vals: YearValues }) {
   return (
     <>
       {now.toFixed(1)}%{' '}
-      <span style={{ color }} className="text-[10px]">
+      <span style={{ color, fontSize: 10 }}>
         {arrow}{Math.abs(d).toFixed(1)}
       </span>
     </>
@@ -83,13 +137,7 @@ function crimeTotal(crime?: CrimeResponse): { total: number | null; year: number
   return { total: latest?.total ?? null, year: latest?.yearEnding ?? null }
 }
 
-// —— cell / row primitives ——
-
-const LABEL = 'px-3 py-1.5 text-left text-[12px] text-[#555] align-top'
-const VALUE = 'px-3 py-1.5 text-right text-[12px] text-[#111] font-mono align-top break-words'
-const ROW = 'border-b border-[#ececec]'
-const WIN_MAX = 'bg-[#eef7c9]' // lemon — highest value in the row
-const WIN_MIN = 'bg-[#dff3e4]' // green — lowest value in the row (used for crime)
+// —— row / cell primitives ——
 
 /** Positions holding the max/min value. All false if <2 values or all equal. */
 function extremes(values: (number | null | undefined)[], mode: 'max' | 'min'): boolean[] {
@@ -106,25 +154,25 @@ function CompareRow({
   rows,
   valueOf,
   render,
-  cellClass = '',
+  cellStyle,
   highlight = 'max',
 }: {
   label: string
   rows: CompareReportRow[]
   valueOf: (r: CompareReportRow) => number | null | undefined
   render: (r: CompareReportRow) => React.ReactNode
-  cellClass?: string
+  cellStyle?: CSSProperties
   highlight?: 'max' | 'min'
 }) {
   const win = extremes(rows.map(valueOf), highlight)
-  const winClass = highlight === 'min' ? WIN_MIN : WIN_MAX
+  const winStyle = highlight === 'min' ? WIN_MIN : WIN_MAX
   return (
-    <tr className={ROW}>
-      <td className={LABEL}>{label}</td>
+    <tr style={S.row}>
+      <td style={S.label}>{label}</td>
       {rows.map((r, i) => (
         <td
           key={r.tenure.salCode}
-          className={VALUE + (cellClass ? ' ' + cellClass : '') + (win[i] ? ' font-bold ' + winClass : '')}
+          style={{ ...S.value, ...cellStyle, ...(win[i] ? winStyle : null) }}
         >
           {render(r)}
         </td>
@@ -136,10 +184,7 @@ function CompareRow({
 function SectionHead({ span, children }: { span: number; children: React.ReactNode }) {
   return (
     <tr>
-      <td
-        colSpan={span}
-        className="px-3 pt-3 pb-1 bg-[#f4f4f4] text-[#6a6a6a] font-mono text-[10px] uppercase tracking-[0.12em]"
-      >
+      <td colSpan={span} style={S.sectionHead}>
         {children}
       </td>
     </tr>
@@ -164,23 +209,25 @@ export default function CompareReport({
 
   return (
     <div
-      className="bg-white text-[#111] font-sans"
-      style={{ width: widthPx, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+      style={{
+        width: widthPx,
+        background: '#ffffff',
+        color: '#111',
+        fontFamily: SANS,
+        WebkitPrintColorAdjust: 'exact',
+        printColorAdjust: 'exact',
+      }}
     >
       {/* Header */}
-      <div className="border-b-2 border-[#111] pb-3 mb-2">
-        <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#888]">
-          SuburbLens · ABS Census
-        </div>
-        <h1 className="font-display text-[20px] font-bold leading-tight mt-1">
-          Suburb Comparison
-        </h1>
-        <div className="text-[11px] text-[#777] mt-0.5">
+      <div style={{ borderBottom: '2px solid #111', paddingBottom: 12, marginBottom: 8 }}>
+        <div style={S.eyebrow}>SuburbLens · ABS Census</div>
+        <h1 style={S.h1}>Suburb Comparison</h1>
+        <div style={S.headerSub}>
           {rows.map(r => r.tenure.salName).join('  ·  ')} — generated {generatedAt}
         </div>
       </div>
 
-      <table className="w-full border-collapse table-fixed">
+      <table style={S.table}>
         <colgroup>
           <col style={{ width: 130 }} />
           {rows.map(r => <col key={r.tenure.salCode} />)}
@@ -188,16 +235,11 @@ export default function CompareReport({
         {/* Suburb column headers */}
         <thead>
           <tr>
-            <th className="px-3 py-2 text-left align-bottom border-b-2 border-[#111]" />
+            <th style={S.thBlank} />
             {rows.map(r => (
-              <th
-                key={r.tenure.salCode}
-                className="px-3 py-2 text-right align-bottom border-b-2 border-[#111]"
-              >
-                <div className="font-display font-bold text-[13px] text-[#111] leading-tight">
-                  {r.tenure.salName}
-                </div>
-                <div className="text-[9px] text-[#888] font-normal font-sans mt-0.5">
+              <th key={r.tenure.salCode} style={S.thSuburb}>
+                <div style={S.thName}>{r.tenure.salName}</div>
+                <div style={S.thMeta}>
                   {r.tenure.stateName} · {r.tenure.gccsaName}
                 </div>
               </th>
@@ -206,7 +248,7 @@ export default function CompareReport({
         </thead>
 
         {/* Residency Shift Index */}
-        <tbody className="break-inside-avoid">
+        <tbody style={{ breakInside: 'avoid' }}>
           <SectionHead span={span}>Residency Shift Index · SuburbLens Custom</SectionHead>
           <CompareRow
             label="Index & trend"
@@ -214,17 +256,15 @@ export default function CompareReport({
             valueOf={r => r.tenure.residencyShiftIndex}
             render={r => (
               <>
-                <span className="text-[13px]">{r.tenure.residencyShiftIndex ?? '—'}</span>
-                <div className="text-[10px] text-[#777] font-sans font-normal">
-                  {r.tenure.trendLabel}
-                </div>
+                <span style={{ fontSize: 13 }}>{r.tenure.residencyShiftIndex ?? '—'}</span>
+                <div style={S.subValue}>{r.tenure.trendLabel}</div>
               </>
             )}
           />
         </tbody>
 
         {/* Tenure */}
-        <tbody className="break-inside-avoid">
+        <tbody style={{ breakInside: 'avoid' }}>
           <SectionHead span={span}>Tenure · 2021 (change since 2011)</SectionHead>
           {([
             ['Owned outright', 'outright'],
@@ -242,7 +282,7 @@ export default function CompareReport({
         </tbody>
 
         {/* Community — language */}
-        <tbody className="break-inside-avoid">
+        <tbody style={{ breakInside: 'avoid' }}>
           <SectionHead span={span}>Community · Language at home · 2021</SectionHead>
           <CompareRow
             label="English only"
@@ -250,10 +290,10 @@ export default function CompareReport({
             valueOf={r => englishOnlyPct(r.language)}
             render={r => fmtPct(englishOnlyPct(r.language))}
           />
-          <tr className={ROW}>
-            <td className={LABEL}>Top other languages</td>
+          <tr style={S.row}>
+            <td style={S.label}>Top other languages</td>
             {rows.map(r => (
-              <td key={r.tenure.salCode} className={VALUE + ' !whitespace-normal text-[11px]'}>
+              <td key={r.tenure.salCode} style={{ ...S.value, whiteSpace: 'normal', fontSize: 11 }}>
                 {topLanguages(r.language)}
               </td>
             ))}
@@ -261,12 +301,12 @@ export default function CompareReport({
         </tbody>
 
         {/* Community — country of birth */}
-        <tbody className="break-inside-avoid">
+        <tbody style={{ breakInside: 'avoid' }}>
           <SectionHead span={span}>Community · Country of birth · 2021</SectionHead>
-          <tr className={ROW}>
-            <td className={LABEL}>Top overseas origins</td>
+          <tr style={S.row}>
+            <td style={S.label}>Top overseas origins</td>
             {rows.map(r => (
-              <td key={r.tenure.salCode} className={VALUE + ' !whitespace-normal text-[11px]'}>
+              <td key={r.tenure.salCode} style={{ ...S.value, whiteSpace: 'normal', fontSize: 11 }}>
                 {topCountries(r.birthCountry)}
               </td>
             ))}
@@ -274,7 +314,7 @@ export default function CompareReport({
         </tbody>
 
         {/* Education */}
-        <tbody className="break-inside-avoid">
+        <tbody style={{ breakInside: 'avoid' }}>
           <SectionHead span={span}>Education · 2021</SectionHead>
           <CompareRow
             label="University-qualified"
@@ -283,18 +323,14 @@ export default function CompareReport({
             render={r => (
               <>
                 {fmtPct(universityPct(r.education))}
-                {eduRank(r.education) && (
-                  <div className="text-[10px] text-[#777] font-sans font-normal">
-                    {eduRank(r.education)}
-                  </div>
-                )}
+                {eduRank(r.education) && <div style={S.subValue}>{eduRank(r.education)}</div>}
               </>
             )}
           />
         </tbody>
 
-        {/* Crime (Greater Melbourne only) */}
-        <tbody className="break-inside-avoid">
+        {/* Crime (Greater Melbourne only) — fewest incidents highlighted in green */}
+        <tbody style={{ breakInside: 'avoid' }}>
           <SectionHead span={span}>Crime · recorded incidents / yr · Greater Melbourne only</SectionHead>
           <CompareRow
             label="Total incidents"
@@ -307,9 +343,7 @@ export default function CompareReport({
                 <>
                   {fmtNum(total)}
                   {total != null && year != null && (
-                    <div className="text-[10px] text-[#777] font-sans font-normal">
-                      yr ending {year}
-                    </div>
+                    <div style={S.subValue}>yr ending {year}</div>
                   )}
                 </>
               )
@@ -319,11 +353,11 @@ export default function CompareReport({
       </table>
 
       {/* Disclaimer — required: Residency Shift Index must be labelled custom */}
-      <p className="mt-4 text-[10px] leading-relaxed text-[#777]">
+      <p style={S.note}>
         <strong style={{ color: '#111' }}>Highlighted</strong> = the highest value in that row;
         for crime, <strong style={{ color: '#1a7a4a' }}>green</strong> marks the lowest (fewest
         incidents).<br />
-        <strong className="text-[#555]">Note:</strong> The Residency Shift Index is a SuburbLens
+        <strong style={{ color: '#555' }}>Note:</strong> The Residency Shift Index is a SuburbLens
         custom heuristic based on 2016→2021 tenure changes; it is not an official ABS metric.
         Census figures are ABS 2011 / 2016 / 2021 (SA2, mapped to the searched suburb). Crime data
         is Victoria Police (year ending March) and is available for Greater Melbourne suburbs only —
