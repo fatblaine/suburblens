@@ -1,9 +1,9 @@
 # SuburbLens — crawler rules
 # Everything is public and indexable except the login route.
-# If you move to a custom domain, update the Sitemap URL below.
+# www is the canonical host; the apex 301s to it in Amplify.
 
 User-agent: *
 Allow: /
 Disallow: /login
 
-Sitemap: https://main.d1yrvhzuhaioqy.amplifyapp.com/sitemap.xml
+Sitemap: https://www.suburblensapp.com/sitemap.xml

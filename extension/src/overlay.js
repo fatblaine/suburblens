@@ -3,7 +3,7 @@
 // scope; content.js calls renderOverlay()/removeOverlay().
 
 const SL_HOST_ID = 'suburblens-overlay-host'
-const SITE_URL = 'https://main.d1yrvhzuhaioqy.amplifyapp.com'
+const SITE_URL = 'https://www.suburblensapp.com'
 
 const TREND = {
   strong_ownership_shift: { text: 'Shifting to owner-occupied',   color: '#3fb97f' },
