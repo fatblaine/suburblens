@@ -1,0 +1,9 @@
+# SuburbLens — crawler rules
+# Everything is public and indexable except the login route.
+# If you move to a custom domain, update the Sitemap URL below.
+
+User-agent: *
+Allow: /
+Disallow: /login
+
+Sitemap: https://main.d1yrvhzuhaioqy.amplifyapp.com/sitemap.xml
