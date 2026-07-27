@@ -71,6 +71,7 @@ for (const { salCode, salName, stateName } of suburbs) {
     .replace(/(<meta property="og:title" content=").*?(")/, `$1${esc(title)}$2`)
     .replace(/(<meta property="og:description" content=").*?(")/, `$1${esc(desc)}$2`)
     .replace(/(<meta property="og:url" content=").*?(")/, `$1${esc(url)}$2`)
+    .replace(/(<link rel="canonical" href=").*?(")/, `$1${esc(url)}$2`)
 
   // Flat file per suburb, e.g. dist/suburb/12345.html — NOT a subdir index.html.
   // Amplify's rewrite wildcard <*> cannot be followed by "/", so the rule that
@@ -82,10 +83,14 @@ for (const { salCode, salName, stateName } of suburbs) {
   urls.push(url)
 }
 
-// 4. Sitemap for Google Search Console. Homepage first, then every suburb.
+// 4. Sitemap for Google Search Console. Static routes first, then every suburb.
+//    This overwrites the hand-written public/sitemap.xml, so the static routes
+//    have to be repeated here or they silently drop out of the deployed sitemap.
+//    /login is omitted on purpose — robots.txt disallows it.
+const STATIC_ROUTES = ['/', '/map', '/privacy']
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>${SITE}/</loc></url>
+${STATIC_ROUTES.map((p) => `  <url><loc>${SITE}${p === '/' ? '/' : p}</loc></url>`).join('\n')}
 ${urls.map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}
 </urlset>
 `
