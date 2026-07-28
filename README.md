@@ -20,20 +20,6 @@ community's languages and countries of origin, education levels, and recent crim
 
 ---
 
-## Screenshots
-
-> _Replace the placeholders below with real captures in `docs/screenshots/`._
-
-| Suburb detail — Tenure Time Machine | Compare view |
-|---|---|
-| ![Suburb detail](docs/screenshots/suburb-detail.png) | ![Compare](docs/screenshots/compare.png) |
-
-| Map heatmap | AI assistant | Browser extension overlay |
-|---|---|---|
-| ![Map](docs/screenshots/map.png) | ![AI assistant](docs/screenshots/assistant.png) | ![Extension](docs/screenshots/extension.png) |
-
----
-
 ## Why it exists
 
 Property portals answer *"what houses are available."* They don't answer
