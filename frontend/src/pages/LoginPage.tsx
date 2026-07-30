@@ -23,6 +23,7 @@ export default function LoginPage() {
   // Fade the login screen out first, then navigate once the transition has played.
   useEffect(() => {
     if (session && (!isGuest || pendingGuest)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 触发淡出动画确实需要 state
       setLeaving(true)
       const t = setTimeout(() => navigate('/', { replace: true }), 550)
       return () => clearTimeout(t)
