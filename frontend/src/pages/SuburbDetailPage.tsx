@@ -55,19 +55,20 @@ export default function SuburbDetailPage() {
 
   // 每张卡片的容器引用 + 待滚动目标（新加入的 suburb）
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({})
-  const [scrollTo, setScrollTo] = useState<string | null>(null)
+  // 用 ref 存一次性的滚动目标：读完即清，避免在 effect 里再 setState
+  const scrollToRef = useRef<string | null>(null)
 
   // 列表更新、目标卡片挂载后再滚动过去
   useEffect(() => {
-    if (!scrollTo) return
-    cardRefs.current[scrollTo]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    setScrollTo(null)
-  }, [salCodes, scrollTo])
+    if (!scrollToRef.current) return
+    cardRefs.current[scrollToRef.current]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    scrollToRef.current = null
+  }, [salCodes])
 
   function addSuburb(code: string) {
     setSalCodes(prev => (prev.includes(code) ? prev : [...prev, code]))
     // 已存在也滚过去，方便定位
-    setScrollTo(code)
+    scrollToRef.current = code
   }
 
   function removeSuburb(code: string) {
