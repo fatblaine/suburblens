@@ -655,12 +655,7 @@ app.MapGet("/api/suburbs/{salCode}/crime", async (IDbConnection db, string salCo
 // browsers/CDN via Cache-Control.
 app.MapGet("/api/suburbs/heatmap", async (IDbConnection db, HttpContext http, string? city) =>
 {
-    var (cacheKey, gccsaFilter) = city?.ToLower() switch
-    {
-        "sydney" => ("heatmap:v1:sydney", new[] { "1GSYD" }),
-        "melbourne" => ("heatmap:v1:melbourne", new[] { "2GMEL" }),
-        _ => ("heatmap:v1:all", new[] { "1GSYD", "2GMEL" }),
-    };
+    var (cacheKey, gccsaFilter) = HeatmapScope.Resolve(city);
 
     http.Response.Headers.CacheControl = $"public, max-age={(int)heatmapTtl.TotalSeconds}";
 
@@ -715,6 +710,25 @@ app.MapGet("/api/suburbs/heatmap", async (IDbConnection db, HttpContext http, st
 });
 
 app.Run();
+
+// ── Pure helpers (extracted so they can be unit-tested without a database) ───
+
+/// <summary>
+/// Maps the optional <c>?city</c> query param to its Redis cache key and the
+/// GCCSA codes to filter on. Encodes the project scope rule: only Sydney
+/// (1GSYD) and Melbourne (2GMEL) are in scope, and an absent/unknown city
+/// means "both".
+/// </summary>
+public static class HeatmapScope
+{
+    public static (string CacheKey, string[] Gccsa) Resolve(string? city) =>
+        city?.ToLower() switch
+        {
+            "sydney" => ("heatmap:v1:sydney", new[] { "1GSYD" }),
+            "melbourne" => ("heatmap:v1:melbourne", new[] { "2GMEL" }),
+            _ => ("heatmap:v1:all", new[] { "1GSYD", "2GMEL" }),
+        };
+}
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
 
