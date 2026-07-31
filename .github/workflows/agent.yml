@@ -25,4 +25,14 @@ jobs:
                   cache: pip
                   cache-dependency-path: agent/requirements.txt
             - run: pip install -r requirements.txt
+            - run: pip install -r requirements-dev.txt
             - run: python -m compileall .
+            - name: Unit tests (offline)
+              run: pytest
+            - name: Guard suite (deterministic, offline)
+              run: python test_guard.py
+              env:
+                  # A non-empty placeholder so guard.py's import-time ChatOpenAI()
+                  # constructs. The deterministic layers use a fake classifier and
+                  # never call the API; the live L2 test stays opt-in (unset flag).
+                  OPENROUTER_API_KEY: dummy-key-for-ci
