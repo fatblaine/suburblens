@@ -3,13 +3,7 @@ name: agent
 on:
     push:
         branches: [dev, main]
-        paths:
-            - "agent/**"
-            - ".github/workflows/agent.yml"
     pull_request:
-        paths:
-            - "agent/**"
-            - ".github/workflows/agent.yml"
 
 jobs:
     check:
