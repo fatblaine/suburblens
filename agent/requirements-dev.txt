@@ -1,0 +1,2 @@
+# Test-only dependencies (not installed into the production image).
+pytest>=8,<9
