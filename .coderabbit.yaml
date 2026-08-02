@@ -1,0 +1,20 @@
+language: en-US           # review comments in English
+reviews:
+  profile: chill          # assertive = stricter / chill = more restrained; chill suits solo
+  request_changes_workflow: false   # don't hard-block with request changes (avoid self-gating)
+  high_level_summary: true
+  poem: false             # disable the default poem
+  auto_review:
+    enabled: true
+    base_branches:
+      - dev
+      - main
+  path_instructions:
+    - path: "backend/**"
+      instructions: "Minimal API only, no Controllers. Dapper query-only, no EF Core. All JSON fields camelCase. Push calculations into Postgres views."
+    - path: "frontend/**"
+      instructions: "React functional components + TanStack Query hooks in src/api/suburbs.ts. Tailwind v4 with the Nocturne design tokens."
+    - path: "agent/**"
+      instructions: "LangGraph + LangChain. Keep the deterministic guard layers offline and API-free."
+chat:
+  auto_reply: true
