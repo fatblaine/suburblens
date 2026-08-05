@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import SuburbCard from '../components/SuburbCard'
 import PageMeta from '../components/PageMeta'
+import Footer from '../components/Footer'
 import { useSuburbTenure, recordSuburbView } from '../api/suburbs'
 import { track } from '../lib/analytics'
 
@@ -109,6 +110,8 @@ export default function SuburbDetailPage() {
             </div>
           ))}
         </div>
+
+        <Footer className="mt-16" />
 
       </div>
     </div>
