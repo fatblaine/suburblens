@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import SearchBox from '../components/SearchBox'
 import AgentChat from '../components/AgentChat'
 import PopularSuburbs from '../components/PopularSuburbs'
 import PageMeta from '../components/PageMeta'
+import Footer from '../components/Footer'
 import type { SuburbSearchResult } from '../types/api'
 import { track } from '../lib/analytics'
 
@@ -105,23 +106,7 @@ export default function HomePage() {
           <AgentChat />
         </div>
 
-        <footer className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-dim">
-          <span>Covers Sydney &amp; Melbourne suburbs only.</span>
-          <span aria-hidden="true" className="text-white/15">·</span>
-          <a
-            href={CHROME_STORE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => track('extension_click', { placement: 'footer' })}
-            className="transition-colors hover:text-lemon"
-          >
-            Chrome extension
-          </a>
-          <span aria-hidden="true" className="text-white/15">·</span>
-          <Link to="/privacy" className="transition-colors hover:text-lemon">
-            Privacy
-          </Link>
-        </footer>
+        <Footer className="mt-8" />
       </div>
     </main>
   )

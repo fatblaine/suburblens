@@ -11,6 +11,7 @@ import EducationChart from '../components/EducationChart'
 import CrimeChart from '../components/CrimeChart'
 import CompareReport from '../components/CompareReport'
 import LoadingSkeleton from '../components/LoadingSkeleton'
+import Footer from '../components/Footer'
 import { track } from '../lib/analytics'
 
 type CommunityTab = 'language' | 'birthcountry'
@@ -317,6 +318,8 @@ export default function ComparePage() {
           <strong>Note:</strong> The Residency Shift Index is a SuburbLens custom heuristic based on
           2016&rarr;2021 tenure changes. It does not represent an official ABS metric.
         </div>
+
+        <Footer className="mt-16" />
 
       </div>
 
