@@ -7,6 +7,7 @@ import ComparePage from './pages/ComparePage'
 import MapPage from './pages/MapPage'
 import LoginPage from './pages/LoginPage'
 import PrivacyPage from './pages/PrivacyPage'
+import AboutPage from './pages/AboutPage'
 import AuthBadge from './components/AuthBadge'
 import { trackPageView } from './lib/analytics'
 
@@ -45,6 +46,7 @@ export default function App() {
           {/* Must stay reachable signed-out: the Chrome Web Store listing links
               here, and reviewers open it without an account. */}
           <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/about" element={<AboutPage />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
