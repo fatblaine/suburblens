@@ -12,7 +12,7 @@
 * add multi-suburb comparison with batch API endpoints ([#8](https://github.com/fatblaine/suburblens/issues/8)) ([2c7b217](https://github.com/fatblaine/suburblens/commit/2c7b21761d25ba36d3aa562144c9140fda05d949))
 * Add per-user daily AI question limit ([bca8c5d](https://github.com/fatblaine/suburblens/commit/bca8c5d6ba48701ee2506a0b50717e5888afca64))
 * Add per-user daily AI question limit ([7b84c46](https://github.com/fatblaine/suburblens/commit/7b84c46f4dcbf2aea8a698c9ba31702cb59ca17b))
-* add sitemap.xml and robot.txt ([876c7ad](https://github.com/fatblaine/suburblens/commit/876c7ad8197f85049804688090a6aa091dc2a6f9))
+* add sitemap.xml and robots.txt ([876c7ad](https://github.com/fatblaine/suburblens/commit/876c7ad8197f85049804688090a6aa091dc2a6f9))
 * **agent:** add security event logging to the prompt-injection guard ([0322b14](https://github.com/fatblaine/suburblens/commit/0322b14caae6d4173a9ef5a6c66c9592d16656c0))
 * **agent:** add security event logging to the prompt-injection guard ([f04c9ee](https://github.com/fatblaine/suburblens/commit/f04c9ee97c77013419586ebc2b4a86025281e82c))
 * **agent:** add security event logging to the prompt-injection guard ([527042e](https://github.com/fatblaine/suburblens/commit/527042e142879c0358ac3ef87fbef5617e2e2fd4))
