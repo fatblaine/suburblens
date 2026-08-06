@@ -4,7 +4,7 @@ import PageMeta from '../components/PageMeta'
 
 // Chrome Web Store requires a reachable contact for the listing's privacy tab.
 const CONTACT_EMAIL = 'suburblens@outlook.com'
-const LAST_UPDATED = '23 July 2026'
+const LAST_UPDATED = '6 August 2026'
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
@@ -64,8 +64,13 @@ export default function PrivacyPage() {
             <li>
               The website uses <strong className="text-fg">Microsoft Clarity</strong> and{' '}
               <strong className="text-fg">Google Analytics</strong> to see how pages are used — anonymous
-              session replays, click heatmaps, and visit counts. There is no advertising, and nothing is sold
-              to anyone.
+              session replays, click heatmaps, and visit counts.
+            </li>
+            <li>
+              The website carries ads served by <strong className="text-fg">Google AdSense</strong>, which
+              use cookies. Ads appear on the <strong className="text-fg">website only</strong> — the browser
+              extension contains no advertising and injects nothing into the pages it runs on. We never sell
+              your personal information.
             </li>
           </ul>
         </div>
@@ -141,6 +146,60 @@ export default function PrivacyPage() {
                 blocked by common ad blockers, and Clarity honours Do Not Track.
               </Row>
             </div>
+
+            <h3 className="font-display text-base font-semibold text-fg pt-2">Advertising</h3>
+            <p>
+              The website is funded by ads served through{' '}
+              <strong className="text-fg">Google AdSense</strong>. Ads appear on the website only. The{' '}
+              <strong className="text-fg">browser extension shows no ads</strong>, injects no ads into the
+              pages it runs on, and sends nothing to any advertising network.
+            </p>
+            <ul className="ml-4 list-disc space-y-1.5">
+              <li>
+                Google, as a third-party vendor, uses <strong className="text-fg">cookies</strong> to serve
+                ads on this site.
+              </li>
+              <li>
+                Google's use of advertising cookies lets it and its partners serve ads to you based on your
+                visit to this site and other sites on the internet.
+              </li>
+              <li>
+                Other third-party vendors and ad networks may also serve ads here and may set their own
+                cookies.
+              </li>
+            </ul>
+            <div className="divide-y divide-white/[0.07] border-y border-white/[0.07] my-4">
+              <Row label="What is collected">
+                Cookies and device identifiers, the pages you view on this site, and approximate
+                (non-precise) location derived from your IP address.
+              </Row>
+              <Row label="What is not">
+                Your name, email, account details, or anything you type into the AI assistant. We do not
+                pass your account information to any advertiser.
+              </Row>
+              <Row label="How to opt out">
+                Turn off personalised advertising at{' '}
+                <a
+                  href="https://myadcenter.google.com/"
+                  className="text-lemon underline underline-offset-4 hover:text-lemon/80"
+                >
+                  Google My Ad Center
+                </a>
+                , or opt out of third-party vendor cookies at{' '}
+                <a
+                  href="https://www.aboutads.info/choices/"
+                  className="text-lemon underline underline-offset-4 hover:text-lemon/80"
+                >
+                  aboutads.info/choices
+                </a>
+                . An ad blocker also works.
+              </Row>
+              <Row label="Consent">
+                If you are in the EEA, the UK or Switzerland, you will be asked to consent before
+                personalised ads are shown. You can change that choice at any time from the link in the
+                consent notice.
+              </Row>
+            </div>
           </Section>
 
           <Section id="assistant" title="The AI assistant">
@@ -183,6 +242,7 @@ export default function PrivacyPage() {
               <Row label="Amazon Web Services">Runs our API. Sydney, Australia.</Row>
               <Row label="Microsoft Clarity">Website analytics and session replay. Outside Australia.</Row>
               <Row label="Google Analytics">Website visit and event analytics. Outside Australia.</Row>
+              <Row label="Google AdSense">Serves the ads on the website. Outside Australia.</Row>
               <Row label="Supabase">Database and accounts. Sydney, Australia.</Row>
               <Row label="Upstash">Caches map data. Contains no personal data.</Row>
               <Row label="Fly.io">Runs the AI assistant service.</Row>
@@ -190,7 +250,12 @@ export default function PrivacyPage() {
                 Processes AI assistant messages. Outside Australia. Used only if you use the assistant.
               </Row>
             </div>
-            <p>We do not sell your data, share it for advertising, or give it to anyone for unrelated purposes.</p>
+            <p>
+              We do not sell your personal information. Ads on the website are served by Google and may use
+              cookies as described above, but we do not hand your account details, your email, or your
+              assistant conversations to any advertiser, and we do not give your data to anyone for
+              unrelated purposes.
+            </p>
           </Section>
 
           <Section id="retention" title="Keeping and deleting data">
