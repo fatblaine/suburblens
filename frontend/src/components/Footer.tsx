@@ -14,10 +14,6 @@ const Dot = () => (
 // on any page can reach /about and /privacy from here, and every suburb page
 // linking to them is a strong internal-link signal for Search too.
 //
-// /methodology and /suburbs are commented out on purpose — those routes do not
-// exist yet, and React Router has no catch-all, so a link to them would open a
-// blank page (a listed AdSense rejection reason). Un-comment each line the day
-// its page ships (adsense-plan.md §8.5.3 / §8.5.4).
 export default function Footer({ className = '' }: { className?: string }) {
   return (
     <footer className={`font-mono text-xs text-dim ${className}`}>
@@ -28,7 +24,6 @@ export default function Footer({ className = '' }: { className?: string }) {
           About
         </Link>
         <Dot />
-        {/*
         <Link to="/methodology" className="transition-colors hover:text-lemon">
           Methodology
         </Link>
@@ -37,7 +32,6 @@ export default function Footer({ className = '' }: { className?: string }) {
           All suburbs
         </Link>
         <Dot />
-        */}
         <Link to="/privacy" className="transition-colors hover:text-lemon">
           Privacy
         </Link>

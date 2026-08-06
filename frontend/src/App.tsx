@@ -8,6 +8,8 @@ import MapPage from './pages/MapPage'
 import LoginPage from './pages/LoginPage'
 import PrivacyPage from './pages/PrivacyPage'
 import AboutPage from './pages/AboutPage'
+import MethodologyPage from './pages/MethodologyPage'
+import BrowsePage from './pages/BrowsePage'
 import AuthBadge from './components/AuthBadge'
 import { trackPageView } from './lib/analytics'
 
@@ -40,6 +42,7 @@ export default function App() {
               Signing in only buys the AI assistant. */}
           <Route path="/" element={<HomePage />} />
           <Route path="/suburb/:salCode" element={<SuburbDetailPage />} />
+          <Route path="/suburbs" element={<BrowsePage />} />
           <Route path="/compare" element={<ComparePage />} />
           <Route path="/map" element={<MapPage />} />
 
@@ -47,6 +50,7 @@ export default function App() {
               here, and reviewers open it without an account. */}
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/methodology" element={<MethodologyPage />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

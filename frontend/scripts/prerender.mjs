@@ -87,7 +87,7 @@ for (const { salCode, salName, stateName } of suburbs) {
 //    This overwrites the hand-written public/sitemap.xml, so the static routes
 //    have to be repeated here or they silently drop out of the deployed sitemap.
 //    /login is omitted on purpose — robots.txt disallows it.
-const STATIC_ROUTES = ['/', '/map', '/privacy', '/about']
+const STATIC_ROUTES = ['/', '/map', '/privacy', '/about', '/methodology', '/suburbs']
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${STATIC_ROUTES.map((p) => `  <url><loc>${SITE}${p === '/' ? '/' : p}</loc></url>`).join('\n')}
