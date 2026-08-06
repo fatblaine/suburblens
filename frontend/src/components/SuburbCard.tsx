@@ -8,6 +8,7 @@ import EducationChart from './EducationChart'
 import CrimeChart from './CrimeChart'
 import LoadingSkeleton from './LoadingSkeleton'
 import NearbySuburbs from './NearbySuburbs'
+import SuburbNarrative from './SuburbNarrative'
 
 interface Props {
   salCode: string
@@ -219,6 +220,8 @@ export default function SuburbCard({ salCode, onAdd, onRemove, defaultNearbyExpa
         residencyShiftIndex={data.residencyShiftIndex}
         trendLabel={data.trendLabel}
       />
+
+      <SuburbNarrative salCode={salCode} />
 
       <NearbySuburbs
         salCode={salCode}
