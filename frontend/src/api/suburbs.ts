@@ -238,6 +238,35 @@ export function useSuburbTenureBatch(salCodes: string[]) {
     })
 }
 
+// —— 全量 suburb 列表（用于 /suburbs 索引页）——
+// 复用 /api/suburbs/heatmap：不带 city 参数即返回悉尼+墨尔本全部，且已在 Redis
+// + 浏览器 Cache-Control 里缓存。这里只取 feature 的 properties（名字/城市），
+// 丢掉几何，交给索引页按城市 + 首字母 A–Z 分组渲染成内链。
+export interface SuburbListEntry {
+    salCode: string
+    salName: string
+    gccsaCode: string
+    stateName: string
+}
+
+export function useAllSuburbs() {
+    return useQuery<SuburbListEntry[]>({
+        queryKey: ['all-suburbs'],
+        queryFn: async () => {
+            const res = await fetch(`${API_BASE}/api/suburbs/heatmap`)
+            if (!res.ok) throw new Error('Failed to load the suburb list.')
+            const geojson = await res.json() as { features?: Array<{ properties?: Record<string, unknown> }> }
+            return (geojson.features ?? []).map(f => ({
+                salCode: String(f.properties?.salCode ?? ''),
+                salName: String(f.properties?.salName ?? ''),
+                gccsaCode: String(f.properties?.gccsaCode ?? ''),
+                stateName: String(f.properties?.stateName ?? ''),
+            }))
+        },
+        staleTime: 30 * 60 * 1000,  // 静态数据，缓存久一点
+    })
+}
+
 // —— 热门 suburb 计数（自建，写入 Supabase suburb_views）——
 // GA4 的数据取不回前端，首页要读的"最近 30 天最热"只能存在自己库里。
 // 写入不走 C# 后端（Dapper is query-only），前端直接打 Supabase，受 RLS 约束：
