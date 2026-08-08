@@ -709,6 +709,138 @@ app.MapGet("/api/suburbs/heatmap", async (IDbConnection db, HttpContext http, st
     return Results.Content(geojson, "application/json");
 });
 
+// Rank/filter suburbs by demographic criteria (drives the agent's rank_suburbs
+// tool: "find me a suburb with a big Vietnamese community and lots of uni grads").
+// Language / birth-country are generalised via a whitelist enum→column map, so no
+// ethnicity is hard-coded. WHERE/ORDER BY only ever interpolate whitelisted column
+// expressions; all user-supplied values are Dapper-parameterised → no injection.
+app.MapGet("/api/suburbs/rank", async (
+    IDbConnection db,
+    string? city,
+    string? language,           // mandarin|cantonese|chinese|vietnamese|hindi|punjabi|arabic|korean|tamil|nepali|italian|greek|spanish
+    decimal? minLanguagePct,    // applies to the chosen language
+    string? bornCountry,        // china|india|vietnam|philippines|uk|southKorea|nepal
+    decimal? minBornPct,
+    decimal? minUniversityPct,
+    string? trend,              // ownership|rental|stable
+    decimal? maxRentedSharePct, // share of renters (NOT a rent price)
+    string? sortBy,             // universityPct|languagePct|residencyShiftIndex|population
+    int limit = 8) =>
+{
+    if (limit < 1 || limit > 20) limit = 8;
+
+    var gccsa = city?.ToLower() switch
+    {
+        "sydney" => new[] { "1GSYD" },
+        "melbourne" => new[] { "2GMEL" },
+        _ => new[] { "1GSYD", "2GMEL" },
+    };
+
+    // enum → column (whitelist). Only a matched enum resolves to a column; the
+    // column name comes from this switch, never from user text, so interpolating
+    // it is safe. Add a line to support one more language/country.
+    string? langCol = language?.ToLower() switch
+    {
+        "mandarin" => "mandarin_pct",
+        "cantonese" => "cantonese_pct",
+        "chinese" => "chinese_total_pct",
+        "vietnamese" => "vietnamese_pct",
+        "hindi" => "hindi_pct",
+        "punjabi" => "punjabi_pct",
+        "arabic" => "arabic_pct",
+        "korean" => "korean_pct",
+        "tamil" => "tamil_pct",
+        "nepali" => "nepali_pct",
+        "italian" => "italian_pct",
+        "greek" => "greek_pct",
+        "spanish" => "spanish_pct",
+        _ => null,               // unknown language → filter ignored
+    };
+    string? bornCol = bornCountry?.ToLower() switch
+    {
+        "china" => "born_china_pct",
+        "india" => "born_india_pct",
+        "vietnam" => "born_vietnam_pct",
+        "philippines" => "born_philippines_pct",
+        "uk" => "born_uk_pct",
+        "southkorea" => "born_south_korea_pct",
+        "nepal" => "born_nepal_pct",
+        _ => null,
+    };
+
+    // Only whitelisted column expressions get interpolated; user values go as params.
+    var where = new List<string> { "gccsa_code = ANY(@gccsa)" };
+    if (langCol is not null && minLanguagePct is not null)
+        where.Add($"{langCol} >= @minLanguagePct");
+    if (bornCol is not null && minBornPct is not null)
+        where.Add($"{bornCol} >= @minBornPct");
+    if (minUniversityPct is not null) where.Add("university_pct >= @minUniversityPct");
+    if (maxRentedSharePct is not null) where.Add("rent_2021 <= @maxRentedSharePct");
+    if (!string.IsNullOrWhiteSpace(trend))
+        where.Add(trend.ToLower() switch
+        {
+            "ownership" => "residency_shift_index >= 1",
+            "rental" => "residency_shift_index <= -1",
+            "stable" => "residency_shift_index BETWEEN -1 AND 1",
+            _ => "TRUE",
+        });
+
+    var orderBy = sortBy?.ToLower() switch
+    {
+        "languagepct" => langCol is not null ? $"{langCol} DESC NULLS LAST"
+                                             : "university_pct DESC NULLS LAST",
+        "residencyshiftindex" => "residency_shift_index DESC NULLS LAST",
+        "population" => "population_2021 DESC NULLS LAST",
+        "universitypct" => "university_pct DESC NULLS LAST",
+        // No explicit sort: if a language/birth-country was chosen, sort by it so
+        // the result actually reflects that community even when the caller (the
+        // LLM) forgot to pass sortBy; otherwise fall back to university_pct.
+        _ => langCol is not null ? $"{langCol} DESC NULLS LAST"
+           : bornCol is not null ? $"{bornCol} DESC NULLS LAST"
+           : "university_pct DESC NULLS LAST",
+    };
+
+    // Echo the chosen language/birth-country column under a fixed field name so the
+    // agent can quote the number; NULL when no such filter was chosen.
+    var langSelect = langCol is not null ? langCol : "NULL::numeric";
+    var bornSelect = bornCol is not null ? bornCol : "NULL::numeric";
+
+    var sql = $@"
+        SELECT sal_code AS SalCode, sal_name AS SalName,
+               gccsa_name AS GccsaName, state_name AS StateName,
+               university_pct        AS UniversityPct,
+               {langSelect}          AS LanguagePct,
+               {bornSelect}          AS BornPct,
+               rent_2021             AS RentedSharePct,
+               residency_shift_index AS ResidencyShiftIndex,
+               trend_label           AS TrendLabel,
+               population_2021       AS Population
+        FROM v_suburb_features
+        WHERE {string.Join(" AND ", where)}
+        ORDER BY {orderBy}
+        LIMIT @limit";
+
+    var rows = (await db.QueryAsync<SuburbRankRow>(sql, new
+    {
+        gccsa,
+        minLanguagePct,
+        minBornPct,
+        minUniversityPct,
+        maxRentedSharePct,
+        limit
+    })).ToArray();
+
+    return Results.Ok(new
+    {
+        count = rows.Length,
+        language,             // echo back so the agent/UI can phrase the result
+        bornCountry,
+        results = rows,
+        dataNote = "Percentages are 2021 ABS census (SA2-sourced). 'rentedSharePct' " +
+                   "is the share of dwellings rented, NOT a rent price."
+    });
+});
+
 app.Run();
 
 // ── Pure helpers (extracted so they can be unit-tested without a database) ───
@@ -850,4 +982,13 @@ record CrimeRow(
     string SalCode, string SalName, string StateName, string GccsaName,
     short YearEnding, string OffenceCategory, int Incidents
 );
+
+// Ranked-discovery row from v_suburb_features. LanguagePct / BornPct hold the
+// percentage for whichever language / birth-country the caller chose (generic,
+// not tied to any one community).
+record SuburbRankRow(
+    string SalCode, string SalName, string GccsaName, string StateName,
+    decimal? UniversityPct, decimal? LanguagePct, decimal? BornPct,
+    decimal? RentedSharePct, decimal? ResidencyShiftIndex,
+    string TrendLabel, int? Population);
 

@@ -91,5 +91,42 @@ def get_crime(sal_code: str) -> dict:
     return _get(f"/api/suburbs/{sal_code}/crime")
 
 
+@tool
+def rank_suburbs(
+    city: str | None = None,               # "sydney" | "melbourne"
+    language: str | None = None,           # mandarin|cantonese|chinese|vietnamese|hindi|punjabi|arabic|korean|tamil|nepali|italian|greek|spanish
+    min_language_pct: float | None = None,  # applies to the chosen language
+    born_country: str | None = None,       # china|india|vietnam|philippines|uk|southKorea|nepal
+    min_born_pct: float | None = None,
+    min_university_pct: float | None = None,
+    trend: str | None = None,              # "ownership" | "rental" | "stable"
+    max_rented_share_pct: float | None = None,
+    sort_by: str | None = None,            # "universityPct"|"languagePct"|"residencyShiftIndex"|"population"
+    limit: int = 8,
+) -> dict:
+    """Find and RANK Sydney/Melbourne suburbs matching demographic criteria, for
+    when the user describes what they WANT but does NOT name a specific suburb
+    (e.g. "find a suburb with a big Vietnamese community and lots of uni grads,
+    family-owned not investor"). Pick language / born_country from the lists above
+    to match ANY community, not just one. All percentages are 2021 census;
+    rentedShare is the share of renters, NOT a rent price. Returns {count,
+    results:[...]} with each suburb's numbers so you can quote them. If count is 0,
+    drop the least important filter and call again."""
+    params = {k: v for k, v in {
+        "city": city,
+        "language": language,
+        "minLanguagePct": min_language_pct,
+        "bornCountry": born_country,
+        "minBornPct": min_born_pct,
+        "minUniversityPct": min_university_pct,
+        "trend": trend,
+        "maxRentedSharePct": max_rented_share_pct,
+        "sortBy": sort_by,
+        "limit": limit,
+    }.items() if v is not None}
+    return _get("/api/suburbs/rank", **params)
+
+
 tools = [search_suburb, get_tenure, get_education,
-         get_language, get_birthcountry, get_nearby, get_crime]
+         get_language, get_birthcountry, get_nearby, get_crime,
+         rank_suburbs]

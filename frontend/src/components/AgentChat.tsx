@@ -22,6 +22,14 @@ const SUGGESTIONS = [
   'Which suburbs are near Newtown?',
 ]
 
+// Discovery examples — the user does NOT name a suburb, so the agent uses the
+// rank_suburbs tool to find matching ones. Showcases the ranking capability.
+const DISCOVERY = [
+  'Find a Melbourne suburb with a big Chinese community and lots of uni grads',
+  'Where in Sydney has a large Vietnamese community?',
+  'Suburbs that are becoming more family-owned, not investor-rented',
+]
+
 // Generic FAQs — answered instantly, client-side. No LLM call, no network,
 // and they don't count against the daily question limit.
 const FAQ: { q: string; a: string }[] = [
@@ -199,6 +207,22 @@ export default function AgentChat() {
                     ))}
                   </div>
                 </div>
+                <div>
+                  <p className="font-mono text-[10px] tracking-[0.14em] uppercase text-dim mb-2">
+                    Find a suburb
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {DISCOVERY.map(q => (
+                      <button
+                        key={q}
+                        onClick={() => send(q)}
+                        className="px-3 py-1.5 rounded-full bg-surface-2 hover:bg-surface-3 border border-white/10 text-faint hover:text-fg text-xs transition-colors text-left"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
             {messages.map((m, i) => (
@@ -223,7 +247,7 @@ export default function AgentChat() {
 
           {messages.length > 0 && (
             <div className="px-3 pt-2 pb-1.5 flex gap-2 overflow-x-auto [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.18)_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/15 hover:[&::-webkit-scrollbar-thumb]:bg-white/25">
-              {[...FAQ.map(f => f.q), ...SUGGESTIONS].map(q => (
+              {[...FAQ.map(f => f.q), ...DISCOVERY, ...SUGGESTIONS].map(q => (
                 <button
                   key={q}
                   onClick={() => send(q)}
