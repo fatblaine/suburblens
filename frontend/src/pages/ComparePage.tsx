@@ -11,6 +11,8 @@ import EducationChart from '../components/EducationChart'
 import CrimeChart from '../components/CrimeChart'
 import CompareReport from '../components/CompareReport'
 import LoadingSkeleton from '../components/LoadingSkeleton'
+import BarListSkeleton from '../components/BarListSkeleton'
+import SegmentToggle from '../components/SegmentToggle'
 import Footer from '../components/Footer'
 import { track } from '../lib/analytics'
 
@@ -34,14 +36,16 @@ function CollapsibleSection({
   return (
     <div className={GLASS_CARD}>
       <button
+        type="button"
         onClick={() => setOpen(prev => !prev)}
+        aria-expanded={open}
         className="w-full flex items-center justify-between p-6 text-left"
       >
         <div>
           <h3 className="text-base font-semibold text-white">{title}</h3>
           <p className="text-xs text-white/50 mt-0.5">{subtitle}</p>
         </div>
-        <span className={`text-white/40 transition-transform duration-200 ml-4 shrink-0 ${open ? 'rotate-180' : ''}`}>
+        <span aria-hidden="true" className={`text-white/40 transition-transform duration-200 ml-4 shrink-0 ${open ? 'rotate-180' : ''}`}>
           ▼
         </span>
       </button>
@@ -60,15 +64,7 @@ function EducationSection({ salCode }: { salCode: string }) {
 
   if (isPending) return (
     <div className={GLASS_CARD + ' p-6'}>
-      <div className="animate-pulse space-y-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <div className="w-36 h-3 bg-white/10 rounded" />
-            <div className="flex-1 h-4 bg-white/10 rounded-full" />
-            <div className="w-10 h-3 bg-white/10 rounded" />
-          </div>
-        ))}
-      </div>
+      <BarListSkeleton rows={6} labelWidth="w-36" />
     </div>
   )
 
@@ -93,15 +89,7 @@ function CrimeSection({ salCode }: { salCode: string }) {
 
   if (isPending) return (
     <div className={GLASS_CARD + ' p-6'}>
-      <div className="animate-pulse space-y-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <div className="w-28 h-3 bg-white/10 rounded" />
-            <div className="flex-1 h-4 bg-white/10 rounded-full" />
-            <div className="w-10 h-3 bg-white/10 rounded" />
-          </div>
-        ))}
-      </div>
+      <BarListSkeleton rows={6} labelWidth="w-28" />
     </div>
   )
 
@@ -125,15 +113,7 @@ function CommunitySection({ salCode }: { salCode: string }) {
 
   if (lang.isPending) return (
     <div className={GLASS_CARD + ' p-6'}>
-      <div className="animate-pulse space-y-3">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <div className="w-24 h-3 bg-white/10 rounded" />
-            <div className="flex-1 h-4 bg-white/10 rounded-full" />
-            <div className="w-10 h-3 bg-white/10 rounded" />
-          </div>
-        ))}
-      </div>
+      <BarListSkeleton rows={5} labelWidth="w-24" />
     </div>
   )
 
@@ -146,24 +126,16 @@ function CommunitySection({ salCode }: { salCode: string }) {
       title="Community Profile"
       subtitle="Language & origins · 2011 / 2016 / 2021"
     >
-      <div className="flex gap-1 bg-surface-2 border border-white/10 rounded-lg p-1 w-fit mb-5">
-        <button
-          onClick={() => setTab('language')}
-          className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-            tab === 'language' ? 'bg-lemon text-ink' : 'text-muted hover:text-fg'
-          }`}
-        >
-          Language at Home
-        </button>
-        <button
-          onClick={() => setTab('birthcountry')}
-          className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-            tab === 'birthcountry' ? 'bg-lemon text-ink' : 'text-muted hover:text-fg'
-          }`}
-        >
-          Country of Birth
-        </button>
-      </div>
+      <SegmentToggle
+        options={[
+          { value: 'language', label: 'Language at Home' },
+          { value: 'birthcountry', label: 'Country of Birth' },
+        ]}
+        value={tab}
+        onChange={setTab}
+        ariaLabel="Community profile view"
+        className="w-fit mb-5"
+      />
 
       {tab === 'language' && lang.data && <LanguageChart response={lang.data} />}
       {tab === 'birthcountry' && birth.data && <BirthCountryChart response={birth.data} />}
