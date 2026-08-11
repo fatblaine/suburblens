@@ -12,6 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
+// RFC-7807 problem+json for unhandled errors (see app.UseExceptionHandler below)
+builder.Services.AddProblemDetails();
+
 // Lambda hosting
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
 
@@ -101,6 +104,11 @@ builder.Services.AddSwaggerGen(c =>
 var app = builder.Build();
 app.UseCors();
 
+// Any unhandled exception (e.g. a DB outage) → application/problem+json 500
+// instead of a raw stack trace. Explicit Results.NotFound/BadRequest are unaffected.
+app.UseExceptionHandler();
+app.UseStatusCodePages();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -108,6 +116,10 @@ if (app.Environment.IsDevelopment())
 }
 
 // === API Endpoints ===
+
+// Upper bound on batch-endpoint array inputs, so a caller can't push thousands
+// of values into a single `= ANY(...)` query.
+const int MaxBatch = 50;
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
@@ -121,7 +133,7 @@ app.MapGet("/api/suburbs/search", async (IDbConnection db, string q) =>
         SELECT sal_code AS SalCode, sal_name AS SalName,
                state_name AS StateName, gccsa_name AS GccsaName
         FROM geo_sal
-        WHERE gccsa_code IN ('1GSYD', '2GMEL')
+        WHERE gccsa_code = ANY(@gccsa)
           AND (sal_name ILIKE @contains                -- correct spelling: substring match
                OR similarity(sal_name, @q) >= 0.25)    -- typo tolerance: trigram similarity (pg_trgm)
         ORDER BY
@@ -143,6 +155,7 @@ app.MapGet("/api/suburbs/search", async (IDbConnection db, string q) =>
             prefix = $"{q}%",
             word = $"% {q}%",
             contains = $"%{q}%",
+            gccsa = GccsaScope.All,
         });
 
     return Results.Ok(results);
@@ -153,6 +166,9 @@ app.MapGet("/api/suburbs/search/batch", async (IDbConnection db, string[] names)
 {
     if (names == null || names.Length == 0)
         return Results.BadRequest(new { error = "Names query parameter is required" });
+
+    if (names.Length > MaxBatch)
+        return Results.BadRequest(new { error = $"Too many names (max {MaxBatch})" });
 
     var patterns = names
         .Where(n => !string.IsNullOrWhiteSpace(n) && n.Trim().Length >= 2)
@@ -167,9 +183,9 @@ app.MapGet("/api/suburbs/search/batch", async (IDbConnection db, string[] names)
                state_name AS StateName, gccsa_name AS GccsaName
         FROM geo_sal
         WHERE sal_name ILIKE ANY(@patterns)
-          AND gccsa_code IN ('1GSYD', '2GMEL')
+          AND gccsa_code = ANY(@gccsa)
         ORDER BY sal_name",
-        new { patterns });
+        new { patterns, gccsa = GccsaScope.All });
 
     return Results.Ok(results);
 });
@@ -177,44 +193,14 @@ app.MapGet("/api/suburbs/search/batch", async (IDbConnection db, string[] names)
 // Get tenure data for a suburb by SAL code
 app.MapGet("/api/suburbs/{salCode}/tenure", async (IDbConnection db, string salCode) =>
 {
-    var row = await db.QuerySingleOrDefaultAsync<TenureRow>(@"
-        SELECT
-            sal_code AS SalCode, sal_name AS SalName,
-            state_name AS StateName, gccsa_name AS GccsaName,
-            sa2_code AS Sa2Code, sa2_name AS Sa2Name,
-            outright_2011 AS Outright2011, outright_2016 AS Outright2016, outright_2021 AS Outright2021,
-            mortgage_2011 AS Mortgage2011, mortgage_2016 AS Mortgage2016, mortgage_2021 AS Mortgage2021,
-            rent_2011 AS Rent2011, rent_2016 AS Rent2016, rent_2021 AS Rent2021,
-            total_dwellings_2011 AS TotalDwellings2011,
-            total_dwellings_2016 AS TotalDwellings2016,
-            total_dwellings_2021 AS TotalDwellings2021,
-            residency_shift_index AS ResidencyShiftIndex, trend_label AS TrendLabel
-        FROM v_tenure_shift
-        WHERE sal_code = @salCode",
+    var row = await db.QuerySingleOrDefaultAsync<TenureRow>(
+        TenureQuery.SelectPrefix + "sal_code = @salCode",
         new { salCode });
 
     if (row is null)
         return Results.NotFound(new { error = $"Suburb not found: {salCode}" });
 
-    var response = new TenureResponse(
-        SalCode: row.SalCode,
-        SalName: row.SalName,
-        StateName: row.StateName,
-        GccsaName: row.GccsaName,
-        Sa2Code: row.Sa2Code,
-        Sa2Name: row.Sa2Name,
-        Tenure: new TenureByYear(
-            Outright: new YearValues(row.Outright2011, row.Outright2016, row.Outright2021),
-            Mortgage: new YearValues(row.Mortgage2011, row.Mortgage2016, row.Mortgage2021),
-            Rent: new YearValues(row.Rent2011, row.Rent2016, row.Rent2021),
-            TotalDwellings: new YearCounts(row.TotalDwellings2011, row.TotalDwellings2016, row.TotalDwellings2021)
-        ),
-        ResidencyShiftIndex: row.ResidencyShiftIndex,
-        TrendLabel: row.TrendLabel,
-        DataNote: $"Cross-year data is based on the ABS SA2 '{row.Sa2Name}', which may include nearby suburbs."
-    );
-
-    return Results.Ok(response);
+    return Results.Ok(TenureQuery.Map(row));
 });
 
 // Batch tenure lookup by SAL code
@@ -223,41 +209,14 @@ app.MapGet("/api/suburbs/tenure/batch", async (IDbConnection db, string[] salCod
     if (salCodes == null || salCodes.Length == 0)
         return Results.BadRequest(new { error = "salCodes query parameter is required" });
 
-    var rows = await db.QueryAsync<TenureRow>(@"
-        SELECT
-            sal_code AS SalCode, sal_name AS SalName,
-            state_name AS StateName, gccsa_name AS GccsaName,
-            sa2_code AS Sa2Code, sa2_name AS Sa2Name,
-            outright_2011 AS Outright2011, outright_2016 AS Outright2016, outright_2021 AS Outright2021,
-            mortgage_2011 AS Mortgage2011, mortgage_2016 AS Mortgage2016, mortgage_2021 AS Mortgage2021,
-            rent_2011 AS Rent2011, rent_2016 AS Rent2016, rent_2021 AS Rent2021,
-            total_dwellings_2011 AS TotalDwellings2011,
-            total_dwellings_2016 AS TotalDwellings2016,
-            total_dwellings_2021 AS TotalDwellings2021,
-            residency_shift_index AS ResidencyShiftIndex, trend_label AS TrendLabel
-        FROM v_tenure_shift
-        WHERE sal_code = ANY(@salCodes)",
+    if (salCodes.Length > MaxBatch)
+        return Results.BadRequest(new { error = $"Too many salCodes (max {MaxBatch})" });
+
+    var rows = await db.QueryAsync<TenureRow>(
+        TenureQuery.SelectPrefix + "sal_code = ANY(@salCodes)",
         new { salCodes });
 
-    var response = rows.Select(row => new TenureResponse(
-        SalCode: row.SalCode,
-        SalName: row.SalName,
-        StateName: row.StateName,
-        GccsaName: row.GccsaName,
-        Sa2Code: row.Sa2Code,
-        Sa2Name: row.Sa2Name,
-        Tenure: new TenureByYear(
-            Outright: new YearValues(row.Outright2011, row.Outright2016, row.Outright2021),
-            Mortgage: new YearValues(row.Mortgage2011, row.Mortgage2016, row.Mortgage2021),
-            Rent: new YearValues(row.Rent2011, row.Rent2016, row.Rent2021),
-            TotalDwellings: new YearCounts(row.TotalDwellings2011, row.TotalDwellings2016, row.TotalDwellings2021)
-        ),
-        ResidencyShiftIndex: row.ResidencyShiftIndex,
-        TrendLabel: row.TrendLabel,
-        DataNote: $"Cross-year data is based on the ABS SA2 '{row.Sa2Name}', which may include nearby suburbs."
-    )).ToArray();
-
-    return Results.Ok(response);
+    return Results.Ok(rows.Select(TenureQuery.Map).ToArray());
 });
 
 // Find nearby suburbs of the designated suburb
@@ -293,12 +252,12 @@ app.MapGet("/api/suburbs/{salCode}/nearby", async (IDbConnection db, string salC
         ) ref
         WHERE
             g.sal_code != @salCode
-            AND g.gccsa_code IN ('1GSYD', '2GMEL')
+            AND g.gccsa_code = ANY(@gccsa)
             AND g.centroid IS NOT NULL
             AND ST_DWithin(g.centroid, ref.centroid, 20000)
         ORDER BY DistanceMeters ASC
         LIMIT @limit",
-        new { salCode, limit });
+        new { salCode, limit, gccsa = GccsaScope.All });
 
     return Results.Ok(new
     {
@@ -729,12 +688,7 @@ app.MapGet("/api/suburbs/rank", async (
 {
     if (limit < 1 || limit > 20) limit = 8;
 
-    var gccsa = city?.ToLower() switch
-    {
-        "sydney" => new[] { "1GSYD" },
-        "melbourne" => new[] { "2GMEL" },
-        _ => new[] { "1GSYD", "2GMEL" },
-    };
+    var gccsa = GccsaScope.For(city);
 
     // enum → column (whitelist). Only a matched enum resolves to a column; the
     // column name comes from this switch, never from user text, so interpolating
@@ -846,20 +800,79 @@ app.Run();
 // ── Pure helpers (extracted so they can be unit-tested without a database) ───
 
 /// <summary>
+/// The project scope rule in one place: only Sydney (1GSYD) and Melbourne
+/// (2GMEL) are in scope, and an absent/unknown city means "both".
+/// </summary>
+public static class GccsaScope
+{
+    public static readonly string[] All = { "1GSYD", "2GMEL" };
+
+    public static string[] For(string? city) =>
+        city?.ToLower() switch
+        {
+            "sydney" => new[] { "1GSYD" },
+            "melbourne" => new[] { "2GMEL" },
+            _ => All,
+        };
+}
+
+/// <summary>
 /// Maps the optional <c>?city</c> query param to its Redis cache key and the
-/// GCCSA codes to filter on. Encodes the project scope rule: only Sydney
-/// (1GSYD) and Melbourne (2GMEL) are in scope, and an absent/unknown city
-/// means "both".
+/// GCCSA codes to filter on (via <see cref="GccsaScope"/>).
 /// </summary>
 public static class HeatmapScope
 {
-    public static (string CacheKey, string[] Gccsa) Resolve(string? city) =>
-        city?.ToLower() switch
+    public static (string CacheKey, string[] Gccsa) Resolve(string? city)
+    {
+        var cacheKey = city?.ToLower() switch
         {
-            "sydney" => ("heatmap:v1:sydney", new[] { "1GSYD" }),
-            "melbourne" => ("heatmap:v1:melbourne", new[] { "2GMEL" }),
-            _ => ("heatmap:v1:all", new[] { "1GSYD", "2GMEL" }),
+            "sydney" => "heatmap:v1:sydney",
+            "melbourne" => "heatmap:v1:melbourne",
+            _ => "heatmap:v1:all",
         };
+        return (cacheKey, GccsaScope.For(city));
+    }
+}
+
+/// <summary>
+/// Shared tenure query + mapping. The single and batch endpoints differ only in
+/// the WHERE clause appended to <see cref="SelectPrefix"/>, and both project the
+/// same nested <see cref="TenureResponse"/> via <see cref="Map"/>.
+/// </summary>
+internal static class TenureQuery
+{
+    public const string SelectPrefix = @"
+        SELECT
+            sal_code AS SalCode, sal_name AS SalName,
+            state_name AS StateName, gccsa_name AS GccsaName,
+            sa2_code AS Sa2Code, sa2_name AS Sa2Name,
+            outright_2011 AS Outright2011, outright_2016 AS Outright2016, outright_2021 AS Outright2021,
+            mortgage_2011 AS Mortgage2011, mortgage_2016 AS Mortgage2016, mortgage_2021 AS Mortgage2021,
+            rent_2011 AS Rent2011, rent_2016 AS Rent2016, rent_2021 AS Rent2021,
+            total_dwellings_2011 AS TotalDwellings2011,
+            total_dwellings_2016 AS TotalDwellings2016,
+            total_dwellings_2021 AS TotalDwellings2021,
+            residency_shift_index AS ResidencyShiftIndex, trend_label AS TrendLabel
+        FROM v_tenure_shift
+        WHERE ";
+
+    public static TenureResponse Map(TenureRow row) => new(
+        SalCode: row.SalCode,
+        SalName: row.SalName,
+        StateName: row.StateName,
+        GccsaName: row.GccsaName,
+        Sa2Code: row.Sa2Code,
+        Sa2Name: row.Sa2Name,
+        Tenure: new TenureByYear(
+            Outright: new YearValues(row.Outright2011, row.Outright2016, row.Outright2021),
+            Mortgage: new YearValues(row.Mortgage2011, row.Mortgage2016, row.Mortgage2021),
+            Rent: new YearValues(row.Rent2011, row.Rent2016, row.Rent2021),
+            TotalDwellings: new YearCounts(row.TotalDwellings2011, row.TotalDwellings2016, row.TotalDwellings2021)
+        ),
+        ResidencyShiftIndex: row.ResidencyShiftIndex,
+        TrendLabel: row.TrendLabel,
+        DataNote: $"Cross-year data is based on the ABS SA2 '{row.Sa2Name}', which may include nearby suburbs."
+    );
 }
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
