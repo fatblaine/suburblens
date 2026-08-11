@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.2.0](https://github.com/fatblaine/suburblens/compare/suburblens-v1.1.0...suburblens-v1.2.0) (2026-08-11)
+
+
+### Features
+
+* Add a reusable site footer and mount it across the main pages ([e6414e6](https://github.com/fatblaine/suburblens/commit/e6414e6d73eefe1efd6d0be1ed994a18a216600e))
+* add about page ([870c115](https://github.com/fatblaine/suburblens/commit/870c1159ec4acc5fb86f39c6797827b4c857ee37))
+* add about page ([0aa4227](https://github.com/fatblaine/suburblens/commit/0aa4227a6dc5253dd3b4883d9e75c6d7a0d890e2))
+* add AdSense verification script and ads.txt ([f8069b3](https://github.com/fatblaine/suburblens/commit/f8069b396e88d880d6ac2429cae82c7868346153))
+* add methodology and all-suburbs index pages ([342a4da](https://github.com/fatblaine/suburblens/commit/342a4daedc993d25c55011a4b96121c1637843c1))
+* add methodology and all-suburbs index pages ([878807b](https://github.com/fatblaine/suburblens/commit/878807b3a1b868070290080c5a6b1a77ca1b5cc8))
+* add natural-language suburb discovery to the AI agent ([2b2975d](https://github.com/fatblaine/suburblens/commit/2b2975d1e184ecbfef7c17ae4ffdf7dddfd74124))
+* add per-suburb editorial narrative paragraph ([c287ac9](https://github.com/fatblaine/suburblens/commit/c287ac9f46f4be3f007ea064976f1e7f15bd35f0))
+* add per-suburb editorial narrative paragraph ([3db7158](https://github.com/fatblaine/suburblens/commit/3db7158c1a56fd11258c00f51e2ea2aea9d6fcd5))
+* add site footer linking about and privacy ([edb6cf1](https://github.com/fatblaine/suburblens/commit/edb6cf12b8a54a669371e6f57df82ef084539e67))
+* add site footer linking about and privacy ([f55b72b](https://github.com/fatblaine/suburblens/commit/f55b72bc96c73a79a99e385fa5fa71720992df88))
+* AdSense readiness — content hardening, verification & privacy disclosure ([a80a45a](https://github.com/fatblaine/suburblens/commit/a80a45acede43888092cd8c0f196031b725ea03f))
+* AdSense verification + advertising privacy disclosure ([8edbcb7](https://github.com/fatblaine/suburblens/commit/8edbcb7cd5c072634b3a811eb8dd4704cc4b402f))
+* disclose advertising in the privacy policy ([70848ee](https://github.com/fatblaine/suburblens/commit/70848ee831c2523f10c8e0b707fce135d6404178))
+* natural-language suburb discovery in the AI agent ([bd52666](https://github.com/fatblaine/suburblens/commit/bd526661b11a0621e16c5c0c6077ae8e097b93d9))
+* prerender suburb narrative into the page body ([de189c3](https://github.com/fatblaine/suburblens/commit/de189c385a315b43b90112ad4eebc0814c9094d8))
+* prerender suburb narrative into the page body ([5fb8f63](https://github.com/fatblaine/suburblens/commit/5fb8f63e3f2d04279389773b1b8d9b5c46e5d7af))
+
+
+### Refactors
+
+* **api:** dedupe tenure/gccsa queries and add error+input guards ([edcf169](https://github.com/fatblaine/suburblens/commit/edcf1698b4ac54e1806e295aebc93d52279052fa))
+* backend query/error dedup + frontend query dedup & a11y ([57bef50](https://github.com/fatblaine/suburblens/commit/57bef50af6b7c3a079e8b510f10819634deb6450))
+* **frontend:** dedupe suburb queries and improve accessibility ([f923851](https://github.com/fatblaine/suburblens/commit/f923851106c96e70d0c2d39e1e3ddacfd5c90d62))
+
 ## [1.1.0](https://github.com/fatblaine/suburblens/compare/suburblens-v1.0.0...suburblens-v1.1.0) (2026-08-05)
 
 
