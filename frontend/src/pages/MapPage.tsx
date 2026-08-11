@@ -54,12 +54,14 @@ export default function MapPage() {
   const [city, setCity] = useState<City>('sydney')
   const [panel, setPanel] = useState<PanelSuburb | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   // Load GeoJSON for a city and (re)build the layers.
   const loadSuburbs = useCallback(async (targetCity: City) => {
     const m = map.current
     if (!m) return
     setLoading(true)
+    setError(null)
 
     try {
       const res = await fetch(`${API_BASE}/api/suburbs/heatmap?city=${targetCity}`)
@@ -101,7 +103,8 @@ export default function MapPage() {
         },
       })
     } catch (err) {
-      console.error(err)
+      if (import.meta.env.DEV) console.error(err)
+      setError('Could not load map data. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -120,7 +123,7 @@ export default function MapPage() {
     map.current = m
 
     m.addControl(new maplibregl.NavigationControl(), 'top-right')
-    m.on('error', (e) => console.error('[MapLibre]', e.error))
+    m.on('error', (e) => { if (import.meta.env.DEV) console.error('[MapLibre]', e.error) })
 
     // Hover highlight: bump opacity for the hovered suburb.
     let hoveredId: string | null = null
@@ -208,6 +211,11 @@ export default function MapPage() {
         {loading && (
           <span className="text-white/50 text-sm bg-black/40 backdrop-blur px-3 py-1.5 rounded-lg border border-white/10">
             Loading…
+          </span>
+        )}
+        {error && !loading && (
+          <span className="pointer-events-auto text-red-300 text-sm bg-black/40 backdrop-blur px-3 py-1.5 rounded-lg border border-red-400/30">
+            {error}
           </span>
         )}
       </div>

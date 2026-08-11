@@ -5,6 +5,7 @@ import {
 } from 'recharts'
 import type { EducationResponse, EducationYearData } from '../types/api'
 import { COLORS, TOOLTIP_STYLE } from '../lib/theme'
+import SegmentToggle from './SegmentToggle'
 
 const LEVEL_COLORS: Record<string, string> = {
   'Postgraduate':        '#c6f24e',
@@ -36,7 +37,7 @@ function UniversityBadge({ pct2011, pct2021 }: { pct2011: number | null; pct2021
   return (
     <div className="flex items-center gap-2 flex-wrap mb-4">
       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-lemon/15 text-lemon">
-        🎓 {pct2021.toFixed(1)}% university-qualified (2021)
+        <span aria-hidden="true">🎓</span> {pct2021.toFixed(1)}% university-qualified (2021)
       </span>
       {delta != null && Math.abs(delta) >= 1 && (
         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -160,19 +161,14 @@ export default function EducationChart({ response }: { response: EducationRespon
             <p className="text-sm font-semibold text-white">What qualifications do residents hold?</p>
             <p className="text-xs text-white/40 mt-0.5">% of persons aged 15+ by highest qualification</p>
           </div>
-          <div className="flex gap-0.5 bg-white/10 border border-white/10 rounded-lg p-1 shrink-0 ml-4">
-            {YEARS.map(y => (
-              <button
-                key={y}
-                onClick={() => setYear(y)}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                  year === y ? 'bg-lemon text-ink' : 'text-muted hover:text-fg'
-                }`}
-              >
-                {YEAR_LABEL[y]}
-              </button>
-            ))}
-          </div>
+          <SegmentToggle
+            options={YEARS.map(y => ({ value: y, label: YEAR_LABEL[y] }))}
+            value={year}
+            onChange={setYear}
+            ariaLabel="Select census year"
+            tone="overlay"
+            className="shrink-0 ml-4"
+          />
         </div>
 
         <UniversityBadge
