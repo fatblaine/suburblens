@@ -5,6 +5,7 @@ import {
 } from 'recharts'
 import type { BirthCountryResponse, BirthCountryYearData, CountryEntry } from '../types/api'
 import { CHART_PALETTE as PALETTE, COLORS, TOOLTIP_STYLE } from '../lib/theme'
+import SegmentToggle from './SegmentToggle'
 
 type YearKey = 'y2011' | 'y2016' | 'y2021'
 const YEARS: YearKey[] = ['y2011', 'y2016', 'y2021']
@@ -159,19 +160,14 @@ export default function BirthCountryChart({ response }: Props) {
             <p className="text-sm font-semibold text-white">Where are residents born?</p>
             <p className="text-xs text-white/40 mt-0.5">% of residents by country of birth</p>
           </div>
-          <div className="flex gap-0.5 bg-white/10 border border-white/10 rounded-lg p-1 shrink-0 ml-4">
-            {YEARS.map(y => (
-              <button
-                key={y}
-                onClick={() => setYear(y)}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                  year === y ? 'bg-lemon text-ink' : 'text-muted hover:text-fg'
-                }`}
-              >
-                {YEAR_LABEL[y]}
-              </button>
-            ))}
-          </div>
+          <SegmentToggle
+            options={YEARS.map(y => ({ value: y, label: YEAR_LABEL[y] }))}
+            value={year}
+            onChange={setYear}
+            ariaLabel="Select census year"
+            tone="overlay"
+            className="shrink-0 ml-4"
+          />
         </div>
         {yearData
           ? <SnapshotBars yearData={yearData} />

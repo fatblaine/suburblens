@@ -7,9 +7,15 @@ import { supabase } from '../lib/supabase'
 import { track } from '../lib/analytics'
 
 interface Message {
+  id: number
   role: 'user' | 'agent'
   text: string
 }
+
+// Monotonic id so React keys stay stable across streaming updates (which
+// replace the last message in place) instead of relying on the array index.
+let msgSeq = 0
+const nextMsgId = () => ++msgSeq
 
 const AGENT_BASE = import.meta.env.VITE_AGENT_BASE ?? 'http://localhost:8001'
 
@@ -20,6 +26,14 @@ const SUGGESTIONS = [
   'Top languages spoken at home in Box Hill?',
   'How has crime changed in Dandenong?',
   'Which suburbs are near Newtown?',
+]
+
+// Discovery examples — the user does NOT name a suburb, so the agent uses the
+// rank_suburbs tool to find matching ones. Showcases the ranking capability.
+const DISCOVERY = [
+  'Find a Melbourne suburb with a big Chinese community and lots of uni grads',
+  'Where in Sydney has a large Vietnamese community?',
+  'Suburbs that are becoming more family-owned, not investor-rented',
 ]
 
 // Generic FAQs — answered instantly, client-side. No LLM call, no network,
@@ -69,7 +83,7 @@ export default function AgentChat() {
           onClick={() => navigate('/login')}
           className="w-full py-3.5 border border-white/15 hover:border-white/30 text-faint hover:text-fg font-display font-medium rounded-xl transition-colors"
         >
-          🔒 Log in to use the AI assistant
+          <span aria-hidden="true">🔒</span> Log in to use the AI assistant
         </button>
       </div>
     )
@@ -84,7 +98,7 @@ export default function AgentChat() {
     // B — generic FAQ: answer instantly client-side, skip the LLM entirely.
     const canned = lookupFaq(text)
     if (canned) {
-      setMessages(prev => [...prev, { role: 'user', text }, { role: 'agent', text: canned }])
+      setMessages(prev => [...prev, { id: nextMsgId(), role: 'user', text }, { id: nextMsgId(), role: 'agent', text: canned }])
       return
     }
 
@@ -93,13 +107,13 @@ export default function AgentChat() {
     track('agent_question')
 
     setLoading(true)
-    setMessages(prev => [...prev, { role: 'user', text }])
-    setMessages(prev => [...prev, { role: 'agent', text: '' }])
+    setMessages(prev => [...prev, { id: nextMsgId(), role: 'user', text }])
+    setMessages(prev => [...prev, { id: nextMsgId(), role: 'agent', text: '' }])
 
     function setLastAgent(textValue: string) {
       setMessages(prev => {
         const next = [...prev]
-        next[next.length - 1] = { role: 'agent', text: textValue }
+        next[next.length - 1] = { ...next[next.length - 1], role: 'agent', text: textValue }
         return next
       })
     }
@@ -140,7 +154,7 @@ export default function AgentChat() {
         const chunk = decoder.decode(value)
         setMessages(prev => {
           const next = [...prev]
-          next[next.length - 1] = { role: 'agent', text: next[next.length - 1].text + chunk }
+          next[next.length - 1] = { ...next[next.length - 1], role: 'agent', text: next[next.length - 1].text + chunk }
           return next
         })
       }
@@ -199,10 +213,26 @@ export default function AgentChat() {
                     ))}
                   </div>
                 </div>
+                <div>
+                  <p className="font-mono text-[10px] tracking-[0.14em] uppercase text-dim mb-2">
+                    Find a suburb
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {DISCOVERY.map(q => (
+                      <button
+                        key={q}
+                        onClick={() => send(q)}
+                        className="px-3 py-1.5 rounded-full bg-surface-2 hover:bg-surface-3 border border-white/10 text-faint hover:text-fg text-xs transition-colors text-left"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
-            {messages.map((m, i) => (
-  <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
+            {messages.map(m => (
+  <div key={m.id} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
     <span className={`inline-block px-3 py-2 rounded-xl text-sm max-w-[85%] leading-relaxed ${
       m.role === 'user'
         ? 'bg-lemon/15 border border-lemon/25 text-fg whitespace-pre-wrap'
@@ -223,7 +253,7 @@ export default function AgentChat() {
 
           {messages.length > 0 && (
             <div className="px-3 pt-2 pb-1.5 flex gap-2 overflow-x-auto [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.18)_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/15 hover:[&::-webkit-scrollbar-thumb]:bg-white/25">
-              {[...FAQ.map(f => f.q), ...SUGGESTIONS].map(q => (
+              {[...FAQ.map(f => f.q), ...DISCOVERY, ...SUGGESTIONS].map(q => (
                 <button
                   key={q}
                   onClick={() => send(q)}

@@ -4,6 +4,15 @@ import { supabase } from '../lib/supabase'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
+// Shared fetch → throw-on-error → json. `errorMsg` surfaces in the query's
+// error state; every JSON endpoint goes through here so the fetch/ok/parse
+// boilerplate lives in exactly one place.
+async function fetchJson<T>(url: string, errorMsg = 'Request failed'): Promise<T> {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(errorMsg)
+    return res.json() as Promise<T>
+}
+
 // —— Lambda 冷启动预热：时间自愈守卫 ——
 // lastRequestAt：最后一次真正打到 Lambda 的请求时间戳（毫秒）。真实搜索与预热都刷新它。
 // 模块作用域共享（不放组件 state / localStorage）——刷新页面自然归零，保证首进必预热。
@@ -23,15 +32,43 @@ export function maybeWarmup() {
     fetch(`${API_BASE}/api/suburbs/search?q=sy`, { keepalive: true }).catch(() => {})
 }
 
+// —— 每个 suburb 的人口画像查询（language / birthcountry / education / crime）——
+// 这四个 hook 形状一致，唯一区别是路径、错误文案、以及是否重试（404 = 该 suburb
+// 无数据，属预期，不该重试）。工厂统一生成 TanStack 查询选项，queryKey 与下方
+// 屏幕上各 section 完全一致，从而共享同一份缓存（PDF 报表不会多打一次网络）。
+type ProfileKind = 'language' | 'birthcountry' | 'education' | 'crime'
+
+const PROFILE: Record<ProfileKind, { path: string; error: string; retry?: number }> = {
+    language:     { path: 'language',     error: 'Failed to fetch suburb language data.' },
+    birthcountry: { path: 'birthcountry', error: 'Failed to fetch suburb birth country data.', retry: 0 },
+    education:    { path: 'education',     error: 'Failed to fetch suburb education data.', retry: 0 },
+    crime:        { path: 'crime',         error: 'Failed to fetch suburb crime data.', retry: 0 },
+}
+
+function profileQuery<T>(kind: ProfileKind, salCode: string | undefined) {
+    const meta = PROFILE[kind]
+    return {
+        queryKey: [`suburb-${kind}`, salCode],
+        queryFn: () => fetchJson<T>(`${API_BASE}/api/suburbs/${salCode}/${meta.path}`, meta.error),
+        enabled: !!salCode,
+        staleTime: 5 * 60 * 1000,
+        ...(meta.retry !== undefined ? { retry: meta.retry } : {}),
+    }
+}
+
 // Search for suburbs by name
 export function useSuburbSearch(query: string) {
     return useQuery<SuburbSearchResult[]>({
         queryKey: ['suburbSearch', query],
         queryFn: async () => {
-            const res = await fetch(`${API_BASE}/api/suburbs/search?q=${encodeURIComponent(query)}`)
-            markRequest()  // fetch 返回即视为 Lambda 已唤醒，刷新时间戳
-            if (!res.ok) throw new Error('Failed to search suburbs.')
-            return res.json()
+            try {
+                return await fetchJson<SuburbSearchResult[]>(
+                    `${API_BASE}/api/suburbs/search?q=${encodeURIComponent(query)}`,
+                    'Failed to search suburbs.',
+                )
+            } finally {
+                markRequest()  // 请求打到了 Lambda（成功或失败都算唤醒），刷新时间戳
+            }
         },
         enabled: query.trim().length >= 2,
         staleTime: 5 * 60 * 1000
@@ -42,11 +79,7 @@ export function useSuburbSearch(query: string) {
 export function useSuburbTenure(salCode: string | undefined) {
     return useQuery<TenureResponse>({
         queryKey: ['suburb-tenure', salCode],
-        queryFn: async () => {
-            const res = await fetch(`${API_BASE}/api/suburbs/${salCode}/tenure`)
-            if (!res.ok) throw new Error('Failed to fetch suburb tenure data.')
-            return res.json()
-        },
+        queryFn: () => fetchJson<TenureResponse>(`${API_BASE}/api/suburbs/${salCode}/tenure`, 'Failed to fetch suburb tenure data.'),
         enabled: !!salCode,
         staleTime: 5 * 60 * 1000
     })
@@ -57,11 +90,7 @@ export function useSuburbTenure(salCode: string | undefined) {
 export function useNearbySuburbs(salCode: string | undefined, limit = 5, enabled = false) {
     return useQuery<NearbySuburbsResponse>({
         queryKey: ['nearby', salCode, limit],  // 不同 salCode 各自缓存
-        queryFn: async () => {
-            const res = await fetch(`${API_BASE}/api/suburbs/${salCode}/nearby?limit=${limit}`)
-            if (!res.ok) throw new Error('Failed to fetch nearby suburbs.')
-            return res.json()
-        },
+        queryFn: () => fetchJson<NearbySuburbsResponse>(`${API_BASE}/api/suburbs/${salCode}/nearby?limit=${limit}`, 'Failed to fetch nearby suburbs.'),
         enabled: !!salCode && enabled,  // salCode 存在 且 用户已展开，才发请求
         staleTime: 10 * 60 * 1000  // 地理数据不变，缓存 10 分钟
     })
@@ -69,68 +98,30 @@ export function useNearbySuburbs(salCode: string | undefined, limit = 5, enabled
 
 // Fetch language profile for a suburb by its salCode
 export function useSuburbLanguage(salCode: string | undefined) {
-    return useQuery<LanguageResponse>({
-        queryKey: ['suburb-language', salCode],
-        queryFn: async () => {
-            const res = await fetch(`${API_BASE}/api/suburbs/${salCode}/language`)
-            if (!res.ok) throw new Error('Failed to fetch suburb language data.')
-            return res.json()
-        },
-        enabled: !!salCode,
-        staleTime: 5 * 60 * 1000
-    })
+    return useQuery<LanguageResponse>(profileQuery<LanguageResponse>('language', salCode))
 }
 
 // Fetch country of birth profile for a suburb by its salCode
 export function useSuburbBirthCountry(salCode: string | undefined) {
-    return useQuery<BirthCountryResponse>({
-        queryKey: ['suburb-birthcountry', salCode],
-        queryFn: async () => {
-            const res = await fetch(`${API_BASE}/api/suburbs/${salCode}/birthcountry`)
-            if (!res.ok) throw new Error('Failed to fetch suburb birth country data.')
-            return res.json()
-        },
-        enabled: !!salCode,
-        staleTime: 5 * 60 * 1000,
-        retry: 0,
-    })
+    return useQuery<BirthCountryResponse>(profileQuery<BirthCountryResponse>('birthcountry', salCode))
 }
 
 // Fetch education level profile for a suburb by its salCode
 export function useSuburbEducation(salCode: string | undefined) {
-    return useQuery<EducationResponse>({
-        queryKey: ['suburb-education', salCode],
-        queryFn: async () => {
-            const res = await fetch(`${API_BASE}/api/suburbs/${salCode}/education`)
-            if (!res.ok) throw new Error('Failed to fetch suburb education data.')
-            return res.json()
-        },
-        enabled: !!salCode,
-        staleTime: 5 * 60 * 1000,
-        retry: 0,
-    })
+    return useQuery<EducationResponse>(profileQuery<EducationResponse>('education', salCode))
 }
 
 // Fetch recorded crime incidents for a suburb (Greater Melbourne only; 404 elsewhere)
 export function useSuburbCrime(salCode: string | undefined) {
-    return useQuery<CrimeResponse>({
-        queryKey: ['suburb-crime', salCode],
-        queryFn: async () => {
-            const res = await fetch(`${API_BASE}/api/suburbs/${salCode}/crime`)
-            if (!res.ok) throw new Error('Failed to fetch suburb crime data.')
-            return res.json()
-        },
-        enabled: !!salCode,
-        staleTime: 5 * 60 * 1000,
-        retry: 0,
-    })
+    return useQuery<CrimeResponse>(profileQuery<CrimeResponse>('crime', salCode))
 }
 
 // —— PDF comparison report ——
 // Gathers language / country-of-birth / education / crime for EVERY suburb in
 // one place so the print-only <CompareReport> table can render its rows.
-// Uses the same queryKeys / staleTime as the per-suburb hooks above, so it
-// shares the TanStack cache with the on-screen sections — no extra network.
+// Uses the same queryKeys / staleTime as the per-suburb hooks above (via the
+// shared profileQuery factory), so it shares the TanStack cache with the
+// on-screen sections — no extra network.
 export interface CompareReportRow {
     tenure: TenureResponse
     language?: LanguageResponse
@@ -144,58 +135,16 @@ export function useCompareReport(
     tenure: TenureResponse[] | undefined,
 ) {
     const language = useQueries({
-        queries: salCodes.map(code => ({
-            queryKey: ['suburb-language', code],
-            queryFn: async () => {
-                const res = await fetch(`${API_BASE}/api/suburbs/${code}/language`)
-                if (!res.ok) throw new Error('Failed to fetch suburb language data.')
-                return res.json() as Promise<LanguageResponse>
-            },
-            enabled: !!code,
-            staleTime: 5 * 60 * 1000,
-        })),
+        queries: salCodes.map(code => profileQuery<LanguageResponse>('language', code)),
     })
-
     const birthCountry = useQueries({
-        queries: salCodes.map(code => ({
-            queryKey: ['suburb-birthcountry', code],
-            queryFn: async () => {
-                const res = await fetch(`${API_BASE}/api/suburbs/${code}/birthcountry`)
-                if (!res.ok) throw new Error('Failed to fetch suburb birth country data.')
-                return res.json() as Promise<BirthCountryResponse>
-            },
-            enabled: !!code,
-            staleTime: 5 * 60 * 1000,
-            retry: 0,
-        })),
+        queries: salCodes.map(code => profileQuery<BirthCountryResponse>('birthcountry', code)),
     })
-
     const education = useQueries({
-        queries: salCodes.map(code => ({
-            queryKey: ['suburb-education', code],
-            queryFn: async () => {
-                const res = await fetch(`${API_BASE}/api/suburbs/${code}/education`)
-                if (!res.ok) throw new Error('Failed to fetch suburb education data.')
-                return res.json() as Promise<EducationResponse>
-            },
-            enabled: !!code,
-            staleTime: 5 * 60 * 1000,
-            retry: 0,
-        })),
+        queries: salCodes.map(code => profileQuery<EducationResponse>('education', code)),
     })
-
     const crime = useQueries({
-        queries: salCodes.map(code => ({
-            queryKey: ['suburb-crime', code],
-            queryFn: async () => {
-                const res = await fetch(`${API_BASE}/api/suburbs/${code}/crime`)
-                if (!res.ok) throw new Error('Failed to fetch suburb crime data.')
-                return res.json() as Promise<CrimeResponse>
-            },
-            enabled: !!code,
-            staleTime: 5 * 60 * 1000,
-            retry: 0,  // Sydney suburbs 404 — treat as "no data", not a failure
-        })),
+        queries: salCodes.map(code => profileQuery<CrimeResponse>('crime', code)),
     })
 
     // Align each tenure row to its side queries by salCode (the batch endpoint
@@ -226,12 +175,10 @@ export function useCompareReport(
 export function useSuburbTenureBatch(salCodes: string[]) {
     return useQuery<TenureResponse[]>({
         queryKey: ['suburb-tenure-batch', salCodes],
-        queryFn: async () => {
+        queryFn: () => {
             const params = new URLSearchParams()
             salCodes.forEach(code => params.append('salCodes', code))
-            const res = await fetch(`${API_BASE}/api/suburbs/tenure/batch?${params}`)
-            if (!res.ok) throw new Error('Failed to fetch batch tenure data.')
-            return res.json()
+            return fetchJson<TenureResponse[]>(`${API_BASE}/api/suburbs/tenure/batch?${params}`, 'Failed to fetch batch tenure data.')
         },
         enabled: salCodes.length > 0,
         staleTime: 5 * 60 * 1000
@@ -253,9 +200,10 @@ export function useAllSuburbs() {
     return useQuery<SuburbListEntry[]>({
         queryKey: ['all-suburbs'],
         queryFn: async () => {
-            const res = await fetch(`${API_BASE}/api/suburbs/heatmap`)
-            if (!res.ok) throw new Error('Failed to load the suburb list.')
-            const geojson = await res.json() as { features?: Array<{ properties?: Record<string, unknown> }> }
+            const geojson = await fetchJson<{ features?: Array<{ properties?: Record<string, unknown> }> }>(
+                `${API_BASE}/api/suburbs/heatmap`,
+                'Failed to load the suburb list.',
+            )
             return (geojson.features ?? []).map(f => ({
                 salCode: String(f.properties?.salCode ?? ''),
                 salName: String(f.properties?.salName ?? ''),
