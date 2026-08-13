@@ -158,3 +158,10 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+
+/* AdSense marks a slot it could not fill with data-ad-status="unfilled".
+   Without this the empty <ins> still occupies vertical space and leaves a
+   visible gap — most obvious for users running an ad blocker (adsense-plan §3.5). */
+ins.adsbygoogle[data-ad-status='unfilled'] {
+  display: none !important;
+}
