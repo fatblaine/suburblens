@@ -24,10 +24,6 @@ export default function FeedbackModal({ open, onClose }: { open: boolean; onClos
   const botcheck = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (open) setEmail(knownEmail)
-  }, [open, knownEmail])
-
-  useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
