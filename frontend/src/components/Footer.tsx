@@ -64,7 +64,7 @@ export default function Footer({ className = '' }: { className?: string }) {
         Population and Housing 2021. An independent project, not affiliated with the ABS.
       </p>
 
-      <FeedbackModal open={fbOpen} onClose={() => setFbOpen(false)} />
+      {fbOpen && <FeedbackModal open onClose={() => setFbOpen(false)} />}
     </footer>
   )
 }
