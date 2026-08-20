@@ -2,10 +2,38 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import maplibregl from 'maplibre-gl'
 import PageMeta from '../components/PageMeta'
+import { useSuburbSearch, maybeWarmup } from '../api/suburbs'
+import type { SuburbSearchResult } from '../types/api'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
 type City = 'sydney' | 'melbourne'
+
+// Which city a search result belongs to (results span both cities; the map
+// only holds one at a time). gccsaName is "Greater Sydney" / "Greater Melbourne".
+function cityOf(gccsaName: string): City {
+  return gccsaName.includes('Melbourne') ? 'melbourne' : 'sydney'
+}
+
+// Bounding box of a Polygon/MultiPolygon as [[west,south],[east,north]], or
+// null if it has no coordinates. Recurses through the nested coordinate arrays.
+function bboxOf(geom: GeoJSON.Geometry | undefined): [[number, number], [number, number]] | null {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  const visit = (arr: unknown): void => {
+    if (!Array.isArray(arr)) return
+    if (typeof arr[0] === 'number') {
+      const [x, y] = arr as number[]
+      if (x < minX) minX = x; if (y < minY) minY = y
+      if (x > maxX) maxX = x; if (y > maxY) maxY = y
+      return
+    }
+    for (const c of arr) visit(c)
+  }
+  if (!geom || !('coordinates' in geom)) return null
+  visit((geom as GeoJSON.Polygon | GeoJSON.MultiPolygon).coordinates)
+  if (minX === Infinity) return null
+  return [[minX, minY], [maxX, maxY]]
+}
 
 // RSI segment colours (kept in sync with ShiftIndexCard / Legend below).
 const RSI_COLOR_EXPR: maplibregl.ExpressionSpecification = [
@@ -51,6 +79,12 @@ export default function MapPage() {
   const navigate = useNavigate()
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<maplibregl.Map | null>(null)
+  // Raw GeoJSON for the currently-loaded city — lets search look a suburb up by
+  // salCode and compute its bounds without re-querying the map source.
+  const featuresRef = useRef<GeoJSON.FeatureCollection | null>(null)
+  // The salCode currently outlined in lemon (from a search pick), so the
+  // highlight can be re-applied after a layer rebuild and cleared on close.
+  const selectedCodeRef = useRef<string | null>(null)
   const [city, setCity] = useState<City>('sydney')
   const [panel, setPanel] = useState<PanelSuburb | null>(null)
   const [loading, setLoading] = useState(true)
@@ -67,6 +101,7 @@ export default function MapPage() {
       const res = await fetch(`${API_BASE}/api/suburbs/heatmap?city=${targetCity}`)
       if (!res.ok) throw new Error('Failed to load heatmap data.')
       const geojson = await res.json()
+      featuresRef.current = geojson
 
       // Remove existing layers/source first (switching cities).
       for (const id of ['suburbs-fill', 'suburbs-line', 'suburbs-label']) {
@@ -164,12 +199,62 @@ export default function MapPage() {
     if (target === city) return
     setCity(target)
     setPanel(null)
+    clearHighlight()
     map.current?.flyTo({
       center: CITY_CENTERS[target].center,
       zoom: CITY_CENTERS[target].zoom,
       duration: 1200,
     })
     loadSuburbs(target)
+  }
+
+  // Outline one suburb in lemon (an expression over the whole line layer, so it
+  // survives pans/zooms). Reapplied after a city's layers are rebuilt.
+  function applyHighlight(m: maplibregl.Map, salCode: string) {
+    selectedCodeRef.current = salCode
+    if (!m.getLayer('suburbs-line')) return
+    m.setPaintProperty('suburbs-line', 'line-color',
+      ['case', ['==', ['get', 'salCode'], salCode], '#c6f24e', 'rgba(255,255,255,0.2)'])
+    m.setPaintProperty('suburbs-line', 'line-width',
+      ['case', ['==', ['get', 'salCode'], salCode], 2.5, 0.8])
+  }
+
+  function clearHighlight() {
+    selectedCodeRef.current = null
+    const m = map.current
+    if (!m || !m.getLayer('suburbs-line')) return
+    m.setPaintProperty('suburbs-line', 'line-color', 'rgba(255,255,255,0.2)')
+    m.setPaintProperty('suburbs-line', 'line-width', 0.8)
+  }
+
+  function closePanel() {
+    setPanel(null)
+    clearHighlight()
+  }
+
+  // Fly to a suburb, outline it, and open its panel. Reads geometry + RSI from
+  // the loaded GeoJSON, so no extra request.
+  function locate(salCode: string) {
+    const m = map.current
+    const feature = featuresRef.current?.features.find(
+      f => String(f.properties?.salCode ?? '') === salCode,
+    )
+    if (!m || !feature) return
+    const b = bboxOf(feature.geometry)
+    if (b) m.fitBounds(b, { padding: 80, duration: 1000, maxZoom: 14 })
+    applyHighlight(m, salCode)
+    setPanel(toPanelSuburb(feature.properties ?? {}))
+  }
+
+  // Search pick: switch city first if the suburb is in the other city (the map
+  // holds one city at a time), then locate once its data has loaded.
+  async function focusSuburb(result: SuburbSearchResult) {
+    const target = cityOf(result.gccsaName)
+    if (target !== city) {
+      setCity(target)
+      await loadSuburbs(target)
+    }
+    locate(result.salCode)
   }
 
   return (
@@ -208,6 +293,7 @@ export default function MapPage() {
             </button>
           ))}
         </div>
+        <MapSearch onSelect={focusSuburb} />
         {loading && (
           <span className="text-white/50 text-sm bg-black/40 backdrop-blur px-3 py-1.5 rounded-lg border border-white/10">
             Loading…
@@ -224,7 +310,7 @@ export default function MapPage() {
       {panel && (
         <SlidePanel
           suburb={panel}
-          onClose={() => setPanel(null)}
+          onClose={closePanel}
           onViewDetails={() => navigate(`/suburb/${panel.salCode}`)}
         />
       )}
@@ -237,6 +323,77 @@ export default function MapPage() {
 }
 
 // ── Subcomponents ───────────────────────────────────────────────────────────
+
+// Compact suburb search for the map top bar. Reuses the shared debounced
+// search hook; picking a result hands the suburb to the map (fly + highlight).
+function MapSearch({ onSelect }: { onSelect: (s: SuburbSearchResult) => void }) {
+  const [query, setQuery] = useState('')
+  const [debounced, setDebounced] = useState('')
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(query), 300)
+    return () => clearTimeout(t)
+  }, [query])
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const { data: results, isPending } = useSuburbSearch(debounced)
+  const show = open && debounced.trim().length >= 2
+
+  function pick(s: SuburbSearchResult) {
+    onSelect(s)
+    setQuery('')
+    setOpen(false)
+  }
+
+  return (
+    <div ref={wrapRef} className="pointer-events-auto relative w-56 sm:w-64">
+      <div className="flex items-center gap-2 bg-black/50 backdrop-blur border border-white/10 rounded-lg px-3 focus-within:border-lemon/60 transition-colors">
+        <span className="text-white/40 select-none text-sm">⌕</span>
+        <input
+          type="text"
+          value={query}
+          placeholder="Search a suburb…"
+          onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && show && !isPending && results?.length) {
+              e.preventDefault(); pick(results[0])
+            }
+          }}
+          onFocus={() => { setOpen(true); maybeWarmup() }}
+          className="flex-1 py-2 bg-transparent text-white placeholder:text-white/40 focus:outline-none text-sm"
+        />
+      </div>
+
+      {show && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-black/70 backdrop-blur border border-white/10 rounded-lg shadow-2xl shadow-black/50 overflow-hidden max-h-72 overflow-y-auto">
+          {isPending && <div className="px-3 py-2 text-sm text-white/50">Searching…</div>}
+          {!isPending && results?.length === 0 && (
+            <div className="px-3 py-2 text-sm text-white/50">No suburbs found.</div>
+          )}
+          {results?.map((s) => (
+            <button
+              key={s.salCode}
+              onClick={() => pick(s)}
+              className="w-full text-left px-3 py-2 hover:bg-white/10 transition-colors border-b border-white/[0.06] last:border-0"
+            >
+              <span className="text-white text-sm font-medium">{s.salName}</span>
+              <span className="ml-2 text-xs text-white/45">{s.gccsaName}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function SlidePanel({
   suburb,
