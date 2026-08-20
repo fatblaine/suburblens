@@ -266,6 +266,36 @@ app.MapGet("/api/suburbs/{salCode}/nearby", async (IDbConnection db, string salC
     });
 });
 
+// Straight-line distances from a suburb centroid to key POIs (same city only)
+app.MapGet("/api/suburbs/{salCode}/distances", async (IDbConnection db, string salCode) =>
+{
+    var rows = await db.QueryAsync<PoiDistanceResult>(@"
+        SELECT
+            p.code                                              AS Code,
+            p.name                                              AS Name,
+            p.short_name                                        AS ShortName,
+            p.category                                          AS Category,
+            ROUND(ST_Distance(p.geom, ref.centroid)::numeric, 0)::int AS DistanceMeters
+        FROM poi p
+        CROSS JOIN (
+            SELECT centroid, gccsa_code
+            FROM geo_sal
+            WHERE sal_code = @salCode
+        ) ref
+        WHERE p.gccsa_code = ref.gccsa_code
+          AND ref.centroid IS NOT NULL
+        ORDER BY
+            CASE p.category WHEN 'cbd' THEN 0 ELSE 1 END,
+            DistanceMeters ASC",
+        new { salCode });
+
+    var list = rows.ToArray();
+    if (list.Length == 0)
+        return Results.NotFound(new { error = $"Suburb not found or out of scope: {salCode}" });
+
+    return Results.Ok(new { salCode, distances = list });
+});
+
 // Get language data for a suburb by SAL code
 app.MapGet("/api/suburbs/{salCode}/language", async (IDbConnection db, string salCode) =>
 {
@@ -906,6 +936,14 @@ record NearbySuburbResult(
     string SalName,
     string StateName,
     string GccsaName,
+    int DistanceMeters
+);
+
+record PoiDistanceResult(
+    string Code,
+    string Name,
+    string? ShortName,
+    string Category,       // "university" | "cbd"
     int DistanceMeters
 );
 
