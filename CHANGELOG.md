@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.3.0](https://github.com/fatblaine/suburblens/compare/suburblens-v1.2.0...suburblens-v1.3.0) (2026-08-20)
+
+
+### Features
+
+* **ads:** activate AdSense on suburb detail page ([4f60a49](https://github.com/fatblaine/suburblens/commit/4f60a49bf1165fcf7dd2b23bbc59de894af93be2))
+* **ads:** place first adsense unit on suburb detail page ([48e6423](https://github.com/fatblaine/suburblens/commit/48e642324030f363f4c5fc01f6a7f2b70f1e42f9))
+* **auth:** add forgot-password reset flow ([63ce15d](https://github.com/fatblaine/suburblens/commit/63ce15dafa595a352b8490ceb6290ccb007255b2))
+* **auth:** add forgot-password reset flow ([7cb716e](https://github.com/fatblaine/suburblens/commit/7cb716ecec72e42794f312f2be59d7093e99ba2a))
+* **auth:** enhance login flow ([4930829](https://github.com/fatblaine/suburblens/commit/4930829287d7c64fddd89b445641f9c8b3347a2e))
+* **distance:** add poi distances endpoint and record ([e8275b2](https://github.com/fatblaine/suburblens/commit/e8275b2a4f555dd5a977685320c1e451e34d2408))
+* **distance:** show university and cbd distances on detail and compare pages ([5684cf8](https://github.com/fatblaine/suburblens/commit/5684cf89a9fde6126294543a2037b2c10bfdce20))
+* **distance:** straight-line distances to universities and CBD ([d29be90](https://github.com/fatblaine/suburblens/commit/d29be90ac73af3c86d9a6e7f881a7cd752111b18))
+* **feedback:** add contact form in footer via web3forms ([0024295](https://github.com/fatblaine/suburblens/commit/002429527d8a2067d9c48d4314929a6b2ab8bcd4))
+* **feedback:** add contact form in footer via web3forms ([9b81340](https://github.com/fatblaine/suburblens/commit/9b81340e2ffdb0879df29e7de22457bdc28b7d9e))
+* show university and cbd distances ([b94bd17](https://github.com/fatblaine/suburblens/commit/b94bd17a7eadf9a932325f9a50c73efda3722472))
+
+
+### Bug Fixes
+
+* **feedback:** avoid setState in effect to satisfy lint ([bfa3518](https://github.com/fatblaine/suburblens/commit/bfa351847cd61d33ff6c1ddc3947fa0fcb28f2e3))
+* **feedback:** avoid setState in effect to satisfy lint ([9cf51fc](https://github.com/fatblaine/suburblens/commit/9cf51fcf1dcccfbb1beef6876d6d649efba0fc1d))
+* **feedback:** enhance code ([2fe2e31](https://github.com/fatblaine/suburblens/commit/2fe2e313858bad6c7af6033a11f9ece044af5132))
+* **map:** show suburb labels from zoom 10 so names appear at city view ([0874317](https://github.com/fatblaine/suburblens/commit/0874317c4ff048e14c529d801c43a3e668a2f897))
+* **map:** show suburb labels from zoom 10 so names appear at city view ([0dc9775](https://github.com/fatblaine/suburblens/commit/0dc9775936eb4de0b9f390e9f0da755b0503a02b))
+
 ## [1.2.0](https://github.com/fatblaine/suburblens/compare/suburblens-v1.1.0...suburblens-v1.2.0) (2026-08-11)
 
 
