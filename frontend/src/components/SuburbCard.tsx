@@ -8,6 +8,7 @@ import EducationChart from './EducationChart'
 import CrimeChart from './CrimeChart'
 import LoadingSkeleton from './LoadingSkeleton'
 import NearbySuburbs from './NearbySuburbs'
+import DistancePanel from './DistancePanel'
 import SuburbNarrative from './SuburbNarrative'
 
 interface Props {
@@ -228,6 +229,8 @@ export default function SuburbCard({ salCode, onAdd, onRemove, defaultNearbyExpa
         defaultExpanded={defaultNearbyExpanded}
         onSelect={onAdd}
       />
+
+      <DistancePanel salCode={salCode} />
 
       <CollapsibleSection
         title="Tenure Time Machine"

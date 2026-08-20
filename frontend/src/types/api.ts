@@ -12,6 +12,20 @@ export interface NearbySuburbsResponse {
   nearby: NearbySuburb[]
 }
 
+// POI straight-line distances — matches GET /api/suburbs/:salCode/distances
+export interface PoiDistance {
+  code: string
+  name: string
+  shortName?: string
+  category: 'university' | 'cbd'
+  distanceMeters: number
+}
+
+export interface PoiDistancesResponse {
+  salCode: string
+  distances: PoiDistance[]
+}
+
 // Suburb search result — matches GET /api/suburbs/search
 export interface SuburbSearchResult {
   salCode: string
