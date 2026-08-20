@@ -6,6 +6,7 @@ import SuburbDetailPage from './pages/SuburbDetailPage'
 import ComparePage from './pages/ComparePage'
 import MapPage from './pages/MapPage'
 import LoginPage from './pages/LoginPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import PrivacyPage from './pages/PrivacyPage'
 import AboutPage from './pages/AboutPage'
 import MethodologyPage from './pages/MethodologyPage'
@@ -36,6 +37,7 @@ export default function App() {
         <AuthBadge />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Every data page is public: a shared link has to open cold, and
               /api/suburbs/* serves all of this without a token anyway.
