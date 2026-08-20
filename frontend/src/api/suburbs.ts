@@ -1,5 +1,5 @@
 import { useQuery, useQueries } from '@tanstack/react-query'
-import type { SuburbSearchResult, TenureResponse, NearbySuburbsResponse, LanguageResponse, BirthCountryResponse, EducationResponse, CrimeResponse } from '../types/api'
+import type { SuburbSearchResult, TenureResponse, NearbySuburbsResponse, PoiDistancesResponse, LanguageResponse, BirthCountryResponse, EducationResponse, CrimeResponse } from '../types/api'
 import { supabase } from '../lib/supabase'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -93,6 +93,18 @@ export function useNearbySuburbs(salCode: string | undefined, limit = 5, enabled
         queryFn: () => fetchJson<NearbySuburbsResponse>(`${API_BASE}/api/suburbs/${salCode}/nearby?limit=${limit}`, 'Failed to fetch nearby suburbs.'),
         enabled: !!salCode && enabled,  // salCode 存在 且 用户已展开，才发请求
         staleTime: 10 * 60 * 1000  // 地理数据不变，缓存 10 分钟
+    })
+}
+
+// Fetch straight-line distances from a suburb to key POIs (universities + CBD).
+// Geographic data is static, so cache it long like nearby.
+export function useSuburbDistances(salCode: string | undefined) {
+    return useQuery<PoiDistancesResponse>({
+        queryKey: ['distances', salCode],
+        queryFn: () => fetchJson<PoiDistancesResponse>(`${API_BASE}/api/suburbs/${salCode}/distances`, 'Failed to fetch suburb distances.'),
+        enabled: !!salCode,
+        staleTime: 10 * 60 * 1000,
+        retry: 0,  // 404 = out of scope, not worth retrying
     })
 }
 
