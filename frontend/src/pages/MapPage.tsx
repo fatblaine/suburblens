@@ -15,9 +15,15 @@ function cityOf(gccsaName: string): City {
   return gccsaName.includes('Melbourne') ? 'melbourne' : 'sydney'
 }
 
+// Minimal shapes for the heatmap GeoJSON. Deliberately local rather than the
+// global `GeoJSON` namespace, which isn't in scope under the CI build (`tsc -b`).
+interface MapGeometry { type: string; coordinates: unknown }
+interface MapFeature { properties: Record<string, unknown> | null; geometry: MapGeometry | null }
+interface MapFeatureCollection { features: MapFeature[] }
+
 // Bounding box of a Polygon/MultiPolygon as [[west,south],[east,north]], or
 // null if it has no coordinates. Recurses through the nested coordinate arrays.
-function bboxOf(geom: GeoJSON.Geometry | undefined): [[number, number], [number, number]] | null {
+function bboxOf(geom: MapGeometry | null | undefined): [[number, number], [number, number]] | null {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
   const visit = (arr: unknown): void => {
     if (!Array.isArray(arr)) return
@@ -29,8 +35,8 @@ function bboxOf(geom: GeoJSON.Geometry | undefined): [[number, number], [number,
     }
     for (const c of arr) visit(c)
   }
-  if (!geom || !('coordinates' in geom)) return null
-  visit((geom as GeoJSON.Polygon | GeoJSON.MultiPolygon).coordinates)
+  if (!geom) return null
+  visit(geom.coordinates)
   if (minX === Infinity) return null
   return [[minX, minY], [maxX, maxY]]
 }
@@ -81,7 +87,7 @@ export default function MapPage() {
   const map = useRef<maplibregl.Map | null>(null)
   // Raw GeoJSON for the currently-loaded city — lets search look a suburb up by
   // salCode and compute its bounds without re-querying the map source.
-  const featuresRef = useRef<GeoJSON.FeatureCollection | null>(null)
+  const featuresRef = useRef<MapFeatureCollection | null>(null)
   // The salCode currently outlined in lemon (from a search pick), so the
   // highlight can be re-applied after a layer rebuild and cleared on close.
   const selectedCodeRef = useRef<string | null>(null)
