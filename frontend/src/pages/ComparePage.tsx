@@ -10,6 +10,7 @@ import BirthCountryChart from '../components/BirthCountryChart'
 import EducationChart from '../components/EducationChart'
 import CrimeChart from '../components/CrimeChart'
 import CompareReport from '../components/CompareReport'
+import DistancePanel from '../components/DistancePanel'
 import LoadingSkeleton from '../components/LoadingSkeleton'
 import BarListSkeleton from '../components/BarListSkeleton'
 import SegmentToggle from '../components/SegmentToggle'
@@ -275,6 +276,8 @@ export default function ComparePage() {
                     &#9432; Data sourced from ABS SA2: <strong>{suburb.sa2Name}</strong>
                   </p>
                 </CollapsibleSection>
+
+                <DistancePanel salCode={suburb.salCode} />
 
                 <CommunitySection salCode={suburb.salCode} />
 

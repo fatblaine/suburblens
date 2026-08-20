@@ -94,7 +94,7 @@ export default function MapPage() {
         id: 'suburbs-label',
         type: 'symbol',
         source: 'suburbs',
-        minzoom: 12,
+        minzoom: 10,
         layout: { 'text-field': ['get', 'salName'], 'text-size': 11, 'text-anchor': 'center' },
         paint: {
           'text-color': '#ffffff',
