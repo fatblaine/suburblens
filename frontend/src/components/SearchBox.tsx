@@ -124,23 +124,21 @@ export default function SearchBox({ selected, onAdd, onRemove, onCompare, onNear
         </div>
       )}
 
-      {selected.length > 0 && (
+      {selected.length === 1 ? (
+        <button
+          onClick={onNearby}
+          className="mt-4 w-full py-3.5 bg-lemon hover:brightness-95 text-ink font-display font-semibold rounded-xl transition-all"
+        >
+          Details + Nearby Suburbs of {selected[0].salName}
+        </button>
+      ) : selected.length > 1 ? (
         <button
           onClick={onCompare}
           className="mt-4 w-full py-3.5 bg-lemon hover:brightness-95 text-ink font-display font-semibold rounded-xl transition-all"
         >
-          Compare {selected.length} suburb{selected.length > 1 ? 's' : ''}
+          Compare {selected.length} suburbs
         </button>
-      )}
-
-      {selected.length === 1 && (
-        <button
-          onClick={onNearby}
-          className="mt-2.5 w-full py-3.5 border border-white/15 hover:border-white/30 text-fg font-display font-medium rounded-xl transition-colors"
-        >
-          Nearby Suburbs of {selected[0].salName}
-        </button>
-      )}
+      ) : null}
     </div>
   )
 }
