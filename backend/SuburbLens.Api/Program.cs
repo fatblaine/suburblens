@@ -575,6 +575,68 @@ app.MapGet("/api/suburbs/{salCode}/education", async (IDbConnection db, string s
     ));
 });
 
+// housing mix — 2021 ABS GCP G36 at the user-facing SAL level. Unlike the
+// cross-year profiles above, this is a suburb-level snapshot and needs no SA2 bridge.
+app.MapGet("/api/suburbs/{salCode}/housing-mix", async (
+    IDbConnection db, HttpContext http, string salCode) =>
+{
+    var row = await db.QueryFirstOrDefaultAsync<HousingMixRow>(@"
+        SELECT
+            sal_code AS SalCode, sal_name AS SalName,
+            state_name AS StateName, gccsa_name AS GccsaName,
+            census_year AS CensusYear,
+            separate_houses AS SeparateHouses,
+            semi_detached_townhouses AS SemiDetachedTownhouses,
+            apartments AS Apartments,
+            other_dwellings AS OtherDwellings,
+            structure_not_stated AS StructureNotStated,
+            total_occupied_private_dwellings AS TotalOccupiedPrivateDwellings,
+            apartments_per_100_houses::float8 AS ApartmentsPer100Houses,
+            apartment_share_pct::float8 AS ApartmentSharePct,
+            townhouse_share_pct::float8 AS TownhouseSharePct,
+            city_median_apartments_per_100_houses::float8
+                AS CityMedianApartmentsPer100Houses,
+            attached_dwellings AS AttachedDwellings,
+            attached_dwellings_per_100_houses::float8
+                AS AttachedDwellingsPer100Houses,
+            city_median_attached_dwellings_per_100_houses::float8
+                AS CityMedianAttachedDwellingsPer100Houses
+        FROM v_housing_mix
+        WHERE sal_code = @salCode",
+        new { salCode });
+
+    if (row is null)
+        return Results.NotFound(new { error = $"Housing mix data not available for: {salCode}" });
+
+    http.Response.Headers.CacheControl = "public, max-age=86400";
+
+    return Results.Ok(new HousingMixResponse(
+        SalCode: row.SalCode,
+        SalName: row.SalName,
+        StateName: row.StateName,
+        GccsaName: row.GccsaName,
+        CensusYear: row.CensusYear,
+        Housing: new HousingMixData(
+            SeparateHouses: row.SeparateHouses,
+            SemiDetachedTownhouses: row.SemiDetachedTownhouses,
+            Apartments: row.Apartments,
+            OtherDwellings: row.OtherDwellings,
+            StructureNotStated: row.StructureNotStated,
+            TotalOccupiedPrivateDwellings: row.TotalOccupiedPrivateDwellings,
+            ApartmentsPer100Houses: row.ApartmentsPer100Houses,
+            ApartmentSharePct: row.ApartmentSharePct,
+            TownhouseSharePct: row.TownhouseSharePct,
+            CityMedianApartmentsPer100Houses: row.CityMedianApartmentsPer100Houses,
+            AttachedDwellings: row.AttachedDwellings,
+            AttachedDwellingsPer100Houses: row.AttachedDwellingsPer100Houses,
+            CityMedianAttachedDwellingsPer100Houses: row.CityMedianAttachedDwellingsPer100Houses),
+        DataNote: "2021 ABS Census General Community Profile, SAL-level occupied " +
+                  "private dwellings. Attached dwellings include apartments, semi-detached " +
+                  "homes, terraces and townhouses. Housing mix is a snapshot, not an " +
+                  "investment recommendation."
+    ));
+});
+
 // crime — recorded criminal incidents (VIC CSA), Greater Melbourne only. The view
 // filters to gccsa_code='2GMEL' and the last 5 year-endings, so a non-Melbourne
 // salCode returns 0 rows → 404 (the frontend card then just doesn't render).
@@ -1019,6 +1081,53 @@ record EducationRow(
     decimal? UniversityPct
 );
 
+record HousingMixData(
+    int SeparateHouses,
+    int SemiDetachedTownhouses,
+    int Apartments,
+    int OtherDwellings,
+    int StructureNotStated,
+    int TotalOccupiedPrivateDwellings,
+    double? ApartmentsPer100Houses,
+    double? ApartmentSharePct,
+    double? TownhouseSharePct,
+    double? CityMedianApartmentsPer100Houses,
+    int AttachedDwellings,
+    double? AttachedDwellingsPer100Houses,
+    double? CityMedianAttachedDwellingsPer100Houses
+);
+
+record HousingMixResponse(
+    string SalCode,
+    string SalName,
+    string StateName,
+    string GccsaName,
+    short CensusYear,
+    HousingMixData Housing,
+    string DataNote
+);
+
+record HousingMixRow(
+    string SalCode,
+    string SalName,
+    string StateName,
+    string GccsaName,
+    short CensusYear,
+    int SeparateHouses,
+    int SemiDetachedTownhouses,
+    int Apartments,
+    int OtherDwellings,
+    int StructureNotStated,
+    int TotalOccupiedPrivateDwellings,
+    double? ApartmentsPer100Houses,
+    double? ApartmentSharePct,
+    double? TownhouseSharePct,
+    double? CityMedianApartmentsPer100Houses,
+    int AttachedDwellings,
+    double? AttachedDwellingsPer100Houses,
+    double? CityMedianAttachedDwellingsPer100Houses
+);
+
 record CrimeCategory(string Category, int Incidents);
 record CrimePeriod(short YearEnding, int Total, CrimeCategory[] Categories);
 record CrimeBenchmark(
@@ -1042,4 +1151,3 @@ record SuburbRankRow(
     decimal? UniversityPct, decimal? LanguagePct, decimal? BornPct,
     decimal? RentedSharePct, decimal? ResidencyShiftIndex,
     string TrendLabel, int? Population);
-
