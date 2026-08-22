@@ -1,13 +1,14 @@
 import { useRef, useState, useEffect } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { useSuburbTenureBatch, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation, useSuburbCrime, useCompareReport, recordSuburbView } from '../api/suburbs'
+import { useSuburbTenureBatch, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation, useSuburbHousingMix, useSuburbCrime, useCompareReport, recordSuburbView } from '../api/suburbs'
 import PageMeta from '../components/PageMeta'
 import ShiftIndexCard from '../components/ShiftIndexCard'
 import TenureChart from '../components/TenureChart'
 import LanguageChart from '../components/LanguageChart'
 import BirthCountryChart from '../components/BirthCountryChart'
 import EducationChart from '../components/EducationChart'
+import HousingMix from '../components/HousingMix'
 import CrimeChart from '../components/CrimeChart'
 import CompareReport from '../components/CompareReport'
 import DistancePanel from '../components/DistancePanel'
@@ -78,6 +79,30 @@ function EducationSection({ salCode }: { salCode: string }) {
     >
       <EducationChart response={data} />
       <p className="mt-5 text-xs text-white/40">&#9432; {data.dataNote}</p>
+    </CollapsibleSection>
+  )
+}
+
+function HousingMixSection({ salCode }: { salCode: string }) {
+  const { data, isPending, isError } = useSuburbHousingMix(salCode)
+
+  if (isError) return null
+
+  if (isPending) return (
+    <div className={GLASS_CARD + ' p-6'}>
+      <BarListSkeleton rows={3} labelWidth="w-36" />
+    </div>
+  )
+
+  if (!data) return null
+
+  return (
+    <CollapsibleSection
+      title="Unit-to-House Ratio"
+      subtitle="Attached dwellings vs separate houses · 2021 Census"
+    >
+      <HousingMix response={data} />
+      <p className="mt-5 text-xs leading-5 text-faint">&#9432; {data.dataNote}</p>
     </CollapsibleSection>
   )
 }
@@ -165,7 +190,7 @@ export default function ComparePage() {
     ? `${shown}${names.length > 3 ? ` +${names.length - 3} more` : ''} — compare suburbs | SuburbLens`
     : 'Compare suburbs | SuburbLens'
   const compareDesc = names.length
-    ? `Side-by-side ABS Census comparison of ${names.join(', ')} — tenure trends, languages, countries of birth, and education.`
+    ? `Side-by-side ABS Census comparison of ${names.join(', ')} — tenure trends, housing mix, languages, countries of birth, and education.`
     : 'Compare Sydney and Melbourne suburbs side by side using ABS Census data.'
 
   // Default PDF file name. Cap at 3 names so it never grows unwieldy.
@@ -276,6 +301,8 @@ export default function ComparePage() {
                     &#9432; Data sourced from ABS SA2: <strong>{suburb.sa2Name}</strong>
                   </p>
                 </CollapsibleSection>
+
+                <HousingMixSection salCode={suburb.salCode} />
 
                 <DistancePanel salCode={suburb.salCode} />
 
