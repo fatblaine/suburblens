@@ -135,13 +135,14 @@ export function useSuburbCrime(salCode: string | undefined) {
 }
 
 // —— PDF comparison report ——
-// Gathers language / country-of-birth / education / crime for EVERY suburb in
+// Gathers housing mix / language / country-of-birth / education / crime for EVERY suburb in
 // one place so the print-only <CompareReport> table can render its rows.
 // Uses the same queryKeys / staleTime as the per-suburb hooks above (via the
 // shared profileQuery factory), so it shares the TanStack cache with the
 // on-screen sections — no extra network.
 export interface CompareReportRow {
     tenure: TenureResponse
+    housingMix?: HousingMixResponse
     language?: LanguageResponse
     birthCountry?: BirthCountryResponse
     education?: EducationResponse
@@ -152,6 +153,9 @@ export function useCompareReport(
     salCodes: string[],
     tenure: TenureResponse[] | undefined,
 ) {
+    const housingMix = useQueries({
+        queries: salCodes.map(code => profileQuery<HousingMixResponse>('housingMix', code)),
+    })
     const language = useQueries({
         queries: salCodes.map(code => profileQuery<LanguageResponse>('language', code)),
     })
@@ -171,6 +175,7 @@ export function useCompareReport(
         const i = salCodes.indexOf(t.salCode)
         return {
             tenure: t,
+            housingMix: i >= 0 ? housingMix[i]?.data : undefined,
             language: i >= 0 ? language[i]?.data : undefined,
             birthCountry: i >= 0 ? birthCountry[i]?.data : undefined,
             education: i >= 0 ? education[i]?.data : undefined,
@@ -181,6 +186,7 @@ export function useCompareReport(
     // Ready once every side query has settled (success OR error — a 404 crime
     // query is "settled", just empty). Guards against printing half-loaded rows.
     const isPending =
+        housingMix.some(q => q.isPending) ||
         language.some(q => q.isPending) ||
         birthCountry.some(q => q.isPending) ||
         education.some(q => q.isPending) ||
