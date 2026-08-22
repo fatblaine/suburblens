@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { useSuburbTenure, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation, useSuburbCrime } from '../api/suburbs'
+import { useSuburbTenure, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation, useSuburbHousingMix, useSuburbCrime } from '../api/suburbs'
 import ShiftIndexCard from './ShiftIndexCard'
 import TenureChart from './TenureChart'
 import LanguageChart from './LanguageChart'
 import BirthCountryChart from './BirthCountryChart'
 import EducationChart from './EducationChart'
+import HousingMix from './HousingMix'
 import CrimeChart from './CrimeChart'
 import LoadingSkeleton from './LoadingSkeleton'
+import BarListSkeleton from './BarListSkeleton'
 import NearbySuburbs from './NearbySuburbs'
 import DistancePanel from './DistancePanel'
 import SuburbNarrative from './SuburbNarrative'
@@ -38,7 +40,9 @@ function CollapsibleSection({
   return (
     <div className={GLASS_CARD}>
       <button
+        type="button"
         onClick={() => setOpen(prev => !prev)}
+        aria-expanded={open}
         className="w-full flex items-center justify-between p-6 text-left"
       >
         <div>
@@ -56,6 +60,30 @@ function CollapsibleSection({
         </div>
       )}
     </div>
+  )
+}
+
+function HousingMixSection({ salCode }: { salCode: string }) {
+  const { data, isPending, isError } = useSuburbHousingMix(salCode)
+
+  if (isError) return null
+
+  if (isPending) return (
+    <div className={GLASS_CARD + ' p-6'}>
+      <BarListSkeleton rows={3} labelWidth="w-36" />
+    </div>
+  )
+
+  if (!data) return null
+
+  return (
+    <CollapsibleSection
+      title="Unit-to-House Ratio"
+      subtitle="Attached dwellings vs separate houses · 2021 Census"
+    >
+      <HousingMix response={data} />
+      <p className="mt-5 text-xs leading-5 text-faint">&#9432; {data.dataNote}</p>
+    </CollapsibleSection>
   )
 }
 
@@ -242,6 +270,8 @@ export default function SuburbCard({ salCode, onAdd, onRemove, defaultNearbyExpa
           This may include neighbouring localities.
         </p>
       </CollapsibleSection>
+
+      <HousingMixSection salCode={salCode} />
 
       <CommunitySection salCode={salCode} />
 
