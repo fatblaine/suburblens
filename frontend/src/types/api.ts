@@ -126,6 +126,33 @@ export interface EducationResponse {
   dataNote: string
 }
 
+// Housing mix — matches GET /api/suburbs/:salCode/housing-mix
+export interface HousingMix {
+  separateHouses: number
+  semiDetachedTownhouses: number
+  apartments: number
+  otherDwellings: number
+  structureNotStated: number
+  totalOccupiedPrivateDwellings: number
+  apartmentsPer100Houses: number | null
+  apartmentSharePct: number | null
+  townhouseSharePct: number | null
+  cityMedianApartmentsPer100Houses: number | null
+  attachedDwellings: number
+  attachedDwellingsPer100Houses: number | null
+  cityMedianAttachedDwellingsPer100Houses: number | null
+}
+
+export interface HousingMixResponse {
+  salCode: string
+  salName: string
+  stateName: string
+  gccsaName: string
+  censusYear: number
+  housing: HousingMix
+  dataNote: string
+}
+
 // Crime — matches GET /api/suburbs/:salCode/crime  (Greater Melbourne only; 404 elsewhere)
 export interface CrimeCategory {
   category: string   // assault | break_enter | theft | robbery | property_damage | other

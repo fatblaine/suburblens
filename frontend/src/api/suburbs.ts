@@ -1,5 +1,5 @@
 import { useQuery, useQueries } from '@tanstack/react-query'
-import type { SuburbSearchResult, TenureResponse, NearbySuburbsResponse, PoiDistancesResponse, LanguageResponse, BirthCountryResponse, EducationResponse, CrimeResponse } from '../types/api'
+import type { SuburbSearchResult, TenureResponse, NearbySuburbsResponse, PoiDistancesResponse, LanguageResponse, BirthCountryResponse, EducationResponse, HousingMixResponse, CrimeResponse } from '../types/api'
 import { supabase } from '../lib/supabase'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -32,26 +32,27 @@ export function maybeWarmup() {
     fetch(`${API_BASE}/api/suburbs/search?q=sy`, { keepalive: true }).catch(() => {})
 }
 
-// —— 每个 suburb 的人口画像查询（language / birthcountry / education / crime）——
-// 这四个 hook 形状一致，唯一区别是路径、错误文案、以及是否重试（404 = 该 suburb
+// —— 每个 suburb 的画像查询（language / birthcountry / education / housing mix / crime）——
+// 这些 hook 形状一致，唯一区别是路径、错误文案、缓存时间以及是否重试（404 = 该 suburb
 // 无数据，属预期，不该重试）。工厂统一生成 TanStack 查询选项，queryKey 与下方
 // 屏幕上各 section 完全一致，从而共享同一份缓存（PDF 报表不会多打一次网络）。
-type ProfileKind = 'language' | 'birthcountry' | 'education' | 'crime'
+type ProfileKind = 'language' | 'birthcountry' | 'education' | 'housingMix' | 'crime'
 
-const PROFILE: Record<ProfileKind, { path: string; error: string; retry?: number }> = {
+const PROFILE: Record<ProfileKind, { path: string; error: string; retry?: number; staleTime?: number }> = {
     language:     { path: 'language',     error: 'Failed to fetch suburb language data.' },
     birthcountry: { path: 'birthcountry', error: 'Failed to fetch suburb birth country data.', retry: 0 },
     education:    { path: 'education',     error: 'Failed to fetch suburb education data.', retry: 0 },
+    housingMix:   { path: 'housing-mix',   error: 'Failed to fetch suburb housing mix data.', retry: 0, staleTime: 24 * 60 * 60 * 1000 },
     crime:        { path: 'crime',         error: 'Failed to fetch suburb crime data.', retry: 0 },
 }
 
 function profileQuery<T>(kind: ProfileKind, salCode: string | undefined) {
     const meta = PROFILE[kind]
     return {
-        queryKey: [`suburb-${kind}`, salCode],
+        queryKey: [`suburb-${meta.path}`, salCode],
         queryFn: () => fetchJson<T>(`${API_BASE}/api/suburbs/${salCode}/${meta.path}`, meta.error),
         enabled: !!salCode,
-        staleTime: 5 * 60 * 1000,
+        staleTime: meta.staleTime ?? 5 * 60 * 1000,
         ...(meta.retry !== undefined ? { retry: meta.retry } : {}),
     }
 }
@@ -121,6 +122,11 @@ export function useSuburbBirthCountry(salCode: string | undefined) {
 // Fetch education level profile for a suburb by its salCode
 export function useSuburbEducation(salCode: string | undefined) {
     return useQuery<EducationResponse>(profileQuery<EducationResponse>('education', salCode))
+}
+
+// Fetch the 2021 SAL-level occupied-private-dwelling structure snapshot.
+export function useSuburbHousingMix(salCode: string | undefined) {
+    return useQuery<HousingMixResponse>(profileQuery<HousingMixResponse>('housingMix', salCode))
 }
 
 // Fetch recorded crime incidents for a suburb (Greater Melbourne only; 404 elsewhere)
