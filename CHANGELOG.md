@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.4.0](https://github.com/fatblaine/suburblens/compare/suburblens-v1.3.0...suburblens-v1.4.0) (2026-08-25)
+
+
+### Features
+
+* Add new static dataset ([110d4af](https://github.com/fatblaine/suburblens/commit/110d4af0badd6d0b29270ca92db01c88079f5f82))
+* **compare:** add unit-to-house ratio ([b1c1f72](https://github.com/fatblaine/suburblens/commit/b1c1f72b1e73b81a89598b7c41caa4ee912d41e6))
+* **compare:** add unit-to-house ratio to compare pages and exported PDF ([3d88778](https://github.com/fatblaine/suburblens/commit/3d88778965b4beecd5c25db9a0db142bac121f2b))
+* **feedback:** add prominent feedback button to home hero ([7872cac](https://github.com/fatblaine/suburblens/commit/7872cac996489257f5e78927ee0928e8e948ec8a))
+* **housing:** add unit-to-house ratio ([b343098](https://github.com/fatblaine/suburblens/commit/b343098fcca138795339ec8daf1fafd2274bc7b1))
+* **housing:** add unit-to-house ratio ([eea4395](https://github.com/fatblaine/suburblens/commit/eea43953973fce9cbd8739a46c6d7b7d5a4aef46))
+* **map:** add suburb search with fly-to and highlight ([59be538](https://github.com/fatblaine/suburblens/commit/59be538346ffd7ef7b57152d71b17d0b1973ae76))
+* **map:** add suburb search with fly-to and highlight ([aef1d5d](https://github.com/fatblaine/suburblens/commit/aef1d5d5faf705636c8da3a7b7c282709819780c))
+* **map:** add suburb search with fly-to and highlight ([367bfdb](https://github.com/fatblaine/suburblens/commit/367bfdb2462aa507c9654cf985a6db22cf637f4f))
+* **search:** merge single-suburb action into one details + nearby buttom ([99dca10](https://github.com/fatblaine/suburblens/commit/99dca105f1fda9a14f39d2d9b7b0958666cfb128))
+* **search:** merge single-suburb action into one details + nearby button ([b92487a](https://github.com/fatblaine/suburblens/commit/b92487affee24810be5dea93dcc3e1f826b5722c))
+* **suburb:** rework detail card into compact tabbed layout ([1f389a0](https://github.com/fatblaine/suburblens/commit/1f389a0648b9dd19a263a4060d17e0fa021c636a))
+
+
+### Bug Fixes
+
+* Fix frontend UI/UX logic ([ed50d00](https://github.com/fatblaine/suburblens/commit/ed50d0037cb3bc88f0f14d6548e6765a8247b576))
+* **map:** avoid global GeoJSON namespace so tsc -b build passes ([233f554](https://github.com/fatblaine/suburblens/commit/233f554da86abe8777a7007b41310f9b961df971))
+* **map:** avoid global GeoJSON namespace so tsc -b build passes ([d246f3c](https://github.com/fatblaine/suburblens/commit/d246f3c708c51e6329ed9fc3428d87562989e8a5))
+* Prerender homepage and key static pages for SEO improvement ([2ddee96](https://github.com/fatblaine/suburblens/commit/2ddee96b6a6fd2cf64d0e8a8b493c185b2ad1d2d))
+* **seo:** prerender home, about, methodology, suburbs pages ([d860f99](https://github.com/fatblaine/suburblens/commit/d860f99f200706004c1e0752cda23aca700b85e9))
+* **seo:** prerender home, about, methodology, suburbs pages ([db14ded](https://github.com/fatblaine/suburblens/commit/db14ded35ab64d679755df8a8cd03c544a923a1f))
+
 ## [1.3.0](https://github.com/fatblaine/suburblens/compare/suburblens-v1.2.0...suburblens-v1.3.0) (2026-08-20)
 
 
