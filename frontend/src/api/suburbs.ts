@@ -1,5 +1,5 @@
 import { useQuery, useQueries } from '@tanstack/react-query'
-import type { SuburbSearchResult, TenureResponse, NearbySuburbsResponse, LanguageResponse, BirthCountryResponse, EducationResponse, CrimeResponse } from '../types/api'
+import type { SuburbSearchResult, TenureResponse, NearbySuburbsResponse, PoiDistancesResponse, LanguageResponse, BirthCountryResponse, EducationResponse, HousingMixResponse, CrimeResponse } from '../types/api'
 import { supabase } from '../lib/supabase'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -32,26 +32,27 @@ export function maybeWarmup() {
     fetch(`${API_BASE}/api/suburbs/search?q=sy`, { keepalive: true }).catch(() => {})
 }
 
-// —— 每个 suburb 的人口画像查询（language / birthcountry / education / crime）——
-// 这四个 hook 形状一致，唯一区别是路径、错误文案、以及是否重试（404 = 该 suburb
+// —— 每个 suburb 的画像查询（language / birthcountry / education / housing mix / crime）——
+// 这些 hook 形状一致，唯一区别是路径、错误文案、缓存时间以及是否重试（404 = 该 suburb
 // 无数据，属预期，不该重试）。工厂统一生成 TanStack 查询选项，queryKey 与下方
 // 屏幕上各 section 完全一致，从而共享同一份缓存（PDF 报表不会多打一次网络）。
-type ProfileKind = 'language' | 'birthcountry' | 'education' | 'crime'
+type ProfileKind = 'language' | 'birthcountry' | 'education' | 'housingMix' | 'crime'
 
-const PROFILE: Record<ProfileKind, { path: string; error: string; retry?: number }> = {
+const PROFILE: Record<ProfileKind, { path: string; error: string; retry?: number; staleTime?: number }> = {
     language:     { path: 'language',     error: 'Failed to fetch suburb language data.' },
     birthcountry: { path: 'birthcountry', error: 'Failed to fetch suburb birth country data.', retry: 0 },
     education:    { path: 'education',     error: 'Failed to fetch suburb education data.', retry: 0 },
+    housingMix:   { path: 'housing-mix',   error: 'Failed to fetch suburb housing mix data.', retry: 0, staleTime: 24 * 60 * 60 * 1000 },
     crime:        { path: 'crime',         error: 'Failed to fetch suburb crime data.', retry: 0 },
 }
 
 function profileQuery<T>(kind: ProfileKind, salCode: string | undefined) {
     const meta = PROFILE[kind]
     return {
-        queryKey: [`suburb-${kind}`, salCode],
+        queryKey: [`suburb-${meta.path}`, salCode],
         queryFn: () => fetchJson<T>(`${API_BASE}/api/suburbs/${salCode}/${meta.path}`, meta.error),
         enabled: !!salCode,
-        staleTime: 5 * 60 * 1000,
+        staleTime: meta.staleTime ?? 5 * 60 * 1000,
         ...(meta.retry !== undefined ? { retry: meta.retry } : {}),
     }
 }
@@ -96,6 +97,18 @@ export function useNearbySuburbs(salCode: string | undefined, limit = 5, enabled
     })
 }
 
+// Fetch straight-line distances from a suburb to key POIs (universities + CBD).
+// Geographic data is static, so cache it long like nearby.
+export function useSuburbDistances(salCode: string | undefined) {
+    return useQuery<PoiDistancesResponse>({
+        queryKey: ['distances', salCode],
+        queryFn: () => fetchJson<PoiDistancesResponse>(`${API_BASE}/api/suburbs/${salCode}/distances`, 'Failed to fetch suburb distances.'),
+        enabled: !!salCode,
+        staleTime: 10 * 60 * 1000,
+        retry: 0,  // 404 = out of scope, not worth retrying
+    })
+}
+
 // Fetch language profile for a suburb by its salCode
 export function useSuburbLanguage(salCode: string | undefined) {
     return useQuery<LanguageResponse>(profileQuery<LanguageResponse>('language', salCode))
@@ -111,19 +124,25 @@ export function useSuburbEducation(salCode: string | undefined) {
     return useQuery<EducationResponse>(profileQuery<EducationResponse>('education', salCode))
 }
 
+// Fetch the 2021 SAL-level occupied-private-dwelling structure snapshot.
+export function useSuburbHousingMix(salCode: string | undefined) {
+    return useQuery<HousingMixResponse>(profileQuery<HousingMixResponse>('housingMix', salCode))
+}
+
 // Fetch recorded crime incidents for a suburb (Greater Melbourne only; 404 elsewhere)
 export function useSuburbCrime(salCode: string | undefined) {
     return useQuery<CrimeResponse>(profileQuery<CrimeResponse>('crime', salCode))
 }
 
 // —— PDF comparison report ——
-// Gathers language / country-of-birth / education / crime for EVERY suburb in
+// Gathers housing mix / language / country-of-birth / education / crime for EVERY suburb in
 // one place so the print-only <CompareReport> table can render its rows.
 // Uses the same queryKeys / staleTime as the per-suburb hooks above (via the
 // shared profileQuery factory), so it shares the TanStack cache with the
 // on-screen sections — no extra network.
 export interface CompareReportRow {
     tenure: TenureResponse
+    housingMix?: HousingMixResponse
     language?: LanguageResponse
     birthCountry?: BirthCountryResponse
     education?: EducationResponse
@@ -134,6 +153,9 @@ export function useCompareReport(
     salCodes: string[],
     tenure: TenureResponse[] | undefined,
 ) {
+    const housingMix = useQueries({
+        queries: salCodes.map(code => profileQuery<HousingMixResponse>('housingMix', code)),
+    })
     const language = useQueries({
         queries: salCodes.map(code => profileQuery<LanguageResponse>('language', code)),
     })
@@ -153,6 +175,7 @@ export function useCompareReport(
         const i = salCodes.indexOf(t.salCode)
         return {
             tenure: t,
+            housingMix: i >= 0 ? housingMix[i]?.data : undefined,
             language: i >= 0 ? language[i]?.data : undefined,
             birthCountry: i >= 0 ? birthCountry[i]?.data : undefined,
             education: i >= 0 ? education[i]?.data : undefined,
@@ -163,6 +186,7 @@ export function useCompareReport(
     // Ready once every side query has settled (success OR error — a 404 crime
     // query is "settled", just empty). Guards against printing half-loaded rows.
     const isPending =
+        housingMix.some(q => q.isPending) ||
         language.some(q => q.isPending) ||
         birthCountry.some(q => q.isPending) ||
         education.some(q => q.isPending) ||

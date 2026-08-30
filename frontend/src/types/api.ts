@@ -12,6 +12,20 @@ export interface NearbySuburbsResponse {
   nearby: NearbySuburb[]
 }
 
+// POI straight-line distances — matches GET /api/suburbs/:salCode/distances
+export interface PoiDistance {
+  code: string
+  name: string
+  shortName?: string
+  category: 'university' | 'cbd'
+  distanceMeters: number
+}
+
+export interface PoiDistancesResponse {
+  salCode: string
+  distances: PoiDistance[]
+}
+
 // Suburb search result — matches GET /api/suburbs/search
 export interface SuburbSearchResult {
   salCode: string
@@ -109,6 +123,33 @@ export interface EducationResponse {
   y2016: EducationYearData | null
   y2021: EducationYearData | null
   benchmark: EducationBenchmark | null
+  dataNote: string
+}
+
+// Housing mix — matches GET /api/suburbs/:salCode/housing-mix
+export interface HousingMix {
+  separateHouses: number
+  semiDetachedTownhouses: number
+  apartments: number
+  otherDwellings: number
+  structureNotStated: number
+  totalOccupiedPrivateDwellings: number
+  apartmentsPer100Houses: number | null
+  apartmentSharePct: number | null
+  townhouseSharePct: number | null
+  cityMedianApartmentsPer100Houses: number | null
+  attachedDwellings: number
+  attachedDwellingsPer100Houses: number | null
+  cityMedianAttachedDwellingsPer100Houses: number | null
+}
+
+export interface HousingMixResponse {
+  salCode: string
+  salName: string
+  stateName: string
+  gccsaName: string
+  censusYear: number
+  housing: HousingMix
   dataNote: string
 }
 

@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import SuburbCard from '../components/SuburbCard'
 import PageMeta from '../components/PageMeta'
 import Footer from '../components/Footer'
+import AdSlot from '../components/AdSlot'
 import { useSuburbTenure, recordSuburbView } from '../api/suburbs'
 import { track } from '../lib/analytics'
 
@@ -110,6 +111,8 @@ export default function SuburbDetailPage() {
             </div>
           ))}
         </div>
+
+        <AdSlot key={urlSalCode} slot="8314950736" />
 
         <Footer className="mt-16" />
 

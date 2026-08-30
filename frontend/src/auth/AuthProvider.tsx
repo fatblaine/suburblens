@@ -12,6 +12,10 @@ interface AuthContextValue {
   signInWithPassword: (email: string, password: string) => Promise<void>
   /** Resolves with needsConfirmation=true when Supabase's "Confirm email" is on (no session yet). */
   signUp: (email: string, password: string) => Promise<{ needsConfirmation: boolean }>
+  /** Emails a password-reset link that lands the user on /reset-password. */
+  sendPasswordReset: (email: string) => Promise<void>
+  /** Sets a new password for the current (recovery) session. */
+  updatePassword: (newPassword: string) => Promise<void>
   signInAsGuest: () => Promise<void>
   signOut: () => Promise<void>
 }
@@ -54,6 +58,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // clicks the link. Absence of a session is our signal to prompt for it.
     return { needsConfirmation: !data.session }
   }
+  async function sendPasswordReset(email: string) {
+    // Same redirect infra as signup: the target must be whitelisted in
+    // Supabase → Authentication → URL Configuration → Redirect URLs, and the
+    // Site URL must be the real domain (otherwise the link falls back to it).
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    if (error) throw error
+  }
+  async function updatePassword(newPassword: string) {
+    // Works against the temporary session the recovery link established.
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) throw error
+  }
   async function signInAsGuest() {
     const { error } = await supabase.auth.signInAnonymously()
     if (error) throw error
@@ -64,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, user, isGuest, loading, signInWithPassword, signUp, signInAsGuest, signOut }}
+      value={{ session, user, isGuest, loading, signInWithPassword, signUp, sendPasswordReset, updatePassword, signInAsGuest, signOut }}
     >
       {children}
     </AuthContext.Provider>

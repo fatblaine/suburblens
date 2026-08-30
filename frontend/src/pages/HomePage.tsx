@@ -5,6 +5,7 @@ import AgentChat from '../components/AgentChat'
 import PopularSuburbs from '../components/PopularSuburbs'
 import PageMeta from '../components/PageMeta'
 import Footer from '../components/Footer'
+import FeedbackButton from '../components/FeedbackButton'
 import type { SuburbSearchResult } from '../types/api'
 import { track } from '../lib/analytics'
 
@@ -56,9 +57,11 @@ export default function HomePage() {
         <div className="font-mono text-xs tracking-[0.16em] uppercase text-lemon mb-4">
           Compare multiple suburbs
         </div>
-        <h1 className="font-display font-bold text-4xl sm:text-5xl leading-[1.04] tracking-tight text-fg mb-9">
+        <h1 className="font-display font-bold text-4xl sm:text-5xl leading-[1.04] tracking-tight text-fg mb-6">
           Which suburb are you<br />weighing up?
         </h1>
+
+        <FeedbackButton placement="home_hero" className="mb-9" />
 
         <SearchBox
           selected={selected}

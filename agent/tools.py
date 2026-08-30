@@ -77,6 +77,33 @@ def get_nearby(sal_code: str, limit: int = 5) -> dict:
 
 
 @tool
+def get_distances(sal_code: str) -> dict:
+    """Get STRAIGHT-LINE (great-circle) distances from a suburb to key points of
+    interest — the city CBD and major universities. Available for both Sydney and
+    Melbourne suburbs. Returns `distances`: a list of {name, shortName, category
+    ("cbd" or "university"), distanceMeters}. distanceMeters is a straight-line
+    "as the crow flies" distance in metres, NOT travel time or road distance — say
+    it in km and make clear it is not a commute duration. A 404 not_found error
+    means the suburb is out of scope."""
+    return _get(f"/api/suburbs/{sal_code}/distances")
+
+
+@tool
+def get_housing_mix(sal_code: str) -> dict:
+    """Get the 2021 Census dwelling-structure (housing mix) snapshot for a suburb,
+    i.e. the unit-to-house makeup. Under `housing`: separateHouses,
+    semiDetachedTownhouses, apartments, otherDwellings,
+    totalOccupiedPrivateDwellings, apartmentSharePct, townhouseSharePct, and
+    attachedDwellingsPer100Houses — the headline "unit-to-house" ratio (attached
+    dwellings, i.e. townhouses + apartments, per 100 separate houses). Compare it
+    to cityMedianAttachedDwellingsPer100Houses (the Greater Sydney / Greater
+    Melbourne benchmark): well above the median = apartment/townhouse-heavy, well
+    below = dominated by separate houses. A 404 not_found error means the suburb is
+    out of scope."""
+    return _get(f"/api/suburbs/{sal_code}/housing-mix")
+
+
+@tool
 def get_crime(sal_code: str) -> dict:
     """Get recorded criminal incidents for a suburb, GREATER MELBOURNE ONLY.
     Returns yearly counts (year ending March, ~2022-2026) per offence category
@@ -128,5 +155,5 @@ def rank_suburbs(
 
 
 tools = [search_suburb, get_tenure, get_education,
-         get_language, get_birthcountry, get_nearby, get_crime,
-         rank_suburbs]
+         get_language, get_birthcountry, get_nearby, get_distances,
+         get_housing_mix, get_crime, rank_suburbs]

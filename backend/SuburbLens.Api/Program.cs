@@ -266,6 +266,36 @@ app.MapGet("/api/suburbs/{salCode}/nearby", async (IDbConnection db, string salC
     });
 });
 
+// Straight-line distances from a suburb centroid to key POIs (same city only)
+app.MapGet("/api/suburbs/{salCode}/distances", async (IDbConnection db, string salCode) =>
+{
+    var rows = await db.QueryAsync<PoiDistanceResult>(@"
+        SELECT
+            p.code                                              AS Code,
+            p.name                                              AS Name,
+            p.short_name                                        AS ShortName,
+            p.category                                          AS Category,
+            ROUND(ST_Distance(p.geom, ref.centroid)::numeric, 0)::int AS DistanceMeters
+        FROM poi p
+        CROSS JOIN (
+            SELECT centroid, gccsa_code
+            FROM geo_sal
+            WHERE sal_code = @salCode
+        ) ref
+        WHERE p.gccsa_code = ref.gccsa_code
+          AND ref.centroid IS NOT NULL
+        ORDER BY
+            CASE p.category WHEN 'cbd' THEN 0 ELSE 1 END,
+            DistanceMeters ASC",
+        new { salCode });
+
+    var list = rows.ToArray();
+    if (list.Length == 0)
+        return Results.NotFound(new { error = $"Suburb not found or out of scope: {salCode}" });
+
+    return Results.Ok(new { salCode, distances = list });
+});
+
 // Get language data for a suburb by SAL code
 app.MapGet("/api/suburbs/{salCode}/language", async (IDbConnection db, string salCode) =>
 {
@@ -542,6 +572,68 @@ app.MapGet("/api/suburbs/{salCode}/education", async (IDbConnection db, string s
         Y2021: ToYearData(byYear, 2021),
         Benchmark: eduBenchmark,
         DataNote: $"Education data is based on the ABS SA2 '{first.Sa2Name}', which may include nearby suburbs."
+    ));
+});
+
+// housing mix — 2021 ABS GCP G36 at the user-facing SAL level. Unlike the
+// cross-year profiles above, this is a suburb-level snapshot and needs no SA2 bridge.
+app.MapGet("/api/suburbs/{salCode}/housing-mix", async (
+    IDbConnection db, HttpContext http, string salCode) =>
+{
+    var row = await db.QueryFirstOrDefaultAsync<HousingMixRow>(@"
+        SELECT
+            sal_code AS SalCode, sal_name AS SalName,
+            state_name AS StateName, gccsa_name AS GccsaName,
+            census_year AS CensusYear,
+            separate_houses AS SeparateHouses,
+            semi_detached_townhouses AS SemiDetachedTownhouses,
+            apartments AS Apartments,
+            other_dwellings AS OtherDwellings,
+            structure_not_stated AS StructureNotStated,
+            total_occupied_private_dwellings AS TotalOccupiedPrivateDwellings,
+            apartments_per_100_houses::float8 AS ApartmentsPer100Houses,
+            apartment_share_pct::float8 AS ApartmentSharePct,
+            townhouse_share_pct::float8 AS TownhouseSharePct,
+            city_median_apartments_per_100_houses::float8
+                AS CityMedianApartmentsPer100Houses,
+            attached_dwellings AS AttachedDwellings,
+            attached_dwellings_per_100_houses::float8
+                AS AttachedDwellingsPer100Houses,
+            city_median_attached_dwellings_per_100_houses::float8
+                AS CityMedianAttachedDwellingsPer100Houses
+        FROM v_housing_mix
+        WHERE sal_code = @salCode",
+        new { salCode });
+
+    if (row is null)
+        return Results.NotFound(new { error = $"Housing mix data not available for: {salCode}" });
+
+    http.Response.Headers.CacheControl = "public, max-age=86400";
+
+    return Results.Ok(new HousingMixResponse(
+        SalCode: row.SalCode,
+        SalName: row.SalName,
+        StateName: row.StateName,
+        GccsaName: row.GccsaName,
+        CensusYear: row.CensusYear,
+        Housing: new HousingMixData(
+            SeparateHouses: row.SeparateHouses,
+            SemiDetachedTownhouses: row.SemiDetachedTownhouses,
+            Apartments: row.Apartments,
+            OtherDwellings: row.OtherDwellings,
+            StructureNotStated: row.StructureNotStated,
+            TotalOccupiedPrivateDwellings: row.TotalOccupiedPrivateDwellings,
+            ApartmentsPer100Houses: row.ApartmentsPer100Houses,
+            ApartmentSharePct: row.ApartmentSharePct,
+            TownhouseSharePct: row.TownhouseSharePct,
+            CityMedianApartmentsPer100Houses: row.CityMedianApartmentsPer100Houses,
+            AttachedDwellings: row.AttachedDwellings,
+            AttachedDwellingsPer100Houses: row.AttachedDwellingsPer100Houses,
+            CityMedianAttachedDwellingsPer100Houses: row.CityMedianAttachedDwellingsPer100Houses),
+        DataNote: "2021 ABS Census General Community Profile, SAL-level occupied " +
+                  "private dwellings. Attached dwellings include apartments, semi-detached " +
+                  "homes, terraces and townhouses. Housing mix is a snapshot, not an " +
+                  "investment recommendation."
     ));
 });
 
@@ -909,6 +1001,14 @@ record NearbySuburbResult(
     int DistanceMeters
 );
 
+record PoiDistanceResult(
+    string Code,
+    string Name,
+    string? ShortName,
+    string Category,       // "university" | "cbd"
+    int DistanceMeters
+);
+
 record LanguageEntry(string Language, decimal? Pct);
 record LanguageYearData(int? TotalPersons, LanguageEntry[] Languages);
 
@@ -981,6 +1081,53 @@ record EducationRow(
     decimal? UniversityPct
 );
 
+record HousingMixData(
+    int SeparateHouses,
+    int SemiDetachedTownhouses,
+    int Apartments,
+    int OtherDwellings,
+    int StructureNotStated,
+    int TotalOccupiedPrivateDwellings,
+    double? ApartmentsPer100Houses,
+    double? ApartmentSharePct,
+    double? TownhouseSharePct,
+    double? CityMedianApartmentsPer100Houses,
+    int AttachedDwellings,
+    double? AttachedDwellingsPer100Houses,
+    double? CityMedianAttachedDwellingsPer100Houses
+);
+
+record HousingMixResponse(
+    string SalCode,
+    string SalName,
+    string StateName,
+    string GccsaName,
+    short CensusYear,
+    HousingMixData Housing,
+    string DataNote
+);
+
+record HousingMixRow(
+    string SalCode,
+    string SalName,
+    string StateName,
+    string GccsaName,
+    short CensusYear,
+    int SeparateHouses,
+    int SemiDetachedTownhouses,
+    int Apartments,
+    int OtherDwellings,
+    int StructureNotStated,
+    int TotalOccupiedPrivateDwellings,
+    double? ApartmentsPer100Houses,
+    double? ApartmentSharePct,
+    double? TownhouseSharePct,
+    double? CityMedianApartmentsPer100Houses,
+    int AttachedDwellings,
+    double? AttachedDwellingsPer100Houses,
+    double? CityMedianAttachedDwellingsPer100Houses
+);
+
 record CrimeCategory(string Category, int Incidents);
 record CrimePeriod(short YearEnding, int Total, CrimeCategory[] Categories);
 record CrimeBenchmark(
@@ -1004,4 +1151,3 @@ record SuburbRankRow(
     decimal? UniversityPct, decimal? LanguagePct, decimal? BornPct,
     decimal? RentedSharePct, decimal? ResidencyShiftIndex,
     string TrendLabel, int? Population);
-

@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 
 export default function LoginPage() {
-  const { session, isGuest, signInWithPassword, signUp, signInAsGuest } = useAuth()
+  const { session, isGuest, signInWithPassword, signUp, sendPasswordReset, signInAsGuest } = useAuth()
   const navigate = useNavigate()
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -36,6 +36,12 @@ export default function LoginPage() {
     try {
       if (mode === 'login') {
         await signInWithPassword(email, password)
+      } else if (mode === 'forgot') {
+        await sendPasswordReset(email)
+        // Neutral wording on purpose: Supabase does not reveal whether the email
+        // is registered, so we must not either.
+        setInfo("If an account exists for that email, we've sent a password reset link. Check your inbox.")
+        setMode('login')
       } else {
         const { needsConfirmation } = await signUp(email, password)
         if (needsConfirmation) {
@@ -105,10 +111,12 @@ export default function LoginPage() {
         {/* ── Right: auth card ──────────────────────────── */}
         <div className="bg-ink-2 p-10 sm:p-14 flex flex-col justify-center border-l border-white/[0.06]">
           <h2 className="font-display font-semibold text-[26px] text-fg tracking-tight mb-1.5">
-            {mode === 'login' ? 'Welcome back' : 'Create an account'}
+            {mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Create an account' : 'Reset your password'}
           </h2>
           <p className="text-sm text-faint mb-8">
-            Sign in to save and compare your suburbs.
+            {mode === 'forgot'
+              ? "Enter your email and we'll send you a reset link."
+              : 'Sign in to save and compare your suburbs.'}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -120,14 +128,27 @@ export default function LoginPage() {
                 className="w-full px-4 py-3.5 rounded-[10px] bg-surface-2 border border-white/10 text-fg placeholder:text-dim focus:outline-none focus:border-lemon/60 transition-colors"
               />
             </div>
-            <div>
-              <label className="block font-mono text-[11px] tracking-[0.12em] uppercase text-faint mb-2">Password</label>
-              <input
-                type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••••"
-                className="w-full px-4 py-3.5 rounded-[10px] bg-surface-2 border border-white/10 text-fg placeholder:text-dim focus:outline-none focus:border-lemon/60 transition-colors"
-              />
-            </div>
+            {mode !== 'forgot' && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block font-mono text-[11px] tracking-[0.12em] uppercase text-faint">Password</label>
+                  {mode === 'login' && (
+                    <button
+                      type="button"
+                      onClick={() => { setMode('forgot'); setError(''); setInfo('') }}
+                      className="font-mono text-[11px] text-faint hover:text-lemon transition-colors"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••••"
+                  className="w-full px-4 py-3.5 rounded-[10px] bg-surface-2 border border-white/10 text-fg placeholder:text-dim focus:outline-none focus:border-lemon/60 transition-colors"
+                />
+              </div>
+            )}
 
             {error && <p className="text-rented text-sm">{error}</p>}
             {info && <p className="text-owned text-sm">{info}</p>}
@@ -136,15 +157,19 @@ export default function LoginPage() {
               type="submit" disabled={busy}
               className="w-full py-3.5 bg-lemon hover:brightness-95 text-ink font-display font-semibold rounded-[10px] transition-all disabled:opacity-50"
             >
-              {busy ? '…' : mode === 'login' ? 'Sign in' : 'Sign up'}
+              {busy ? '…' : mode === 'login' ? 'Sign in' : mode === 'signup' ? 'Sign up' : 'Send reset link'}
             </button>
           </form>
 
           <button
-            onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setInfo('') }}
+            onClick={() => {
+              setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setInfo('')
+            }}
             className="w-full mt-3 text-faint hover:text-fg text-sm transition-colors"
           >
-            {mode === 'login' ? "No account? Sign up" : 'Have an account? Sign in'}
+            {mode === 'signup' ? 'Have an account? Sign in'
+              : mode === 'forgot' ? '← Back to sign in'
+              : 'No account? Sign up'}
           </button>
 
           <div className="flex items-center gap-3.5 my-5 text-dim text-xs">

@@ -5,6 +5,7 @@ import type {
   LanguageResponse,
   BirthCountryResponse,
   EducationResponse,
+  HousingMixResponse,
   CrimeResponse,
 } from '../types/api'
 
@@ -123,6 +124,18 @@ function topCountries(birth?: BirthCountryResponse): string {
 
 function universityPct(edu?: EducationResponse): number | null {
   return edu?.y2021?.universityPct ?? null
+}
+
+function attachedDwellingsPer100Houses(housing?: HousingMixResponse): number | null {
+  return housing?.housing.attachedDwellingsPer100Houses ?? null
+}
+
+function apartmentSharePct(housing?: HousingMixResponse): number | null {
+  return housing?.housing.apartmentSharePct ?? null
+}
+
+function townhouseSharePct(housing?: HousingMixResponse): number | null {
+  return housing?.housing.townhouseSharePct ?? null
 }
 
 /** "top 12%" from the city percentile rank, or null if no benchmark. */
@@ -281,6 +294,29 @@ export default function CompareReport({
           ))}
         </tbody>
 
+        {/* Housing mix — SAL-level 2021 snapshot */}
+        <tbody style={{ breakInside: 'avoid' }}>
+          <SectionHead span={span}>Housing mix · 2021 · SAL</SectionHead>
+          <CompareRow
+            label="Attached dwellings / 100 houses"
+            rows={rows}
+            valueOf={r => attachedDwellingsPer100Houses(r.housingMix)}
+            render={r => fmtNum(attachedDwellingsPer100Houses(r.housingMix))}
+          />
+          <CompareRow
+            label="Apartment share"
+            rows={rows}
+            valueOf={r => apartmentSharePct(r.housingMix)}
+            render={r => fmtPct(apartmentSharePct(r.housingMix))}
+          />
+          <CompareRow
+            label="Townhouse / terrace share"
+            rows={rows}
+            valueOf={r => townhouseSharePct(r.housingMix)}
+            render={r => fmtPct(townhouseSharePct(r.housingMix))}
+          />
+        </tbody>
+
         {/* Community — language */}
         <tbody style={{ breakInside: 'avoid' }}>
           <SectionHead span={span}>Community · Language at home · 2021</SectionHead>
@@ -359,6 +395,8 @@ export default function CompareReport({
         incidents).<br />
         <strong style={{ color: '#555' }}>Note:</strong> The Residency Shift Index is a SuburbLens
         custom heuristic based on 2016→2021 tenure changes; it is not an official ABS metric.
+        Housing mix is a 2021 ABS Census SAL-level snapshot and is not an investment
+        recommendation.{' '}
         Census figures are ABS 2011 / 2016 / 2021 (SA2, mapped to the searched suburb). Crime data
         is Victoria Police (year ending March) and is available for Greater Melbourne suburbs only —
         “—” means no crime data for that suburb.
