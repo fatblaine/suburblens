@@ -52,3 +52,6 @@ suburblens-extension-*.zip
 # Claude Code skills tooling (not project code)
 .agents/
 skills-lock.json
+
+# Cross-tool agent instructions (twin of CLAUDE.md, kept out of the repo)
+/AGENTS.md
