@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.1.0](https://github.com/fatblaine/suburblens/compare/suburblens-v2.0.0...suburblens-v2.1.0) (2026-08-31)
+
+
+### Features
+
+* Add SAL-level population density metric and update release manifest ([99f49d0](https://github.com/fatblaine/suburblens/commit/99f49d0405b1c37ec4bbcb18755be660ce67c38c))
+* **agent:** add distances and housing-mix tools to the chat agent ([3f0f1a6](https://github.com/fatblaine/suburblens/commit/3f0f1a607a753054ff35c729223068930e6aea1c))
+* **agent:** add distances and housing-mix tools to the chat agent ([6ee1559](https://github.com/fatblaine/suburblens/commit/6ee15599b2a618387c9f44d0c31e3e16c0e62ee2))
+* **agent:** add get_density tool for population density endpoint ([bbd2d46](https://github.com/fatblaine/suburblens/commit/bbd2d467818578a3685f90373a844550a7eca33b))
+* **agent:** add get_density tool for population density endpoint ([c4e82ba](https://github.com/fatblaine/suburblens/commit/c4e82baafa959eeb2bf3f4f897ff3e89009daf0e))
+* **density:** add SAL-level population density metric ([41c4627](https://github.com/fatblaine/suburblens/commit/41c4627f0574c6d3656d4b31e36ee920a6b21ae8))
+* **density:** add SAL-level population density metric ([09118b4](https://github.com/fatblaine/suburblens/commit/09118b4212ef7239daa72f62f3a2302928d346af))
+* **frontend:** add /r/:code promo short-link redirect ([027b862](https://github.com/fatblaine/suburblens/commit/027b862c0c1b8114a01efa9c50815a1191e7cbfb))
+* **frontend:** add /r/:code promo short-link redirect ([740a6fb](https://github.com/fatblaine/suburblens/commit/740a6fb47401b0f25ca67d3c90effc126cd595d6))
+
 ## [1.4.0](https://github.com/fatblaine/suburblens/compare/suburblens-v1.3.0...suburblens-v1.4.0) (2026-08-25)
 
 
