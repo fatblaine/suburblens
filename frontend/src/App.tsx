@@ -10,6 +10,7 @@ import PrivacyPage from './pages/PrivacyPage'
 import AboutPage from './pages/AboutPage'
 import MethodologyPage from './pages/MethodologyPage'
 import BrowsePage from './pages/BrowsePage'
+import RedirectPage from './pages/RedirectPage'
 import AuthBadge from './components/AuthBadge'
 import { trackPageView } from './lib/analytics'
 
@@ -22,6 +23,9 @@ const queryClient = new QueryClient()
 function RouteTracker() {
   const { pathname, search } = useLocation()
   useEffect(() => {
+    // /r/:code is a bounce, not a real page — skip it so GA keeps only the
+    // UTM'd target the redirect lands on.
+    if (pathname.startsWith('/r/')) return
     const id = setTimeout(() => trackPageView(pathname + search), 0)
     return () => clearTimeout(id)
   }, [pathname, search])
@@ -45,6 +49,10 @@ export default function App() {
           <Route path="/suburbs" element={<BrowsePage />} />
           <Route path="/compare" element={<ComparePage />} />
           <Route path="/map" element={<MapPage />} />
+
+          {/* Promo short links: /r/:code resolves via Supabase, then does a
+              full-page redirect to the UTM'd target. See short-link-plan.md. */}
+          <Route path="/r/:code" element={<RedirectPage />} />
 
           {/* Must stay reachable signed-out: the Chrome Web Store listing links
               here, and reviewers open it without an account. */}
