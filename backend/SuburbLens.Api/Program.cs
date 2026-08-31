@@ -701,6 +701,50 @@ app.MapGet("/api/suburbs/{salCode}/crime", async (IDbConnection db, string salCo
                   "higher by nature."));
 });
 
+// density — SAL-level usual-resident population per km2 (gross density over the
+// suburb's total ABS area), with a within-city percentile so the raw number has
+// a reference. Computed in v_population_density / v_density_benchmark.
+app.MapGet("/api/suburbs/{salCode}/density", async (IDbConnection db, HttpContext http, string salCode) =>
+{
+    var row = await db.QueryFirstOrDefaultAsync<DensityRow>(@"
+        SELECT d.sal_code AS SalCode, d.sal_name AS SalName,
+               d.state_name AS StateName, d.gccsa_name AS GccsaName,
+               d.census_year AS CensusYear,
+               d.total_persons AS TotalPersons,
+               d.area_sqkm::float8 AS AreaSqkm,
+               d.persons_per_sqkm::float8 AS PersonsPerSqkm,
+               b.pct_rank::float8        AS PctRank,
+               b.median_density::float8  AS MedianDensity,
+               b.cohort_max::float8      AS CohortMax,
+               b.cohort_count::int       AS CohortCount
+        FROM v_population_density d
+        LEFT JOIN v_density_benchmark b ON b.sal_code = d.sal_code
+        WHERE d.sal_code = @salCode",
+        new { salCode });
+
+    if (row is null || row.PersonsPerSqkm is null)
+        return Results.NotFound(new { error = $"Density data not available for: {salCode}" });
+
+    http.Response.Headers.CacheControl = "public, max-age=86400";
+
+    return Results.Ok(new DensityResponse(
+        SalCode: row.SalCode, SalName: row.SalName,
+        StateName: row.StateName, GccsaName: row.GccsaName,
+        CensusYear: row.CensusYear,
+        TotalPersons: row.TotalPersons,
+        AreaSqkm: row.AreaSqkm,
+        PersonsPerSqkm: row.PersonsPerSqkm,
+        Benchmark: row.PctRank is null ? null : new DensityBenchmark(
+            PercentileRank: row.PctRank.Value,
+            MedianDensity:  row.MedianDensity,
+            CohortMax:      row.CohortMax,
+            CohortCount:    row.CohortCount),
+        DataNote: "2021 ABS Census (GCP G01), usual-resident population divided by " +
+                  "the suburb's total ABS area (gross density — includes parks, water " +
+                  "and non-residential land). Percentile is within the same capital city."
+    ));
+});
+
 // heatmap — full GeoJSON FeatureCollection, aggregated in Postgres and cached in
 // Redis (fail-open). Census data is static, so it's also marked cacheable for
 // browsers/CDN via Cache-Control.
@@ -1141,6 +1185,19 @@ record CrimeResponse(
 record CrimeRow(
     string SalCode, string SalName, string StateName, string GccsaName,
     short YearEnding, string OffenceCategory, int Incidents
+);
+
+record DensityRow(
+    string SalCode, string SalName, string StateName, string GccsaName,
+    short CensusYear, int? TotalPersons, double? AreaSqkm, double? PersonsPerSqkm,
+    double? PctRank, double? MedianDensity, double? CohortMax, int? CohortCount
+);
+record DensityBenchmark(
+    double PercentileRank, double? MedianDensity, double? CohortMax, int? CohortCount);
+record DensityResponse(
+    string SalCode, string SalName, string StateName, string GccsaName,
+    short CensusYear, int? TotalPersons, double? AreaSqkm, double? PersonsPerSqkm,
+    DensityBenchmark? Benchmark, string DataNote
 );
 
 // Ranked-discovery row from v_suburb_features. LanguagePct / BornPct hold the
