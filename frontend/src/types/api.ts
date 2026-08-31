@@ -183,6 +183,27 @@ export interface CrimeResponse {
   dataNote: string
 }
 
+// Population density — matches GET /api/suburbs/:salCode/density
+export interface DensityBenchmark {
+  percentileRank: number       // 0..1, share of same-city suburbs it exceeds
+  medianDensity: number | null // cohort (city) median persons/km²
+  cohortMax: number | null     // densest suburb in the city
+  cohortCount: number | null   // suburbs in the cohort
+}
+
+export interface DensityResponse {
+  salCode: string
+  salName: string
+  stateName: string
+  gccsaName: string
+  censusYear: number
+  totalPersons: number | null
+  areaSqkm: number | null
+  personsPerSqkm: number | null
+  benchmark: DensityBenchmark | null
+  dataNote: string
+}
+
 // Language at home — matches GET /api/suburbs/:salCode/language
 export interface LanguageEntry {
   language: string
