@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useSuburbTenure, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation, useSuburbHousingMix, useSuburbCrime } from '../api/suburbs'
+import { useSuburbTenure, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation, useSuburbHousingMix, useSuburbCrime, useSuburbDensity } from '../api/suburbs'
 import ShiftIndexCard from './ShiftIndexCard'
 import TenureChart from './TenureChart'
 import LanguageChart from './LanguageChart'
@@ -270,6 +270,73 @@ function CrimeSection({ salCode }: { salCode: string }) {
   )
 }
 
+// Population density stat tile — a single scalar, so it reads as a headline
+// number + a within-city percentile, not a chart. 404 (no data) → renders
+// nothing so the Overview tab just skips it.
+function densityTier(pct: number): { label: string; className: string } {
+  if (pct >= 0.8) return { label: 'High density', className: 'bg-lemon/15 text-lemon' }
+  if (pct >= 0.4) return { label: 'Moderate density', className: 'bg-surface-3 text-muted' }
+  return { label: 'Low density', className: 'bg-surface-3 text-faint' }
+}
+
+function DensitySection({ salCode }: { salCode: string }) {
+  const { data, isPending, isError } = useSuburbDensity(salCode)
+
+  if (isError) return null
+
+  if (isPending) return (
+    <div className={PANEL}>
+      <div className="animate-pulse space-y-2">
+        <div className="h-3 w-1/3 rounded bg-white/10" />
+        <div className="h-7 w-1/2 rounded bg-white/10" />
+        <div className="h-3 w-2/5 rounded bg-white/10" />
+      </div>
+    </div>
+  )
+
+  if (!data || data.personsPerSqkm == null) return null
+
+  const city = data.gccsaName ?? ''
+  const density = Math.round(data.personsPerSqkm)
+  const bench = data.benchmark
+  const tier = bench ? densityTier(bench.percentileRank) : null
+
+  return (
+    <div className={PANEL}>
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="font-mono text-[11px] uppercase tracking-wider text-faint">
+          Population density · {data.censusYear}
+        </p>
+        {tier && (
+          <span className={`rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${tier.className}`}>
+            {tier.label}
+          </span>
+        )}
+      </div>
+
+      <div className="mt-2 flex items-baseline gap-1.5">
+        <span className="font-display text-3xl font-bold tracking-tight text-fg">
+          {density.toLocaleString()}
+        </span>
+        <span className="font-mono text-sm text-muted">/km²</span>
+      </div>
+
+      {bench && (
+        <p className="mt-2 text-sm text-muted">
+          Denser than <span className="text-fg">{Math.round(bench.percentileRank * 100)}%</span> of {city} suburbs
+          {bench.medianDensity != null && (
+            <span className="text-faint"> · city median {Math.round(bench.medianDensity).toLocaleString()}/km²</span>
+          )}
+        </p>
+      )}
+
+      <p className="mt-1 font-mono text-[11px] text-dim">
+        {data.totalPersons?.toLocaleString()} residents · gross density (incl. parks &amp; water)
+      </p>
+    </div>
+  )
+}
+
 const BASE_TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'housing', label: 'Housing' },
@@ -328,6 +395,7 @@ export default function SuburbCard({ salCode, onAdd, onRemove, defaultNearbyExpa
 
       {activeKey === 'overview' && (
         <>
+          <DensitySection salCode={salCode} />
           <SuburbNarrative salCode={salCode} />
           <NearbySuburbs salCode={salCode} defaultExpanded={defaultNearbyExpanded} onSelect={onAdd} />
         </>
