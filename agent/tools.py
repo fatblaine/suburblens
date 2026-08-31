@@ -119,6 +119,17 @@ def get_crime(sal_code: str) -> dict:
 
 
 @tool
+def get_density(sal_code: str) -> dict:
+    """Get population density for a suburb, computed directly on the SAL boundary
+    (not a primary-SA2 proxy). Returns persons per km² plus a within-city
+    percentile benchmark (percentileRank 0-1 = share of Sydney/Melbourne suburbs
+    this one is denser than) so you can say whether it is crowded or spacious
+    relative to the rest of the city. A 404 not_found error means the suburb is
+    out of scope."""
+    return _get(f"/api/suburbs/{sal_code}/density")
+
+
+@tool
 def rank_suburbs(
     city: str | None = None,               # "sydney" | "melbourne"
     language: str | None = None,           # mandarin|cantonese|chinese|vietnamese|hindi|punjabi|arabic|korean|tamil|nepali|italian|greek|spanish
@@ -156,4 +167,4 @@ def rank_suburbs(
 
 tools = [search_suburb, get_tenure, get_education,
          get_language, get_birthcountry, get_nearby, get_distances,
-         get_housing_mix, get_crime, rank_suburbs]
+         get_housing_mix, get_crime, get_density, rank_suburbs]
