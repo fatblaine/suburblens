@@ -63,6 +63,21 @@ export default function Footer({ className = '' }: { className?: string }) {
         Covers Sydney &amp; Melbourne suburbs only. Data source: Australian Bureau of Statistics, Census of
         Population and Housing 2021. An independent project, not affiliated with the ABS.
       </p>
+      {/* ODbL requires attribution wherever OpenStreetMap-derived data is shown.
+          Local-amenity counts come from OSM, so this line is a licence condition,
+          not a courtesy — do not remove it while that feature is live. */}
+      <p className="mt-1 text-dim/80">
+        Local amenity counts:{' '}
+        <a
+          href="https://www.openstreetmap.org/copyright"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="transition-colors hover:text-lemon"
+        >
+          &copy; OpenStreetMap contributors
+        </a>
+        , available under the Open Database Licence (ODbL).
+      </p>
 
       {fbOpen && <FeedbackModal open onClose={() => setFbOpen(false)} />}
     </footer>
