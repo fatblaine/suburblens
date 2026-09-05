@@ -204,6 +204,33 @@ export interface DensityResponse {
   dataNote: string
 }
 
+// Local amenities — matches GET /api/suburbs/:salCode/amenities
+// OpenStreetMap POI counts inside the suburb polygon (static snapshot, not Census).
+export interface AmenityCounts {
+  food: number       // restaurant / cafe / fast_food
+  nightlife: number  // bar / pub / nightclub
+  grocery: number    // supermarket / convenience / greengrocer
+  total: number
+}
+
+export interface AmenityBenchmark {
+  percentileRank: number       // 0..1, share of same-city suburbs it exceeds
+  medianDensity: number | null // cohort (city) median amenities/km²
+  cohortMax: number | null     // most amenity-dense suburb in the city
+  cohortCount: number | null   // suburbs in the cohort
+}
+
+export interface AmenityResponse {
+  salCode: string
+  salName: string
+  stateName: string
+  gccsaName: string
+  counts: AmenityCounts
+  totalPerSqkm: number | null  // ranking uses density so size doesn't distort it
+  benchmark: AmenityBenchmark | null
+  dataNote: string
+}
+
 // Language at home — matches GET /api/suburbs/:salCode/language
 export interface LanguageEntry {
   language: string

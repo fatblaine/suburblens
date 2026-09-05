@@ -130,6 +130,23 @@ def get_density(sal_code: str) -> dict:
 
 
 @tool
+def get_amenities(sal_code: str) -> dict:
+    """Get local amenity counts for a suburb: how many places to eat and drink
+    (food), bars/pubs/nightclubs (nightlife) and supermarkets/convenience stores
+    (grocery) sit inside the suburb boundary. Use this for "is there anything to
+    do there", "is it walkable / lively / dead", "can I get groceries nearby"
+    style questions — this is the liveliness and convenience dimension the census
+    has no data for. Counts come from OpenStreetMap (community-mapped, indicative
+    rather than exhaustive), so quote them as approximate. benchmark.percentileRank
+    (0-1) ranks the suburb by amenities per km2 within the same capital city, so a
+    small inner suburb and a large outer one compare fairly; prefer it over the
+    raw totals when comparing suburbs. A total of 0 usually means parkland, water
+    or industrial land rather than a mapping gap. A 404 not_found error means the
+    suburb is out of scope."""
+    return _get(f"/api/suburbs/{sal_code}/amenities")
+
+
+@tool
 def rank_suburbs(
     city: str | None = None,               # "sydney" | "melbourne"
     language: str | None = None,           # mandarin|cantonese|chinese|vietnamese|hindi|punjabi|arabic|korean|tamil|nepali|italian|greek|spanish
@@ -167,4 +184,4 @@ def rank_suburbs(
 
 tools = [search_suburb, get_tenure, get_education,
          get_language, get_birthcountry, get_nearby, get_distances,
-         get_housing_mix, get_crime, get_density, rank_suburbs]
+         get_housing_mix, get_crime, get_density, get_amenities, rank_suburbs]

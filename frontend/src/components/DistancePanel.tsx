@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useSuburbDistances } from '../api/suburbs'
 import { CARD } from '../lib/theme'
 import type { PoiDistance } from '../types/api'
@@ -30,8 +31,19 @@ function PoiRow({ poi }: { poi: PoiDistance }) {
   )
 }
 
-export default function DistancePanel({ salCode }: { salCode: string }) {
+export default function DistancePanel({
+  salCode,
+  collapsible = false,
+  defaultOpen = false,
+}: {
+  salCode: string
+  /** Compare page folds this away by default so the column stays scannable. */
+  collapsible?: boolean
+  defaultOpen?: boolean
+}) {
   const { data, isPending, isError } = useSuburbDistances(salCode)
+  const [open, setOpen] = useState(defaultOpen)
+  const shown = !collapsible || open
 
   // Out of scope / no centroid → 404 → hide the panel entirely.
   if (isError) return null
@@ -54,18 +66,45 @@ export default function DistancePanel({ salCode }: { salCode: string }) {
 
   if (!data || data.distances.length === 0) return null
 
-  return (
-    <div className={CARD + ' p-6'}>
+  const header = (
+    <>
       <p className="font-mono text-[11px] uppercase tracking-widest text-lemon">Getting Around</p>
       <h3 className="font-display text-lg font-semibold text-fg mt-1">Distances</h3>
+    </>
+  )
 
-      <ul className="mt-4">
-        {data.distances.map(poi => (
-          <PoiRow key={poi.code} poi={poi} />
-        ))}
-      </ul>
+  return (
+    <div className={CARD + ' p-6'}>
+      {collapsible ? (
+        <button
+          type="button"
+          onClick={() => setOpen(prev => !prev)}
+          aria-expanded={open}
+          className="w-full flex items-start justify-between gap-3 text-left"
+        >
+          <div>{header}</div>
+          <span
+            aria-hidden="true"
+            className={`shrink-0 text-white/40 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          >
+            ▼
+          </span>
+        </button>
+      ) : (
+        header
+      )}
 
-      <p className="mt-4 text-xs text-faint">Straight-line distance, not travel time.</p>
+      {shown && (
+        <>
+          <ul className="mt-4">
+            {data.distances.map(poi => (
+              <PoiRow key={poi.code} poi={poi} />
+            ))}
+          </ul>
+
+          <p className="mt-4 text-xs text-faint">Straight-line distance, not travel time.</p>
+        </>
+      )}
     </div>
   )
 }

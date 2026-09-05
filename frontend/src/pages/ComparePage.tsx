@@ -12,6 +12,7 @@ import HousingMix from '../components/HousingMix'
 import CrimeChart from '../components/CrimeChart'
 import CompareReport from '../components/CompareReport'
 import DistancePanel from '../components/DistancePanel'
+import AmenitiesPanel from '../components/AmenitiesPanel'
 import LoadingSkeleton from '../components/LoadingSkeleton'
 import BarListSkeleton from '../components/BarListSkeleton'
 import SegmentToggle from '../components/SegmentToggle'
@@ -304,7 +305,9 @@ export default function ComparePage() {
 
                 <HousingMixSection salCode={suburb.salCode} />
 
-                <DistancePanel salCode={suburb.salCode} />
+                <DistancePanel salCode={suburb.salCode} collapsible />
+
+                <AmenitiesPanel salCode={suburb.salCode} collapsible />
 
                 <CommunitySection salCode={suburb.salCode} />
 
