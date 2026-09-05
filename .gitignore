@@ -56,3 +56,4 @@ skills-lock.json
 
 # Cross-tool agent instructions (twin of CLAUDE.md, kept out of the repo)
 /AGENTS.md
+data/osm/
