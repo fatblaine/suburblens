@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.2.0](https://github.com/fatblaine/suburblens/compare/suburblens-v2.1.0...suburblens-v2.2.0) (2026-09-05)
+
+
+### Features
+
+* **agent:** add get_amenities tool ([58bf1a3](https://github.com/fatblaine/suburblens/commit/58bf1a303e5d3c54b8e3f930c9885a0453e93416))
+* **amenities:** add amenities endpoint with within-city density percentile ([a6294c1](https://github.com/fatblaine/suburblens/commit/a6294c11fb26787164d78c55ccd6bde72133c249))
+* **amenities:** add local amenities section to the pdf compare report ([7fcf49b](https://github.com/fatblaine/suburblens/commit/7fcf49bfd87856be57ec7362cf7031c1cb720fa8))
+* **amenities:** add osm poi etl and per-suburb amenity counts ([8d17f97](https://github.com/fatblaine/suburblens/commit/8d17f97ef0ad9a0ec47d8d04c6ba6eddc6b499cb))
+* **amenities:** local amenities from OpenStreetMap ([5b39d24](https://github.com/fatblaine/suburblens/commit/5b39d244c675409597955dde83d42b2fe5fe54d5))
+* **amenities:** show local amenities on detail and compare pages ([406d62c](https://github.com/fatblaine/suburblens/commit/406d62c9f95a7cc205eb0f4d51b09bf1ab542224))
+* Promote dev to main, local amenities (v2.1.0) ([4fe98b4](https://github.com/fatblaine/suburblens/commit/4fe98b4761c17312f3d52d9cbd16e725c64fa2cd))
+
+
+### Documentation
+
+* **amenities:** attribute openstreetmap under odbl ([e892f27](https://github.com/fatblaine/suburblens/commit/e892f270543f0f9de183cccf317e3a926bdf5f3e))
+
 ## [2.1.0](https://github.com/fatblaine/suburblens/compare/suburblens-v2.0.0...suburblens-v2.1.0) (2026-08-31)
 
 
