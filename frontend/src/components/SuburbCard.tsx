@@ -11,6 +11,7 @@ import LoadingSkeleton from './LoadingSkeleton'
 import BarListSkeleton from './BarListSkeleton'
 import NearbySuburbs from './NearbySuburbs'
 import DistancePanel from './DistancePanel'
+import AmenitiesPanel from './AmenitiesPanel'
 import SuburbNarrative from './SuburbNarrative'
 
 interface Props {
@@ -340,7 +341,7 @@ function DensitySection({ salCode }: { salCode: string }) {
 const BASE_TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'housing', label: 'Housing' },
-  { key: 'distances', label: 'Distances' },
+  { key: 'distances', label: 'Local Area' },
   { key: 'community', label: 'Community' },
   { key: 'education', label: 'Education' },
 ]
@@ -418,7 +419,12 @@ export default function SuburbCard({ salCode, onAdd, onRemove, defaultNearbyExpa
         </>
       )}
 
-      {activeKey === 'distances' && <DistancePanel salCode={salCode} />}
+      {activeKey === 'distances' && (
+        <>
+          <DistancePanel salCode={salCode} />
+          <AmenitiesPanel salCode={salCode} />
+        </>
+      )}
 
       {activeKey === 'community' && <CommunitySection salCode={salCode} />}
 

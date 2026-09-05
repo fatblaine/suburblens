@@ -745,6 +745,53 @@ app.MapGet("/api/suburbs/{salCode}/density", async (IDbConnection db, HttpContex
     ));
 });
 
+// amenities — OpenStreetMap points of interest inside the suburb polygon, with a
+// within-city density percentile so the raw count has a reference. Static OSM
+// snapshot refreshed ~yearly by etl/etl_amenities.py. See v_amenity_profile /
+// v_amenity_benchmark. Counts are bigint in the views, hence the ::int casts.
+app.MapGet("/api/suburbs/{salCode}/amenities", async (IDbConnection db, HttpContext http, string salCode) =>
+{
+    var row = await db.QueryFirstOrDefaultAsync<AmenityRow>(@"
+        SELECT a.sal_code AS SalCode, a.sal_name AS SalName,
+               a.state_name AS StateName, a.gccsa_name AS GccsaName,
+               a.food_count::int      AS FoodCount,
+               a.nightlife_count::int AS NightlifeCount,
+               a.grocery_count::int   AS GroceryCount,
+               a.total_count::int     AS TotalCount,
+               a.total_per_sqkm::float8 AS TotalPerSqkm,
+               b.pct_rank::float8       AS PctRank,
+               b.median_density::float8 AS MedianDensity,
+               b.cohort_max::float8     AS CohortMax,
+               b.cohort_count::int      AS CohortCount
+        FROM v_amenity_profile a
+        LEFT JOIN v_amenity_benchmark b ON b.sal_code = a.sal_code
+        WHERE a.sal_code = @salCode",
+        new { salCode });
+
+    if (row is null)
+        return Results.NotFound(new { error = $"Amenity data not available for: {salCode}" });
+
+    http.Response.Headers.CacheControl = "public, max-age=86400";
+
+    return Results.Ok(new AmenityResponse(
+        SalCode: row.SalCode, SalName: row.SalName,
+        StateName: row.StateName, GccsaName: row.GccsaName,
+        Counts: new AmenityCounts(row.FoodCount, row.NightlifeCount,
+                                  row.GroceryCount, row.TotalCount),
+        TotalPerSqkm: row.TotalPerSqkm,
+        Benchmark: row.PctRank is null ? null : new AmenityBenchmark(
+            PercentileRank: row.PctRank.Value,
+            MedianDensity:  row.MedianDensity,
+            CohortMax:      row.CohortMax,
+            CohortCount:    row.CohortCount),
+        DataNote: "Counts are OpenStreetMap points of interest inside the suburb " +
+                  "boundary (community-sourced, indicative rather than exhaustive, " +
+                  "refreshed periodically). The percentile ranks suburbs by amenities " +
+                  "per km2 within the same capital city, so size doesn't distort the " +
+                  "comparison."
+    ));
+});
+
 // heatmap — full GeoJSON FeatureCollection, aggregated in Postgres and cached in
 // Redis (fail-open). Census data is static, so it's also marked cacheable for
 // browsers/CDN via Cache-Control.
@@ -1198,6 +1245,21 @@ record DensityResponse(
     string SalCode, string SalName, string StateName, string GccsaName,
     short CensusYear, int? TotalPersons, double? AreaSqkm, double? PersonsPerSqkm,
     DensityBenchmark? Benchmark, string DataNote
+);
+
+record AmenityRow(
+    string SalCode, string SalName, string StateName, string GccsaName,
+    int FoodCount, int NightlifeCount, int GroceryCount, int TotalCount,
+    double? TotalPerSqkm, double? PctRank, double? MedianDensity,
+    double? CohortMax, int? CohortCount
+);
+record AmenityCounts(int Food, int Nightlife, int Grocery, int Total);
+record AmenityBenchmark(
+    double PercentileRank, double? MedianDensity, double? CohortMax, int? CohortCount);
+record AmenityResponse(
+    string SalCode, string SalName, string StateName, string GccsaName,
+    AmenityCounts Counts, double? TotalPerSqkm,
+    AmenityBenchmark? Benchmark, string DataNote
 );
 
 // Ranked-discovery row from v_suburb_features. LanguagePct / BornPct hold the

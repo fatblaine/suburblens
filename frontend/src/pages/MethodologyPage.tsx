@@ -155,6 +155,21 @@ export default function MethodologyPage() {
                 incidents, year ending March. <strong className="text-fg">Greater Melbourne only</strong>,
                 counted at suburb (SAL) level.
               </Row>
+              <Row label="Local amenities">
+                <strong className="text-fg">OpenStreetMap</strong> points of interest (cafés, restaurants,
+                bars, pubs, supermarkets) counted inside the suburb (SAL) boundary.{' '}
+                <strong className="text-fg">Snapshot, refreshed periodically</strong> — not a Census figure.
+                &copy; OpenStreetMap contributors, available under the{' '}
+                <a
+                  href="https://www.openstreetmap.org/copyright"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-white/20 underline-offset-2 transition-colors hover:text-lemon"
+                >
+                  Open Database Licence (ODbL)
+                </a>
+                .
+              </Row>
             </div>
           </Section>
 
@@ -180,6 +195,12 @@ export default function MethodologyPage() {
                 because they are less safe.
               </li>
               <li>
+                <strong className="text-fg">Amenity counts are community-mapped, not a register.</strong>{' '}
+                OpenStreetMap coverage is dense in the inner city and thinner in outer suburbs, so a low count
+                can mean "less mapped" rather than "nothing there". Suburbs are ranked by amenities per km²
+                so size does not distort the comparison, but treat the raw totals as indicative.
+              </li>
+              <li>
                 <strong className="text-fg">The Census is a five-yearly, self-reported snapshot.</strong> To
                 protect privacy the ABS randomly adjusts very small counts, so tiny numbers are approximate and
                 category totals may not add up exactly.
@@ -191,8 +212,8 @@ export default function MethodologyPage() {
         <footer className="mt-14 border-t border-white/[0.07] pt-6">
           <p className="font-mono text-[11px] leading-relaxed text-dim">
             Data: Australian Bureau of Statistics, Census of Population and Housing (2011, 2016, 2021); crime:
-            Victoria Crime Statistics Agency. SuburbLens is an independent project and is not affiliated with
-            the ABS.
+            Victoria Crime Statistics Agency; local amenities: &copy; OpenStreetMap contributors (ODbL).
+            SuburbLens is an independent project and is not affiliated with the ABS.
           </p>
         </footer>
       </div>

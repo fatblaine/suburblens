@@ -7,6 +7,7 @@ import type {
   EducationResponse,
   HousingMixResponse,
   CrimeResponse,
+  AmenityResponse,
 } from '../types/api'
 
 /**
@@ -148,6 +149,14 @@ function eduRank(edu?: EducationResponse): string | null {
 function crimeTotal(crime?: CrimeResponse): { total: number | null; year: number | null } {
   const latest = crime?.periods?.[crime.periods.length - 1]
   return { total: latest?.total ?? null, year: latest?.yearEnding ?? null }
+}
+
+/** "top 4%" from the within-city amenity-density percentile, or null.
+ *  Density, not raw count — that is what the benchmark view ranks on. */
+function amenityRank(a?: AmenityResponse): string | null {
+  const p = a?.benchmark?.percentileRank
+  if (p == null || a?.counts?.total === 0) return null
+  return `top ${Math.max(1, Math.round((1 - p) * 100))}% per km²`
 }
 
 // —— row / cell primitives ——
@@ -386,6 +395,53 @@ export default function CompareReport({
             }}
           />
         </tbody>
+
+        {/* Local amenities — OpenStreetMap POI counts inside the suburb boundary.
+            Totals are the readable number; the rank underneath is per km2 so a
+            small inner suburb and a large outer one compare fairly. */}
+        <tbody style={{ breakInside: 'avoid' }}>
+          <SectionHead span={span}>Local amenities · OpenStreetMap · inside suburb boundary</SectionHead>
+          <CompareRow
+            label="Food & drink"
+            rows={rows}
+            valueOf={r => r.amenities?.counts.food}
+            render={r => fmtNum(r.amenities?.counts.food ?? null)}
+          />
+          <CompareRow
+            label="Bars & pubs"
+            rows={rows}
+            valueOf={r => r.amenities?.counts.nightlife}
+            render={r => fmtNum(r.amenities?.counts.nightlife ?? null)}
+          />
+          <CompareRow
+            label="Groceries"
+            rows={rows}
+            valueOf={r => r.amenities?.counts.grocery}
+            render={r => fmtNum(r.amenities?.counts.grocery ?? null)}
+          />
+          <CompareRow
+            label="Total places"
+            rows={rows}
+            valueOf={r => r.amenities?.counts.total}
+            render={r => fmtNum(r.amenities?.counts.total ?? null)}
+          />
+          <CompareRow
+            label="Places per km²"
+            rows={rows}
+            valueOf={r => r.amenities?.totalPerSqkm}
+            render={r => {
+              const d = r.amenities?.totalPerSqkm
+              if (d == null) return '—'
+              const rank = amenityRank(r.amenities)
+              return (
+                <>
+                  {d.toLocaleString('en-AU', { maximumFractionDigits: 1 })}
+                  {rank && <div style={S.subValue}>{rank}</div>}
+                </>
+              )
+            }}
+          />
+        </tbody>
       </table>
 
       {/* Disclaimer — required: Residency Shift Index must be labelled custom */}
@@ -399,7 +455,10 @@ export default function CompareReport({
         recommendation.{' '}
         Census figures are ABS 2011 / 2016 / 2021 (SA2, mapped to the searched suburb). Crime data
         is Victoria Police (year ending March) and is available for Greater Melbourne suburbs only —
-        “—” means no crime data for that suburb.
+        “—” means no crime data for that suburb.{' '}
+        Local amenity counts are © OpenStreetMap contributors (ODbL) — community-mapped,
+        indicative rather than exhaustive. Compare suburbs on “Places per km²” rather than the
+        raw totals: a large outer suburb can hold more venues simply by covering more ground.
       </p>
     </div>
   )
