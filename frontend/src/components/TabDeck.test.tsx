@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import TabDeck, { nearestIndex } from './TabDeck'
+import TabDeck from './TabDeck'
+import { nearestIndex } from '../lib/nearestIndex'
 
 const TABS = [
   { key: 'overview', label: 'Overview' },
