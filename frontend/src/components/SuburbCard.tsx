@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useSuburbTenure, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation, useSuburbHousingMix, useSuburbCrime, useSuburbDensity } from '../api/suburbs'
 import ShiftIndexCard from './ShiftIndexCard'
@@ -14,6 +14,8 @@ import NearbySuburbs from './NearbySuburbs'
 import DistancePanel from './DistancePanel'
 import AmenitiesPanel from './AmenitiesPanel'
 import SuburbNarrative from './SuburbNarrative'
+import TabStrip from './TabStrip'
+import TabDeck from './TabDeck'
 
 interface Props {
   salCode: string
@@ -29,8 +31,6 @@ type CommunityTab = 'language' | 'birthcountry'
 // Compact, always-open section panel used inside a tab (no accordion — the tab
 // strip already gates what is visible).
 const PANEL = 'bg-surface border border-white/[0.07] shadow-xl shadow-black/30 rounded-2xl p-5'
-const NAV_BTN =
-  'rounded-full border border-white/10 bg-surface-2 px-3 py-1.5 font-mono text-[11px] text-muted transition-colors hover:text-fg hover:border-white/25'
 
 // A data block inside a tab. Click the header to expand/collapse; open by
 // default so switching to a tab shows its content straight away.
@@ -76,64 +76,6 @@ function Panel({
         </>
       )}
     </section>
-  )
-}
-
-// Horizontally-scrollable pill strip with prev/next arrows. The arrows cycle the
-// active tab, and the active pill auto-centres itself (mirrors the design mock).
-function TabStrip({
-  tabs,
-  active,
-  onSelect,
-}: {
-  tabs: { key: string; label: string }[]
-  active: number
-  onSelect: (i: number) => void
-}) {
-  const stripRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const el = stripRef.current
-    if (!el) return
-    const pill = el.querySelector<HTMLElement>(`[data-tab="${active}"]`)
-    if (!pill) return
-    const left = pill.offsetLeft - (el.clientWidth - pill.offsetWidth) / 2
-    el.scrollTo({ left: Math.max(0, left), behavior: 'smooth' })
-  }, [active])
-
-  const go = (n: number) => onSelect((n + tabs.length) % tabs.length)
-
-  const arrow =
-    'grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full border border-white/[0.12] bg-surface-2 text-fg leading-none transition-colors hover:bg-surface-3 hover:border-white/25'
-
-  return (
-    <div className="flex items-center gap-1.5 border-b border-white/[0.07] pb-2.5">
-      <button type="button" onClick={() => go(active - 1)} aria-label="Previous tab" className={arrow}>
-        ‹
-      </button>
-      <div
-        ref={stripRef}
-        className="flex flex-1 gap-1.5 overflow-x-auto scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {tabs.map((t, i) => (
-          <button
-            key={t.key}
-            data-tab={i}
-            onClick={() => onSelect(i)}
-            className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-wider transition-colors ${
-              i === active
-                ? 'border-lemon bg-lemon text-ink'
-                : 'border-white/10 bg-surface-2 text-muted hover:bg-surface-3 hover:text-fg hover:border-white/25'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-      <button type="button" onClick={() => go(active + 1)} aria-label="Next tab" className={arrow}>
-        ›
-      </button>
-    </div>
   )
 }
 
@@ -393,6 +335,58 @@ export default function SuburbCard({ salCode, onAdd, onRemove, defaultNearbyExpa
   }
   const showNote = activeKey === 'overview' || activeKey === 'housing'
 
+  // Every panel is rendered, not just the active one: the peek needs its
+  // neighbours on screen, and windowing would remount them — losing each
+  // Panel's open/closed state and the Community sub-tab, and re-running the
+  // chart animations on every swipe. The cost is 3 extra requests per card
+  // (housing-mix, distances, amenities); the other six are already fired by the
+  // Overview tab and deduped by TanStack on ['suburb-<path>', salCode].
+  const renderPanel = (key: string) => {
+    switch (key) {
+      case 'overview':
+        return (
+          <>
+            <DensitySection salCode={salCode} />
+            <SuburbNarrative salCode={salCode} />
+            <NearbySuburbs salCode={salCode} defaultExpanded={defaultNearbyExpanded} onSelect={onAdd} />
+          </>
+        )
+      case 'housing':
+        return (
+          <>
+            <ShiftIndexCard
+              residencyShiftIndex={data.residencyShiftIndex}
+              trendLabel={data.trendLabel}
+            />
+            <Panel
+              title="Tenure Time Machine"
+              subtitle="% of occupied dwellings · 2011 / 2016 / 2021"
+              note={<>Cross-year data is sourced from ABS SA2 area: <strong>{data.sa2Name}</strong>. This may include neighbouring localities.</>}
+            >
+              <TenureChart tenure={data.tenure} />
+            </Panel>
+            <HousingMixSection salCode={salCode} />
+          </>
+        )
+      case 'distances':
+        return (
+          <>
+            <DistancePanel salCode={salCode} />
+            <AmenitiesPanel salCode={salCode} />
+          </>
+        )
+      case 'community':
+        return <CommunitySection salCode={salCode} />
+      case 'education':
+        return <EducationSection salCode={salCode} />
+      case 'crime':
+        return <CrimeSection salCode={salCode} />
+      default:
+        return null
+    }
+  }
+
+
   return (
     <div className="flex flex-col gap-3.5">
 
@@ -410,55 +404,68 @@ export default function SuburbCard({ salCode, onAdd, onRemove, defaultNearbyExpa
         </button>
       </div>
 
-      <TabStrip tabs={tabs} active={active} onSelect={selectTab} />
+      <TabStrip tabs={tabs} active={active} onSelect={selectTab} idPrefix={salCode} />
 
-      {activeKey === 'overview' && (
-        <>
-          <DensitySection salCode={salCode} />
-          <SuburbNarrative salCode={salCode} />
-          <NearbySuburbs salCode={salCode} defaultExpanded={defaultNearbyExpanded} onSelect={onAdd} />
-        </>
-      )}
+      <TabDeck
+        tabs={tabs}
+        active={active}
+        onSelect={selectTab}
+        idPrefix={salCode}
+        renderPanel={renderPanel}
+      />
 
-      {activeKey === 'housing' && (
-        <>
-          <ShiftIndexCard
-            residencyShiftIndex={data.residencyShiftIndex}
-            trendLabel={data.trendLabel}
-          />
-          <Panel
-            title="Tenure Time Machine"
-            subtitle="% of occupied dwellings · 2011 / 2016 / 2021"
-            note={<>Cross-year data is sourced from ABS SA2 area: <strong>{data.sa2Name}</strong>. This may include neighbouring localities.</>}
+      {/* The reader finishes a panel by scrolling to its bottom, which on a phone
+          is exactly where "and then?" gets asked — so both moves and the position
+          live in one thumb-reachable block there. Forward is the primary half;
+          back is deliberately quieter. */}
+      <nav
+        aria-label="Section navigation"
+        className="mt-0.5 flex items-stretch overflow-hidden rounded-2xl border border-white/10 bg-surface-2"
+      >
+        <button
+          type="button"
+          onClick={() => selectTab(prevIdx)}
+          className="group flex min-w-0 shrink items-center gap-2.5 px-4 py-3.5 text-left transition-colors hover:bg-surface-3"
+        >
+          <span
+            aria-hidden="true"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 text-sm leading-none text-dim transition-colors group-hover:border-white/25 group-hover:text-muted"
           >
-            <TenureChart tenure={data.tenure} />
-          </Panel>
-          <HousingMixSection salCode={salCode} />
-        </>
-      )}
-
-      {activeKey === 'distances' && (
-        <>
-          <DistancePanel salCode={salCode} />
-          <AmenitiesPanel salCode={salCode} />
-        </>
-      )}
-
-      {activeKey === 'community' && <CommunitySection salCode={salCode} />}
-
-      {activeKey === 'education' && <EducationSection salCode={salCode} />}
-
-      {activeKey === 'crime' && <CrimeSection salCode={salCode} />}
-
-      <div className="flex items-center justify-between gap-3 pt-0.5">
-        <button type="button" onClick={() => selectTab(prevIdx)} className={NAV_BTN}>
-          ‹ {tabs[prevIdx].label}
+            ‹
+          </span>
+          <span className="min-w-0">
+            <span className="block font-mono text-[10px] uppercase tracking-wider text-dim">Previous</span>
+            <span className="mt-0.5 block truncate font-display text-sm font-medium text-muted transition-colors group-hover:text-fg">
+              {tabs[prevIdx].label}
+            </span>
+          </span>
         </button>
-        <span className="font-mono text-[10px] text-dim">{active + 1} / {tabs.length}</span>
-        <button type="button" onClick={() => selectTab(nextIdx)} className={NAV_BTN}>
-          {tabs[nextIdx].label} ›
+
+        <div className="flex shrink-0 items-center justify-center border-x border-white/[0.08] px-3">
+          <span className="font-mono text-[10px] text-dim">{active + 1} / {tabs.length}</span>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => selectTab(nextIdx)}
+          className="group flex min-w-0 flex-1 items-center justify-end gap-3 px-4 py-3.5 text-right transition-colors hover:bg-surface-3"
+        >
+          <span className="min-w-0">
+            <span className="block font-mono text-[10px] uppercase tracking-wider text-faint">
+              {active === tabs.length - 1 ? 'Back to the start' : 'Next section'}
+            </span>
+            <span className="mt-0.5 block truncate font-display text-lg font-semibold text-fg">
+              {tabs[nextIdx].label}
+            </span>
+          </span>
+          <span
+            aria-hidden="true"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-surface-3 text-lg leading-none text-muted transition-colors group-hover:border-lemon/50 group-hover:text-lemon"
+          >
+            ›
+          </span>
         </button>
-      </div>
+      </nav>
 
       {showNote && (
         <div className="bg-white/[0.06] border border-amber-300/30 rounded-xl p-3.5 text-xs leading-5 text-amber-200">

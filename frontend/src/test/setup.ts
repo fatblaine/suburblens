@@ -12,3 +12,19 @@ import { afterEach } from 'vitest'
 afterEach(() => {
   cleanup()
 })
+
+// jsdom implements neither of these, and both are load-bearing for the tab deck
+// and strip (Element.scrollTo since the strip auto-centres its active pill).
+// No-ops are enough: every layout read in that code is guarded against the 0
+// widths jsdom reports anyway.
+if (!Element.prototype.scrollTo) {
+  Element.prototype.scrollTo = () => {}
+}
+
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver
+}
