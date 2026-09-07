@@ -107,6 +107,7 @@ export default function SuburbDetailPage() {
                 onAdd={addSuburb}
                 onRemove={() => removeSuburb(code)}
                 defaultNearbyExpanded={index === 0 && defaultNearbyExpanded}
+                syncUrl={code === urlSalCode}
               />
             </div>
           ))}
