@@ -81,7 +81,7 @@ export default function NearbySuburbs({ salCode, defaultExpanded = false, onSele
               <div
                 ref={scrollRef}
                 onScroll={updateArrows}
-                className="flex gap-2 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-1
+                className="flex gap-2 overflow-x-auto overscroll-x-contain snap-x snap-mandatory scroll-smooth pb-1
                            [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               >
                 {data.nearby.map((suburb) => (
