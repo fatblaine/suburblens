@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useSuburbTenure, useSuburbLanguage, useSuburbBirthCountry, useSuburbEducation, useSuburbHousingMix, useSuburbCrime, useSuburbDensity } from '../api/suburbs'
 import ShiftIndexCard from './ShiftIndexCard'
 import TenureChart from './TenureChart'
@@ -19,6 +20,8 @@ interface Props {
   onAdd: (salCode: string) => void
   onRemove: () => void
   defaultNearbyExpanded?: boolean
+  /** Mirror the active tab into `?tab=` — only the card the URL points at. */
+  syncUrl?: boolean
 }
 
 type CommunityTab = 'language' | 'birthcountry'
@@ -346,9 +349,11 @@ const BASE_TABS = [
   { key: 'education', label: 'Education' },
 ]
 
-export default function SuburbCard({ salCode, onAdd, onRemove, defaultNearbyExpanded = false }: Props) {
+export default function SuburbCard({ salCode, onAdd, onRemove, defaultNearbyExpanded = false, syncUrl = false }: Props) {
   const { data, isPending, isError } = useSuburbTenure(salCode)
-  const [active, setActive] = useState(0)
+  const [searchParams, setSearchParams] = useSearchParams()
+  // Stacked cards keep their tab locally; only the URL suburb writes to `?tab=`.
+  const [localKey, setLocalKey] = useState('overview')
 
   if (isPending) {
     return (
@@ -370,9 +375,22 @@ export default function SuburbCard({ salCode, onAdd, onRemove, defaultNearbyExpa
   const isMelbourne = data.gccsaName?.toLowerCase().includes('melbourne')
   const tabs = isMelbourne ? [...BASE_TABS, { key: 'crime', label: 'Crime' }] : BASE_TABS
 
-  const activeKey = tabs[active]?.key ?? 'overview'
+  // Address tabs by key, not index: Melbourne has a 6th tab, so index 4 would
+  // mean different things in different cities. An unknown key falls back to 0.
+  const wantedKey = syncUrl ? (searchParams.get('tab') ?? 'overview') : localKey
+  const active = Math.max(0, tabs.findIndex(t => t.key === wantedKey))
+  const activeKey = tabs[active].key
   const prevIdx = (active - 1 + tabs.length) % tabs.length
   const nextIdx = (active + 1) % tabs.length
+
+  const selectTab = (i: number) => {
+    const key = tabs[i].key
+    if (!syncUrl) return setLocalKey(key)
+    const next = new URLSearchParams(searchParams)
+    if (key === 'overview') next.delete('tab')  // default stays out of the URL
+    else next.set('tab', key)
+    setSearchParams(next, { replace: true })    // tab clicks don't pile up history
+  }
   const showNote = activeKey === 'overview' || activeKey === 'housing'
 
   return (
@@ -392,7 +410,7 @@ export default function SuburbCard({ salCode, onAdd, onRemove, defaultNearbyExpa
         </button>
       </div>
 
-      <TabStrip tabs={tabs} active={active} onSelect={setActive} />
+      <TabStrip tabs={tabs} active={active} onSelect={selectTab} />
 
       {activeKey === 'overview' && (
         <>
@@ -433,11 +451,11 @@ export default function SuburbCard({ salCode, onAdd, onRemove, defaultNearbyExpa
       {activeKey === 'crime' && <CrimeSection salCode={salCode} />}
 
       <div className="flex items-center justify-between gap-3 pt-0.5">
-        <button type="button" onClick={() => setActive(prevIdx)} className={NAV_BTN}>
+        <button type="button" onClick={() => selectTab(prevIdx)} className={NAV_BTN}>
           ‹ {tabs[prevIdx].label}
         </button>
         <span className="font-mono text-[10px] text-dim">{active + 1} / {tabs.length}</span>
-        <button type="button" onClick={() => setActive(nextIdx)} className={NAV_BTN}>
+        <button type="button" onClick={() => selectTab(nextIdx)} className={NAV_BTN}>
           {tabs[nextIdx].label} ›
         </button>
       </div>
