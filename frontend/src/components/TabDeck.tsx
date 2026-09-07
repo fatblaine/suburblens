@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useReducedMotion } from '../lib/useReducedMotion'
+import { nearestIndex } from '../lib/nearestIndex'
 import type { Tab } from './TabStrip'
 
 // How far past the card's own width the deck may bleed, per side. Desktop has
@@ -8,26 +9,6 @@ import type { Tab } from './TabStrip'
 const MAX_PEEK = 56
 const MAX_PEEK_WIDE = 120
 const WIDE_FROM = 1024
-
-/**
- * Which panel is closest to the middle of the viewport, by centre point.
- *
- * Not `round(scrollLeft / trackWidth)`: panels sit in a track that is wider than
- * they are, so that ratio drifts further out of step with every tab.
- * Exported for the unit test — it is the only real arithmetic here.
- */
-export function nearestIndex(centers: number[], trackCenter: number): number {
-  let best = 0
-  let bestGap = Infinity
-  centers.forEach((c, i) => {
-    const gap = Math.abs(c - trackCenter)
-    if (gap < bestGap) {
-      bestGap = gap
-      best = i
-    }
-  })
-  return best
-}
 
 /**
  * A horizontal snap track of tab panels. Swiping (touch, trackpad, shift+wheel)
