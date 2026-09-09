@@ -9,6 +9,13 @@ const STATE_NAME = {
   act: 'Australian Capital Territory', nt: 'Northern Territory',
 }
 
+// salCode -> payload. Census data changes every five years, so within a browsing
+// session the only sane TTL is "forever". A plain Map (not chrome.storage) keeps
+// the manifest permission set unchanged — MV3 evicts the worker after ~30s idle
+// and the cache goes with it, but that covers the burst of listings a user flips
+// through, which is where all the repeat lookups are.
+const cache = new Map()
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type !== 'SUBURBLENS_LOOKUP') return
   lookup(msg.name, msg.state)
@@ -35,18 +42,28 @@ async function lookup(name, state) {
   const match = pickMatch(results, name, state)
   if (!match) return { notFound: true }
 
+  if (cache.has(match.salCode)) return cache.get(match.salCode)
+
   const base = `${API_BASE}/api/suburbs/${match.salCode}`
 
-  // tenure is required; crime (Melbourne-only → 404 elsewhere) and education
-  // are best-effort. Fire all three in parallel.
-  const [r2, crime, education] = await Promise.all([
-    fetch(`${base}/tenure`),
-    fetchJsonOrNull(`${base}/crime`),
-    fetchJsonOrNull(`${base}/education`),
-  ])
-  if (!r2.ok) throw new Error(`tenure ${r2.status}`)
+  // tenure is required; the rest are best-effort — crime is Melbourne-only (404s
+  // in Sydney) and any dimension can be missing for a given suburb. All seven
+  // fire in parallel, so total latency is the slowest one, not the sum.
+  const [tenure, crime, education, density, amenities, language, birth] =
+    await Promise.all([
+      fetchJsonOrNull(`${base}/tenure`),
+      fetchJsonOrNull(`${base}/crime`),
+      fetchJsonOrNull(`${base}/education`),
+      fetchJsonOrNull(`${base}/density`),
+      fetchJsonOrNull(`${base}/amenities`),
+      fetchJsonOrNull(`${base}/language`),
+      fetchJsonOrNull(`${base}/birthcountry`),
+    ])
+  if (!tenure) throw new Error('tenure unavailable')
 
-  return { suburb: match, tenure: await r2.json(), crime, education }
+  const payload = { suburb: match, tenure, crime, education, density, amenities, language, birth }
+  cache.set(match.salCode, payload)
+  return payload
 }
 
 // geo_sal appends a disambiguation suffix to interstate duplicates,
