@@ -201,6 +201,13 @@ export default function MethodologyPage() {
                 so size does not distort the comparison, but treat the raw totals as indicative.
               </li>
               <li>
+                <strong className="text-fg">No sale or rent prices.</strong> SuburbLens holds no property
+                price data at all — Census price fields describe existing loans and five-year-old rents, which
+                would be misleading. The Housing tab links out to realestate.com.au, Domain and Homely for sold
+                listings; those figures are theirs, not ours. The postcode used to build those links is the one
+                covering most of the suburb's area, and a few suburbs do span more than one.
+              </li>
+              <li>
                 <strong className="text-fg">The Census is a five-yearly, self-reported snapshot.</strong> To
                 protect privacy the ABS randomly adjusts very small counts, so tiny numbers are approximate and
                 category totals may not add up exactly.
