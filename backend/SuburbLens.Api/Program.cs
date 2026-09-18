@@ -1028,6 +1028,7 @@ internal static class TenureQuery
         SELECT
             sal_code AS SalCode, sal_name AS SalName,
             state_name AS StateName, gccsa_name AS GccsaName,
+            postcode AS Postcode,
             sa2_code AS Sa2Code, sa2_name AS Sa2Name,
             outright_2011 AS Outright2011, outright_2016 AS Outright2016, outright_2021 AS Outright2021,
             mortgage_2011 AS Mortgage2011, mortgage_2016 AS Mortgage2016, mortgage_2021 AS Mortgage2021,
@@ -1044,6 +1045,7 @@ internal static class TenureQuery
         SalName: row.SalName,
         StateName: row.StateName,
         GccsaName: row.GccsaName,
+        Postcode: row.Postcode,
         Sa2Code: row.Sa2Code,
         Sa2Name: row.Sa2Name,
         Tenure: new TenureByYear(
@@ -1065,6 +1067,7 @@ record SuburbSearchResult(string SalCode, string SalName, string StateName, stri
 // Flat record Dapper maps directly from v_tenure_shift columns
 record TenureRow(
     string SalCode, string SalName, string StateName, string GccsaName,
+    string? Postcode,
     string Sa2Code, string Sa2Name,
     decimal? Outright2011, decimal? Outright2016, decimal? Outright2021,
     decimal? Mortgage2011, decimal? Mortgage2016, decimal? Mortgage2021,
@@ -1075,6 +1078,7 @@ record TenureRow(
 // Nested response the frontend receives
 record TenureResponse(
     string SalCode, string SalName, string StateName, string GccsaName,
+    string? Postcode,
     string Sa2Code, string Sa2Name,
     TenureByYear Tenure,
     decimal? ResidencyShiftIndex, string TrendLabel, string DataNote);
