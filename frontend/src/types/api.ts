@@ -59,6 +59,8 @@ export interface TenureResponse {
   salName: string
   stateName: string
   gccsaName: string
+  /** Primary postcode by area overlap. Null until the POA ETL has run. */
+  postcode: string | null
   sa2Code: string
   sa2Name: string
   tenure: TenureByYear

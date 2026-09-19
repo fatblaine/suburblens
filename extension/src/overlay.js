@@ -1,6 +1,10 @@
 // Overlay UI — renders the SuburbLens card via Shadow DOM so the host page's
 // CSS can never leak in and break it. Runs in the page's isolated content-script
 // scope; content.js calls renderOverlay()/removeOverlay().
+//
+// The card is a fixed 340px box anchored bottom-right, so vertical space is the
+// binding constraint: the stats area is paged rather than scrolled. Header
+// (suburb + trend badge) and footer (nav + CTA) stay put; only .stats swaps.
 
 const SL_HOST_ID = 'suburblens-overlay-host'
 const SITE_URL = 'https://www.suburblensapp.com'
@@ -14,8 +18,14 @@ const TREND = {
 }
 
 // Benchmark accent colours (pill text + thumb ring) and their track gradients.
+// Neutral measures (density, education, amenities) get single-hue ramps — none
+// of them is good or bad. Only crime gets the green→red scale.
 const EDU_COLOR = '#4f8fef'
 const EDU_GRADIENT = 'linear-gradient(90deg, #1c2f52, #4f8fef)'
+const DENSITY_COLOR = '#8f7cf0'
+const DENSITY_GRADIENT = 'linear-gradient(90deg, #241f45, #8f7cf0)'
+const AMENITY_COLOR = '#3fb97f'
+const AMENITY_GRADIENT = 'linear-gradient(90deg, #16332a, #3fb97f)'
 const CRIME_COLOR = '#f2685c'
 const CRIME_GRADIENT = 'linear-gradient(90deg, #3fb97f, #f2c14e, #f2685c)'
 
@@ -26,6 +36,11 @@ const ICON = {
   cap:    '<path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1 3 3 6 3s6-2 6-3v-5"/>',
   bars:   '<line x1="6" y1="20" x2="6" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/>',
   shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3Z"/>',
+  grid:   '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  globe:  '<circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18Z"/>',
+  food:   '<path d="M5 3v6a2 2 0 0 0 4 0V3"/><line x1="7" y1="11" x2="7" y2="21"/><path d="M17 3c-1.4 1.6-2 3.6-2 6s.6 3.2 2 3.2V21"/>',
+  beer:   '<path d="M6 5h9v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5Z"/><path d="M15 9h2a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/><line x1="9" y1="9" x2="9" y2="17"/>',
+  cart:   '<circle cx="9.5" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/><path d="M2 3h3l2.5 11.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 7H6"/>',
 }
 
 const fmt = (v) => (v == null ? '—' : `${v}%`)
@@ -74,16 +89,32 @@ function statRow(icon, label, value, qualifier) {
     </div>`
 }
 
+// A compact key/value list under a small caption — used where three full stat
+// rows would eat the whole page (e.g. top languages).
+function miniList(title, rows) {
+  return `
+    <div class="mini">
+      <div class="mini-title">${title}</div>
+      ${rows.map(([k, v]) => `
+        <div class="mini-row"><span class="mini-k">${k}</span><span class="mini-v">${v}</span></div>`
+      ).join('')}
+    </div>`
+}
+
 // A benchmark row: icon + label, a "More than X%" pill, a gradient track with a
 // ring thumb at the percentile, and a fewer/cohort/more scale. `color`/`gradient`
 // drive the palette (blue for education, green→red for crime).
 function benchRow({ label, color, gradient, pct, scaleMid }) {
   const p = Math.max(0, Math.min(100, Math.round(pct)))
+  // A percentile of 1.0 would read "More than 100%", which can't be true of
+  // anything. The top-ranked suburb gets named as such; the thumb still sits at
+  // the true position, only the pill wording changes.
+  const pill = p >= 100 ? 'Highest in the city' : `More than ${p}%`
   return `
     <div class="bench-row">
       <div class="bench-head">
         <span class="label bench-label">${svgIcon(ICON.bars)}${label}</span>
-        <span class="bench-pill" style="background:color-mix(in srgb, ${color} 18%, transparent); color:${color};">More than ${p}%</span>
+        <span class="bench-pill" style="background:color-mix(in srgb, ${color} 18%, transparent); color:${color};">${pill}</span>
       </div>
       <div class="bench-track" style="background:${gradient};">
         <span class="bench-thumb" style="left:${p}%; border-color:${color};"></span>
@@ -92,6 +123,129 @@ function benchRow({ label, color, gradient, pct, scaleMid }) {
         <span>fewer</span><span class="scale-mid">${scaleMid}</span><span>more</span>
       </div>
     </div>`
+}
+
+// ── Pages ─────────────────────────────────────────────────────────────────────
+// Grouped by the question a house-hunter asks next, not by which endpoint the
+// data came from. Each page carries at most ONE benchmark bar: a bench row is
+// ~70px against ~38px for a stat row, so one-per-page is what keeps the pages
+// close in height. Order is fixed — page 1 is all most people will ever see —
+// and any page that renders empty drops out of the deck; see buildPages().
+
+function housingPage({ tenure, density }) {
+  const rent = tenure.tenure?.rent ?? {}
+  const bm = density?.benchmark
+  return [
+    statRow(ICON.home, 'Renting share', `${fmt(rent.y2016)} → ${fmt(rent.y2021)}`, '2016→2021'),
+    statRow(ICON.trend, 'Residency Shift Index', tenure.residencyShiftIndex ?? '—', 'SuburbLens custom'),
+    density?.personsPerSqkm != null
+      ? statRow(ICON.grid, 'Population density', num(Math.round(density.personsPerSqkm)), 'per km²')
+      : '',
+    bm && bm.cohortCount > 1
+      ? benchRow({
+          label: `Density vs ${density.gccsaName}`,
+          color: DENSITY_COLOR, gradient: DENSITY_GRADIENT,
+          pct: bm.percentileRank * 100,
+          scaleMid: `${num(bm.cohortCount)} suburbs`,
+        })
+      : '',
+  ].join('')
+}
+
+function areaPage({ amenities }) {
+  const c = amenities?.counts
+  const bm = amenities?.benchmark
+  // 383 in-scope suburbs are parks/water/industrial with no POIs at all —
+  // three zeroes say nothing, so drop the page instead (empty → filtered out).
+  if (!c || !c.total) return ''
+  return [
+    statRow(ICON.food, 'Food & drink', num(c.food)),
+    statRow(ICON.beer, 'Bars & pubs', num(c.nightlife)),
+    statRow(ICON.cart, 'Groceries', num(c.grocery)),
+    bm && bm.cohortCount > 1
+      ? benchRow({
+          label: `Amenities vs ${amenities.gccsaName}`,
+          color: AMENITY_COLOR, gradient: AMENITY_GRADIENT,
+          pct: bm.percentileRank * 100,
+          scaleMid: `${num(bm.cohortCount)} suburbs · per km²`,
+        })
+      : '',
+  ].join('')
+}
+
+function peoplePage({ language, birth, education }) {
+  // The country list is a fixed set of named countries with no "other"/"not
+  // stated" bucket, so it does NOT sum to 100 — 100 minus Australia would
+  // overstate "born overseas". Show the Australia figure the data actually has.
+  const aus = (birth?.y2021?.countries ?? []).find(c => c.country === 'Australia')
+  // 'Other' is the aggregate bucket for every language outside the named list —
+  // in a three-slot list it would burn a third of the space saying nothing.
+  const langs = (language?.y2021?.languages ?? [])
+    .filter(l => l.language !== 'English only' && l.language !== 'Other'
+                 && (l.pct ?? 0) >= 0.3)
+    .slice(0, 3)
+  const uniPct = education?.y2021?.universityPct
+  const bm = education?.benchmark
+
+  return [
+    aus?.pct != null ? statRow(ICON.globe, 'Australia-born', fmt(aus.pct), '2021') : '',
+    langs.length ? miniList('Top languages at home', langs.map(l => [l.language, fmt(l.pct)])) : '',
+    // With a benchmark, the raw university share rides in the scale caption
+    // rather than taking its own stat row — two numbers, one row of height.
+    bm && bm.cohortCount > 1
+      ? benchRow({
+          label: 'University-qualified',
+          color: EDU_COLOR, gradient: EDU_GRADIENT,
+          pct: bm.percentileRank * 100,
+          scaleMid: `${fmt(uniPct)} here · ${num(bm.cohortCount)} suburbs`,
+        })
+      : uniPct != null
+        ? statRow(ICON.cap, 'University-qualified', fmt(uniPct), '2021')
+        : '',
+  ].join('')
+}
+
+function safetyPage({ crime }) {
+  const periods = crime?.periods ?? []
+  const last = periods[periods.length - 1]
+  const prev = periods[periods.length - 2]
+  const bm = crime?.benchmark
+
+  // Direction year-on-year, since a raw incident count means little on its own.
+  let changeRow = ''
+  if (last?.total != null && prev?.total > 0) {
+    const delta = ((last.total - prev.total) / prev.total) * 100
+    changeRow = statRow(ICON.trend, 'Change vs last year',
+                        `${delta > 0 ? '+' : ''}${delta.toFixed(1)}%`,
+                        `from ${num(prev.total)}`)
+  }
+
+  return [
+    last ? statRow(ICON.shield, 'Crime incidents', num(last.total), `yr ending ${last.yearEnding}`) : '',
+    changeRow,
+    bm && bm.cohortCount > 1
+      ? benchRow({
+          label: 'Crime rank vs Greater Melbourne',
+          color: CRIME_COLOR, gradient: CRIME_GRADIENT,
+          pct: bm.percentileRank * 100,
+          scaleMid: `${num(bm.cohortCount)} suburbs · by count`,
+        })
+      : '',
+  ].join('')
+}
+
+// Build the deck, dropping any page that renders empty. Sydney has no crime data
+// at all (404) and hundreds of suburbs have no amenities, so a fixed four-page
+// deck would hand those users blank pages — worse than not offering the page.
+function buildPages(data) {
+  return [
+    { label: 'Housing', render: housingPage },
+    { label: 'Area',    render: areaPage },
+    { label: 'People',  render: peoplePage },
+    { label: 'Safety',  render: safetyPage },
+  ]
+    .map(p => ({ label: p.label, html: p.render(data) }))
+    .filter(p => p.html.trim() !== '')
 }
 
 // Loading state — same chrome as the data card, with a spinner + shimmer skeleton
@@ -157,46 +311,12 @@ function renderLoading(name) {
   document.body.appendChild(host)
 }
 
-function renderOverlay({ suburb, tenure, crime, education }) {
+function renderOverlay(data) {
   removeOverlay()
+  const { suburb, tenure } = data
   const t = TREND[tenure.trendLabel] ?? TREND.stable
-  const rent = tenure.tenure?.rent ?? {}
-
-  // Education: latest-year (2021) university qualification share + city rank.
-  const uniPct = education?.y2021?.universityPct
-  const eduRow = uniPct != null
-    ? statRow(ICON.cap, 'University-qualified', fmt(uniPct), '2021')
-    : ''
-
-  // Education benchmark: blue gradient (not green→red) — qualification isn't
-  // good/bad. Metric is already per-person, so no "by count" caveat needed.
-  const eduBm = education?.benchmark
-  const eduBenchRow = eduBm && eduBm.cohortCount > 1
-    ? benchRow({
-        label: `University rank vs ${eduBm.cohortName}`,
-        color: EDU_COLOR, gradient: EDU_GRADIENT,
-        pct: eduBm.percentileRank * 100,
-        scaleMid: `${num(eduBm.cohortCount)} suburbs`,
-      })
-    : ''
-
-  // Crime: latest year's total incidents (Melbourne only → may be absent).
-  const period = crime?.periods?.[crime.periods.length - 1]
-  const crimeRow = period
-    ? statRow(ICON.shield, 'Crime incidents', num(period.total), `yr ending ${period.yearEnding}`)
-    : ''
-
-  // Crime benchmark: green→red gradient. Ranked by raw count, not per person,
-  // so the scale carries a "· by count" caveat.
-  const bm = crime?.benchmark
-  const crimeBenchRow = bm && bm.cohortCount > 1
-    ? benchRow({
-        label: 'Crime rank vs Greater Melbourne',
-        color: CRIME_COLOR, gradient: CRIME_GRADIENT,
-        pct: bm.percentileRank * 100,
-        scaleMid: `${num(bm.cohortCount)} suburbs · by count`,
-      })
-    : ''
+  const pages = buildPages(data)
+  const multi = pages.length > 1
 
   const host = document.createElement('div')
   host.id = SL_HOST_ID
@@ -220,6 +340,15 @@ function renderOverlay({ suburb, tenure, crime, education }) {
       }
       .value { font-size: 13px; font-weight: 600; color: #eef1f6; text-align: right; white-space: nowrap; }
       .dim { font-weight: 400; font-size: 11.5px; color: #5b606d; }
+      .mini { padding: 9px 0 10px; border-bottom: 1px solid rgba(255,255,255,.07); }
+      .mini-title {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+        color: #5b606d; margin-bottom: 6px;
+      }
+      .mini-row { display: flex; justify-content: space-between; gap: 10px; padding: 1.5px 0; }
+      .mini-k { font-size: 12px; color: #9aa0ad; }
+      .mini-v { font-size: 12px; font-weight: 600; color: #eef1f6; }
       .bench-row { padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,.07); }
       .bench-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
       .bench-label { padding-top: 1px; }
@@ -239,11 +368,27 @@ function renderOverlay({ suburb, tenure, crime, education }) {
         font-size: 10.5px; color: #5b606d;
       }
       .scale-mid { color: #6b7280; }
+      .nav { display: flex; align-items: stretch; gap: 2px; margin-top: 8px; }
+      .nav-arrow {
+        flex: none; width: 20px; background: none; border: 0; cursor: pointer;
+        color: #6b7280; font-size: 14px; line-height: 1; padding: 0; border-radius: 6px;
+      }
+      .nav-arrow:hover:not(:disabled) { color: #eef1f6; background: rgba(255,255,255,.06); }
+      .nav-arrow:disabled { color: #33373f; cursor: default; }
+      .nav-tabs { flex: 1; display: flex; gap: 2px; }
+      .nav-tab {
+        flex: 1; background: none; border: 0; cursor: pointer; padding: 5px 2px 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 10.5px; letter-spacing: .04em; color: #5b606d;
+        border-bottom: 1.5px solid transparent; transition: color .12s ease;
+      }
+      .nav-tab:hover { color: #9aa0ad; }
+      .nav-tab.active { color: #c6f24e; border-bottom-color: #c6f24e; }
       a.cta {
         display: flex; justify-content: center; align-items: center; gap: 6px;
         width: 100%; background: #c6f24e; color: #0d0f14; text-decoration: none;
         font-size: 13.5px; font-weight: 700; padding: 11px 14px; border-radius: 10px;
-        margin-top: 14px; transition: filter .15s ease;
+        margin-top: ${multi ? '10px' : '14px'}; transition: filter .15s ease;
       }
       a.cta:hover { filter: brightness(1.08); }
     </style>
@@ -254,17 +399,55 @@ function renderOverlay({ suburb, tenure, crime, education }) {
       </div>
       <div class="suburb">${suburb.salName}</div>
       <div class="badge"><span class="dot"></span>${t.text}</div>
-      <div class="stats">
-        ${statRow(ICON.home, 'Renting share', `${fmt(rent.y2016)} → ${fmt(rent.y2021)}`, '2016→2021')}
-        ${statRow(ICON.trend, 'Residency Shift Index', tenure.residencyShiftIndex ?? '—', 'SuburbLens custom')}
-        ${eduRow}
-        ${eduBenchRow}
-        ${crimeRow}
-        ${crimeBenchRow}
-      </div>
+      <div class="stats"></div>
+      ${multi ? `
+      <div class="nav">
+        <button class="nav-arrow nav-prev" title="Previous">‹</button>
+        <div class="nav-tabs">
+          ${pages.map((p, i) => `<button class="nav-tab" data-i="${i}">${p.label}</button>`).join('')}
+        </div>
+        <button class="nav-arrow nav-next" title="Next">›</button>
+      </div>` : ''}
       <a class="cta" target="_blank" rel="noopener"
          href="${SITE_URL}/suburb/${suburb.salCode}?ref=extension">View full analysis →</a>
     </div>`
   shadow.querySelector('.x').addEventListener('click', removeOverlay)
+
+  const statsEl = shadow.querySelector('.stats')
+  let page = 0
+
+  const paint = () => {
+    statsEl.innerHTML = pages[page].html
+    if (!multi) return
+    shadow.querySelectorAll('.nav-tab').forEach((el, i) =>
+      el.classList.toggle('active', i === page))
+    shadow.querySelector('.nav-prev').disabled = page === 0
+    shadow.querySelector('.nav-next').disabled = page === pages.length - 1
+  }
+
+  if (multi) {
+    // No wrap-around: with only three or four pages, looping back to the first
+    // just loses the reader's place. Ends of the deck grey the arrow out.
+    shadow.querySelector('.nav-prev').addEventListener('click', () => { page--; paint() })
+    shadow.querySelector('.nav-next').addEventListener('click', () => { page++; paint() })
+    shadow.querySelectorAll('.nav-tab').forEach(el =>
+      el.addEventListener('click', () => { page = Number(el.dataset.i); paint() }))
+  }
+
   document.body.appendChild(host)
+
+  // The card is anchored bottom-right, so it grows upward: pages of different
+  // heights would make it jump and slide the CTA out from under the cursor.
+  // Measure each page once it's in the DOM and pin .stats to the tallest —
+  // measured rather than a magic constant, so it stays right when a long suburb
+  // name or benchmark label wraps to two lines.
+  if (multi) {
+    let tallest = 0
+    for (const p of pages) {
+      statsEl.innerHTML = p.html
+      tallest = Math.max(tallest, statsEl.offsetHeight)
+    }
+    statsEl.style.minHeight = `${tallest}px`
+  }
+  paint()
 }

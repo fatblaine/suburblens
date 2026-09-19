@@ -16,6 +16,8 @@ import AmenitiesPanel from './AmenitiesPanel'
 import SuburbNarrative from './SuburbNarrative'
 import TabStrip from './TabStrip'
 import TabDeck from './TabDeck'
+import { soldLinks, baseName } from '../lib/externalLinks'
+import { track } from '../lib/analytics'
 
 interface Props {
   salCode: string
@@ -99,6 +101,49 @@ function HousingMixSection({ salCode }: { salCode: string }) {
       note={data.dataNote}
     >
       <HousingMix response={data} />
+    </Panel>
+  )
+}
+
+// Sold prices are the one thing we send people elsewhere for: SuburbLens holds no
+// sale data, so this is a jump-off point rather than a data block. Renders nothing
+// when the suburb has no postcode — a link built without one lands on a same-named
+// suburb interstate, and a wrong link costs more trust than a missing card.
+function SalesHistorySection({
+  salCode,
+  salName,
+  stateName,
+  postcode,
+}: {
+  salCode: string
+  salName: string
+  stateName: string
+  postcode: string | null
+}) {
+  const links = soldLinks({ salName, stateName, postcode })
+  if (links.length === 0) return null
+
+  return (
+    <Panel
+      title="Sales history"
+      subtitle={`Sold listings for ${baseName(salName)} on external sites`}
+      note="Sold prices come from these property sites, not from SuburbLens or the ABS. SuburbLens does not hold sale price data."
+    >
+      <div className="flex flex-col gap-2">
+        {links.map(({ site, label, url }) => (
+          <a
+            key={site}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            onClick={() => track('sold_link_click', { site, sal_code: salCode })}
+            className="flex items-center justify-between gap-3 rounded-xl bg-surface-2 px-4 py-3 text-sm text-fg transition-colors hover:bg-surface-3 hover:text-lemon focus:border-lemon/60"
+          >
+            <span>{label}</span>
+            <span className="font-mono text-xs text-faint" aria-hidden="true">↗</span>
+          </a>
+        ))}
+      </div>
     </Panel>
   )
 }
@@ -366,6 +411,12 @@ export default function SuburbCard({ salCode, onAdd, onRemove, defaultNearbyExpa
               <TenureChart tenure={data.tenure} />
             </Panel>
             <HousingMixSection salCode={salCode} />
+            <SalesHistorySection
+              salCode={salCode}
+              salName={data.salName}
+              stateName={data.stateName}
+              postcode={data.postcode}
+            />
           </>
         )
       case 'distances':
