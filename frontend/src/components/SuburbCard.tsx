@@ -253,7 +253,7 @@ function CrimeSection({ salCode }: { salCode: string }) {
   return (
     <Panel
       title="Crime"
-      subtitle="Recorded incidents · year ending March · Greater Melbourne"
+      subtitle="Recorded incidents · year ending June · Greater Melbourne"
       note={data.dataNote}
     >
       <CrimeChart response={data} />

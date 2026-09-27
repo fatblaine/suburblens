@@ -696,7 +696,7 @@ app.MapGet("/api/suburbs/{salCode}/crime", async (IDbConnection db, string salCo
         Periods: periods,
         Benchmark: benchmark,
         DataNote: "Recorded criminal incidents in Greater Melbourne (VIC CSA), " +
-                  "year ending March. Benchmarks rank suburbs by total incident " +
+                  "year ending June. Benchmarks rank suburbs by total incident " +
                   "count, not per person — larger and inner-city suburbs sit " +
                   "higher by nature."));
 });

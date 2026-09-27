@@ -3,7 +3,7 @@
 etl_crime.py — 载入大墨尔本 suburb 级犯罪事件数（VIC CSA, Table 03）。
 
 读取 data/crime/ 下的 xlsx，映射 Offence Subdivision → 归一类别，
-按 suburb 名解析 sal_code（仅 VIC + 大墨尔本），聚合到年度入库。幂等（TRUNCATE 后全量灌）。
+按 suburb 名解析 sal_code（仅 VIC + 大墨尔本），聚合到年度（year ending June）入库。幂等（TRUNCATE 后全量灌）。
 
 依赖：pandas, openpyxl, psycopg2；连接串来自 etl/.env 的 SUPABASE_DB_URL。
 
@@ -19,7 +19,7 @@ from etl import get_connection                 # 复用 etl/etl.py:128 的连接
 from psycopg2.extras import execute_values
 
 DATA = Path(__file__).resolve().parent.parent / "data" / "crime"
-VIC_XLSX = DATA / "Data_Tables_LGA_Criminal_Incidents_Year_Ending_March_2026_0.xlsx"
+VIC_XLSX = DATA / "2026-06" / "vic" / "Data_Tables_LGA_Criminal_Incidents_Year_Ending_June_2026.xlsx"
 SHEET = "Table 03"
 
 # —— VIC Offence Subdivision → 归一类别（其余全部落到 "other"）——
