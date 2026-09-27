@@ -155,7 +155,7 @@ export interface HousingMixResponse {
   dataNote: string
 }
 
-// Crime — matches GET /api/suburbs/:salCode/crime  (Greater Melbourne only; 404 elsewhere)
+// Crime — matches GET /api/suburbs/:salCode/crime  (Greater Sydney / Melbourne; 404 when a suburb has none)
 export interface CrimeCategory {
   category: string   // assault | break_enter | theft | robbery | property_damage | other
   incidents: number

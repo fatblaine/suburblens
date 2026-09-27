@@ -62,7 +62,7 @@ export default function CrimeChart({ response }: { response: CrimeResponse }) {
         )}
       </div>
 
-      {/* Benchmark vs Greater Melbourne — ranked by count, not per person */}
+      {/* Benchmark vs the suburb's own city — ranked by count, not per person */}
       {response.benchmark && response.benchmark.cohortCount > 1 && (() => {
         const bm = response.benchmark!
         const max = bm.cohortMax || 1
@@ -70,7 +70,7 @@ export default function CrimeChart({ response }: { response: CrimeResponse }) {
         return (
           <div className="rounded-lg bg-surface-2 border border-white/[0.07] p-4 space-y-3">
             <p className="font-mono text-xs uppercase tracking-wider text-faint">
-              Crime rank vs Greater Melbourne · {latest.yearEnding}
+              Crime rank vs {response.gccsaName} · {latest.yearEnding}
             </p>
             <p className="text-sm text-muted">
               More incidents than{' '}
@@ -85,7 +85,7 @@ export default function CrimeChart({ response }: { response: CrimeResponse }) {
               </div>
               <span className="absolute top-1/2 -translate-y-1/2 h-3 w-0.5 rounded bg-white/50"
                     style={{ left: `${Math.min(100, (bm.medianTotal / max) * 100)}%` }}
-                    title="Greater Melbourne median" />
+                    title={`${response.gccsaName} median`} />
             </div>
             <p className="font-mono text-xs text-muted flex flex-wrap gap-x-4 gap-y-0.5">
               <span>median {Math.round(bm.medianTotal).toLocaleString()}</span>

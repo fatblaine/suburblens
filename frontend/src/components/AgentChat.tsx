@@ -41,7 +41,7 @@ const DISCOVERY = [
 const FAQ: { q: string; a: string }[] = [
   {
     q: 'What data can you look up?',
-    a: 'I can pull ABS Census data for a suburb across 2011, 2016 and 2021:\n• Tenure trends (owned / mortgage / rented) + the SuburbLens Residency Shift Index\n• Education qualification levels\n• Languages spoken at home\n• Country of birth\n• Nearby suburbs (within ~20km)\n\nPlus recorded crime incidents (yearly counts, Greater Melbourne only for now).\n\nJust name a Sydney or Melbourne suburb.',
+    a: 'I can pull ABS Census data for a suburb across 2011, 2016 and 2021:\n• Tenure trends (owned / mortgage / rented) + the SuburbLens Residency Shift Index\n• Education qualification levels\n• Languages spoken at home\n• Country of birth\n• Nearby suburbs (within ~20km)\n\nPlus recorded crime incidents (yearly counts for Sydney and Melbourne suburbs).\n\nJust name a Sydney or Melbourne suburb.',
   },
   {
     q: 'Where does the data come from?',
