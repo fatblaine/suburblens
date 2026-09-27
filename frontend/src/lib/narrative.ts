@@ -118,7 +118,7 @@ function communityPara(
   return sentences.length ? sentences.join(' ') : null
 }
 
-// Paragraph 3 — education, and crime for Melbourne suburbs only.
+// Paragraph 3 — education, and crime where the suburb has it.
 function outcomesPara(education?: EducationResponse | null, crime?: CrimeResponse | null): string | null {
   const sentences: string[] = []
 
@@ -137,7 +137,7 @@ function outcomesPara(education?: EducationResponse | null, crime?: CrimeRespons
     }
   }
 
-  // Crime is Greater Melbourne only; if there is no data (e.g. a Sydney suburb),
+  // If a suburb has no crime data (a tiny locality with no recorded incidents),
   // say nothing rather than invent it.
   const latest = crime?.periods?.length ? crime.periods[crime.periods.length - 1] : null
   if (latest) {
@@ -145,7 +145,7 @@ function outcomesPara(education?: EducationResponse | null, crime?: CrimeRespons
     if (cb && cb.percentileRank != null) {
       const ahead = round(cb.percentileRank * 100)
       sentences.push(
-        `Recorded criminal incidents totalled ${latest.total.toLocaleString()} in the latest year — higher than ${ahead}% of Greater Melbourne suburbs, though this ranks by volume rather than a per-person rate.`,
+        `Recorded criminal incidents totalled ${latest.total.toLocaleString()} in the latest year — higher than ${ahead}% of ${crime!.gccsaName} suburbs, though this ranks by volume rather than a per-person rate.`,
       )
     } else {
       sentences.push(`Recorded criminal incidents totalled ${latest.total.toLocaleString()} in the latest year.`)

@@ -107,7 +107,7 @@ export default function AboutPage() {
               <Row label="Languages at home">The main languages spoken in the community and how they have shifted.</Row>
               <Row label="Country of birth">Where residents were born, and the share born overseas.</Row>
               <Row label="Education">The distribution of qualification levels, including university-qualified share.</Row>
-              <Row label="Recorded crime">Yearly recorded incidents by category — Greater Melbourne only for now.</Row>
+              <Row label="Recorded crime">Yearly recorded incidents by category, for Sydney and Melbourne suburbs.</Row>
               <Row label="Nearby suburbs">The closest suburbs, so you can widen your search.</Row>
               <Row label="Compare & map">Put suburbs side by side, or view the city as a map.</Row>
               <Row label="AI assistant">Ask questions about a suburb in plain language (sign-in required).</Row>
@@ -133,8 +133,8 @@ export default function AboutPage() {
                 SA2 layer, bridged via the ABS correspondence files.
               </Row>
               <Row label="Crime">
-                Recorded criminal incidents from the relevant state agency. Currently available for Greater
-                Melbourne only.
+                Recorded criminal incidents from each state's agency — NSW BOCSAR for Greater Sydney, the
+                Victorian Crime Statistics Agency for Greater Melbourne.
               </Row>
               <Row label="Coverage">
                 Greater Sydney and Greater Melbourne. Other cities are not included yet.
