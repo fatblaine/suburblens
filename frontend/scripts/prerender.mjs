@@ -225,7 +225,7 @@ const HOME_BODY =
   `the direction a neighbourhood is heading — not just where it stands today.</p>` +
   `<p>Every suburb has a profile bringing several Census dimensions together: tenure trends and the SuburbLens ` +
   `Residency Shift Index, the main languages spoken at home, residents' countries of birth, education levels, ` +
-  `and — for Greater Melbourne — recorded crime. You can compare suburbs side by side or view the whole city ` +
+  `and recorded crime. You can compare suburbs side by side or view the whole city ` +
   `as a map.</p>` +
   `<p>It is built for new migrants and international students deciding where to live, and it is an independent, ` +
   `non-commercial project — not affiliated with the ABS, realestate.com.au, or domain.com.au.</p>` +
@@ -254,7 +254,7 @@ const ABOUT_BODY =
   `<h2 style="${H2}">Where the data comes from</h2>` +
   `<p>All figures come from public Australian government releases: the ABS Census of Population and Housing 2021 ` +
   `Time Series Profile (harmonised 2011/2016/2021) and General Community Profile, ABS Statistical Areas for ` +
-  `geography, and recorded criminal incidents from the relevant state agency (Greater Melbourne only for now). ` +
+  `geography, and recorded criminal incidents from each state's agency (NSW BOCSAR, Victoria CSA). ` +
   `SuburbLens adds structure and visualisation; it does not alter the underlying counts. The Residency Shift ` +
   `Index is the only figure it invents.</p>` +
   `<h2 style="${H2}">An independent project</h2>` +
@@ -284,8 +284,9 @@ const METHOD_BODY =
   `notes which SA2 its cross-year data comes from.</p>` +
   `<h2 style="${H2}">Sources and limitations</h2>` +
   `<p>Tenure, language at home, country of birth and education come from the ABS Census Time Series Profile ` +
-  `(tables T01, T10, T08, T29) for 2011, 2016 and 2021. Crime is from the Victoria Crime Statistics Agency, ` +
-  `recorded incidents, Greater Melbourne only, and is ranked by volume rather than a per-capita rate. Coverage ` +
+  `(tables T01, T10, T08, T29) for 2011, 2016 and 2021. Crime is recorded incidents from NSW BOCSAR (Greater ` +
+  `Sydney) and the Victoria Crime Statistics Agency (Greater Melbourne), ranked by volume within each city ` +
+  `rather than by a per-capita rate. Coverage ` +
   `is Greater Sydney and Greater Melbourne only. The Census is a five-yearly, self-reported snapshot and the ` +
   `ABS randomly adjusts very small counts to protect privacy, so tiny numbers are approximate.</p>`
 

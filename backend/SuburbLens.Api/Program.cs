@@ -637,9 +637,9 @@ app.MapGet("/api/suburbs/{salCode}/housing-mix", async (
     ));
 });
 
-// crime — recorded criminal incidents (VIC CSA), Greater Melbourne only. The view
-// filters to gccsa_code='2GMEL' and the last 5 year-endings, so a non-Melbourne
-// salCode returns 0 rows → 404 (the frontend card then just doesn't render).
+// crime — recorded criminal incidents, Greater Sydney (NSW BOCSAR) and Greater Melbourne
+// (VIC CSA), year ending June. The view filters to 1GSYD/2GMEL and each city's last 5
+// year-endings, so an out-of-scope salCode returns 0 rows → 404 (the card doesn't render).
 app.MapGet("/api/suburbs/{salCode}/crime", async (IDbConnection db, string salCode) =>
 {
     var rows = await db.QueryAsync<CrimeRow>(@"
@@ -669,7 +669,8 @@ app.MapGet("/api/suburbs/{salCode}/crime", async (IDbConnection db, string salCo
                          .OrderByDescending(c => c.Incidents).ToArray()))
         .ToArray();
 
-    // benchmark — this suburb's latest-year total vs all Greater Melbourne suburbs.
+    // benchmark — this suburb's latest-year total vs all suburbs in its own city
+    // (the two states record offences differently, so there is no cross-city rank).
     // percentile_cont can't be a window fn, so median comes from v_crime_benchmark.
     var bench = await db.QueryFirstOrDefaultAsync<CrimeBenchmarkRow>(@"
         SELECT total_incidents::int  AS TotalIncidents,
@@ -695,10 +696,13 @@ app.MapGet("/api/suburbs/{salCode}/crime", async (IDbConnection db, string salCo
         StateName: first.StateName, GccsaName: first.GccsaName,
         Periods: periods,
         Benchmark: benchmark,
-        DataNote: "Recorded criminal incidents in Greater Melbourne (VIC CSA), " +
-                  "year ending March. Benchmarks rank suburbs by total incident " +
-                  "count, not per person — larger and inner-city suburbs sit " +
-                  "higher by nature."));
+        DataNote: $"Recorded criminal incidents in {first.GccsaName} " +
+                  (first.StateName == "New South Wales"
+                      ? "(NSW BOCSAR, excluding transport regulatory offences), "
+                      : "(VIC CSA), ") +
+                  "year ending June. Benchmarks rank suburbs by total incident " +
+                  $"count within {first.GccsaName}, not per person — larger and " +
+                  "inner-city suburbs sit higher by nature."));
 });
 
 // density — SAL-level usual-resident population per km2 (gross density over the

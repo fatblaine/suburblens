@@ -225,6 +225,7 @@ export default function CompareReport({
 }) {
   if (rows.length === 0) return null
   const span = rows.length + 1
+  const mixedCities = new Set(rows.map(r => r.tenure.gccsaName)).size > 1
   const generatedAt = new Date().toLocaleDateString('en-AU', {
     day: 'numeric', month: 'long', year: 'numeric',
   })
@@ -374,13 +375,17 @@ export default function CompareReport({
           />
         </tbody>
 
-        {/* Crime (Greater Melbourne only) — fewest incidents highlighted in green */}
+        {/* Crime — fewest incidents highlighted in green, but only within one city:
+            NSW and VIC record offences differently, so a cross-city "winner" would mislead. */}
         <tbody style={{ breakInside: 'avoid' }}>
-          <SectionHead span={span}>Crime · recorded incidents / yr · Greater Melbourne only</SectionHead>
+          <SectionHead span={span}>
+            Crime · recorded incidents / yr
+            {mixedCities && ' · Sydney and Melbourne counts are not directly comparable'}
+          </SectionHead>
           <CompareRow
             label="Total incidents"
             rows={rows}
-            valueOf={r => crimeTotal(r.crime).total}
+            valueOf={r => (mixedCities ? null : crimeTotal(r.crime).total)}
             highlight="min"
             render={r => {
               const { total, year } = crimeTotal(r.crime)
@@ -448,14 +453,16 @@ export default function CompareReport({
       <p style={S.note}>
         <strong style={{ color: '#111' }}>Highlighted</strong> = the highest value in that row;
         for crime, <strong style={{ color: '#1a7a4a' }}>green</strong> marks the lowest (fewest
-        incidents).<br />
+        incidents) — only when every suburb is in the same city.<br />
         <strong style={{ color: '#555' }}>Note:</strong> The Residency Shift Index is a SuburbLens
         custom heuristic based on 2016→2021 tenure changes; it is not an official ABS metric.
         Housing mix is a 2021 ABS Census SAL-level snapshot and is not an investment
         recommendation.{' '}
         Census figures are ABS 2011 / 2016 / 2021 (SA2, mapped to the searched suburb). Crime data
-        is Victoria Police (year ending March) and is available for Greater Melbourne suburbs only —
-        “—” means no crime data for that suburb.{' '}
+        (year ending June) is from the NSW Bureau of Crime Statistics and Research for Greater Sydney
+        and the Victorian Crime Statistics Agency for Greater Melbourne; the two states record
+        offences differently, so compare counts within a city, not across. “—” means no crime data
+        for that suburb.{' '}
         Local amenity counts are © OpenStreetMap contributors (ODbL) — community-mapped,
         indicative rather than exhaustive. Compare suburbs on “Places per km²” rather than the
         raw totals: a large outer suburb can hold more venues simply by covering more ground.

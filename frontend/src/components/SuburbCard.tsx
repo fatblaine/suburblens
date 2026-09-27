@@ -231,8 +231,12 @@ function EducationSection({ salCode }: { salCode: string }) {
 function CrimeSection({ salCode }: { salCode: string }) {
   const { data, isPending, isError } = useSuburbCrime(salCode)
 
-  // 404 (non-Melbourne / no data) → silently render nothing
-  if (isError) return null
+  // 404 → no crime rows for this suburb (e.g. a tiny locality BOCSAR/CSA never recorded)
+  if (isError) return (
+    <div className={`${PANEL} text-sm text-muted`}>
+      No recorded crime data for this suburb.
+    </div>
+  )
 
   if (isPending) return (
     <div className={PANEL}>
@@ -253,7 +257,7 @@ function CrimeSection({ salCode }: { salCode: string }) {
   return (
     <Panel
       title="Crime"
-      subtitle="Recorded incidents · year ending March · Greater Melbourne"
+      subtitle={`Recorded incidents · year ending June · ${data.gccsaName}`}
       note={data.dataNote}
     >
       <CrimeChart response={data} />
@@ -328,12 +332,13 @@ function DensitySection({ salCode }: { salCode: string }) {
   )
 }
 
-const BASE_TABS = [
+const TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'housing', label: 'Housing' },
   { key: 'distances', label: 'Local Area' },
   { key: 'community', label: 'Community' },
   { key: 'education', label: 'Education' },
+  { key: 'crime', label: 'Crime' },
 ]
 
 export default function SuburbCard({ salCode, onAdd, onRemove, defaultNearbyExpanded = false, syncUrl = false }: Props) {
@@ -358,12 +363,10 @@ export default function SuburbCard({ salCode, onAdd, onRemove, defaultNearbyExpa
     )
   }
 
-  // Crime data only exists for Greater Melbourne — surface a 6th tab there only.
-  const isMelbourne = data.gccsaName?.toLowerCase().includes('melbourne')
-  const tabs = isMelbourne ? [...BASE_TABS, { key: 'crime', label: 'Crime' }] : BASE_TABS
+  const tabs = TABS
 
-  // Address tabs by key, not index: Melbourne has a 6th tab, so index 4 would
-  // mean different things in different cities. An unknown key falls back to 0.
+  // Address tabs by key, not index, so ?tab= links survive tab reordering.
+  // An unknown key falls back to 0.
   const wantedKey = syncUrl ? (searchParams.get('tab') ?? 'overview') : localKey
   const active = Math.max(0, tabs.findIndex(t => t.key === wantedKey))
   const activeKey = tabs[active].key

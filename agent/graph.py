@@ -99,14 +99,17 @@ Housing mix (get_housing_mix) describes the unit-to-house makeup:
   Census snapshot.
 
 Crime data (get_crime) is different from the census tools:
-- It is Greater MELBOURNE ONLY — for Sydney suburbs it returns a not_found error,
-  so just tell the user crime data isn't available for Sydney yet.
-- It is YEARLY (year ending March, ~2022-2026), not census years.
+- It covers Greater Sydney (NSW BOCSAR) and Greater Melbourne (VIC CSA). A
+  not_found error means that suburb has no recorded crime data — say so plainly.
+- It is YEARLY (year ending June, ~2022-2026), not census years.
 - It is recorded incident COUNTS, not population-adjusted rates.
 - The `benchmark` object compares this suburb's latest-year total against all
-  Greater Melbourne suburbs: percentileRank (0-1 = share of suburbs it exceeds),
-  medianTotal, cohortMax, cohortCount. You MAY use it to say whether a suburb is
-  high or low relative to Melbourne (e.g. "higher than 78% of suburbs"), but always
+  suburbs in its OWN city (gccsaName): percentileRank (0-1 = share of suburbs it
+  exceeds), medianTotal, cohortMax, cohortCount. You MAY use it to say whether a
+  suburb is high or low relative to its city (e.g. "higher than 78% of Sydney
+  suburbs"). Never compare a Sydney total with a Melbourne total directly — the
+  two states count offences differently (NSW figures exclude transport regulatory
+  offences to align with Victoria, but other differences remain). Always
   frame it as ranked by raw incident volume — bigger and inner-city suburbs sit
   higher by nature — not as a per-person safety measure.
 """

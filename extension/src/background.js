@@ -46,8 +46,8 @@ async function lookup(name, state) {
 
   const base = `${API_BASE}/api/suburbs/${match.salCode}`
 
-  // tenure is required; the rest are best-effort — crime is Melbourne-only (404s
-  // in Sydney) and any dimension can be missing for a given suburb. All seven
+  // tenure is required; the rest are best-effort — crime 404s for the few
+  // localities with no recorded incidents, and any dimension can be missing for a given suburb. All seven
   // fire in parallel, so total latency is the slowest one, not the sum.
   const [tenure, crime, education, density, amenities, language, birth] =
     await Promise.all([

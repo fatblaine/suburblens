@@ -225,7 +225,7 @@ function safetyPage({ crime }) {
     changeRow,
     bm && bm.cohortCount > 1
       ? benchRow({
-          label: 'Crime rank vs Greater Melbourne',
+          label: `Crime rank vs ${crime.gccsaName ?? 'city'}`,
           color: CRIME_COLOR, gradient: CRIME_GRADIENT,
           pct: bm.percentileRank * 100,
           scaleMid: `${num(bm.cohortCount)} suburbs · by count`,
@@ -234,8 +234,8 @@ function safetyPage({ crime }) {
   ].join('')
 }
 
-// Build the deck, dropping any page that renders empty. Sydney has no crime data
-// at all (404) and hundreds of suburbs have no amenities, so a fixed four-page
+// Build the deck, dropping any page that renders empty. A few tiny localities have
+// no crime data (404) and hundreds of suburbs have no amenities, so a fixed four-page
 // deck would hand those users blank pages — worse than not offering the page.
 function buildPages(data) {
   return [

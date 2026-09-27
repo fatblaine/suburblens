@@ -111,7 +111,7 @@ function HousingMixSection({ salCode }: { salCode: string }) {
 function CrimeSection({ salCode }: { salCode: string }) {
   const { data, isPending, isError } = useSuburbCrime(salCode)
 
-  // 404 (non-Melbourne / no data) → silently render nothing
+  // 404 (no crime rows for this suburb) → silently render nothing
   if (isError) return null
 
   if (isPending) return (
@@ -125,7 +125,7 @@ function CrimeSection({ salCode }: { salCode: string }) {
   return (
     <CollapsibleSection
       title="Crime"
-      subtitle="Recorded incidents · year ending March · Greater Melbourne"
+      subtitle={`Recorded incidents · year ending June · ${data.gccsaName}`}
     >
       <CrimeChart response={data} />
       <p className="mt-5 text-xs text-white/40">&#9432; {data.dataNote}</p>

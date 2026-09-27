@@ -131,7 +131,7 @@ export function useSuburbHousingMix(salCode: string | undefined) {
     return useQuery<HousingMixResponse>(profileQuery<HousingMixResponse>('housingMix', salCode))
 }
 
-// Fetch recorded crime incidents for a suburb (Greater Melbourne only; 404 elsewhere)
+// Fetch recorded crime incidents for a suburb (Greater Sydney / Melbourne; 404 when a suburb has none)
 export function useSuburbCrime(salCode: string | undefined) {
     return useQuery<CrimeResponse>(profileQuery<CrimeResponse>('crime', salCode))
 }

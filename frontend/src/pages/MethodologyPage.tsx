@@ -58,7 +58,8 @@ export default function MethodologyPage() {
             </li>
             <li>
               Coverage is limited to <strong className="text-fg">Greater Sydney and Greater Melbourne</strong>.
-              Crime data exists for <strong className="text-fg">Melbourne only</strong>.
+              Crime counts come from a different agency in each state, so compare them{' '}
+              <strong className="text-fg">within a city</strong>, not across.
             </li>
           </ul>
         </div>
@@ -151,9 +152,12 @@ export default function MethodologyPage() {
                 "University-qualified" means a bachelor degree or higher.
               </Row>
               <Row label="Crime">
-                Victoria <strong className="text-fg">Crime Statistics Agency</strong> (CSA). Recorded criminal
-                incidents, year ending March. <strong className="text-fg">Greater Melbourne only</strong>,
-                counted at suburb (SAL) level.
+                Recorded criminal incidents, <strong className="text-fg">year ending June</strong>, counted at
+                suburb (SAL) level. Greater Sydney: NSW{' '}
+                <strong className="text-fg">Bureau of Crime Statistics and Research</strong> (BOCSAR), monthly
+                counts summed July–June, with transport regulatory offences (mostly fare evasion) excluded
+                because Victoria does not record them as criminal incidents. Greater Melbourne: Victoria{' '}
+                <strong className="text-fg">Crime Statistics Agency</strong> (CSA).
               </Row>
               <Row label="Local amenities">
                 <strong className="text-fg">OpenStreetMap</strong> points of interest (cafés, restaurants,
@@ -189,10 +193,12 @@ export default function MethodologyPage() {
                 regional areas, and the rest of Australia are out of scope.
               </li>
               <li>
-                <strong className="text-fg">Crime is Melbourne-only and ranked by volume.</strong> There is no
-                Sydney crime data. Rankings use total recorded incidents, not a per-capita rate — larger and
-                inner-city suburbs sit higher simply because more people pass through them, not necessarily
-                because they are less safe.
+                <strong className="text-fg">Crime is ranked by volume, within each city.</strong> Rankings use
+                total recorded incidents, not a per-capita rate — larger and inner-city suburbs sit higher
+                simply because more people pass through them, not necessarily because they are less safe. A
+                Sydney suburb is ranked only against Sydney suburbs and a Melbourne suburb only against
+                Melbourne ones: NSW and Victoria classify and count offences differently, so a Sydney total
+                and a Melbourne total are not directly comparable.
               </li>
               <li>
                 <strong className="text-fg">Amenity counts are community-mapped, not a register.</strong>{' '}
@@ -219,7 +225,7 @@ export default function MethodologyPage() {
         <footer className="mt-14 border-t border-white/[0.07] pt-6">
           <p className="font-mono text-[11px] leading-relaxed text-dim">
             Data: Australian Bureau of Statistics, Census of Population and Housing (2011, 2016, 2021); crime:
-            Victoria Crime Statistics Agency; local amenities: &copy; OpenStreetMap contributors (ODbL).
+            NSW Bureau of Crime Statistics and Research (CC BY) and Victoria Crime Statistics Agency (CC BY 4.0); local amenities: &copy; OpenStreetMap contributors (ODbL).
             SuburbLens is an independent project and is not affiliated with the ABS.
           </p>
         </footer>
