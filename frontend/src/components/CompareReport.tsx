@@ -454,7 +454,7 @@ export default function CompareReport({
         Housing mix is a 2021 ABS Census SAL-level snapshot and is not an investment
         recommendation.{' '}
         Census figures are ABS 2011 / 2016 / 2021 (SA2, mapped to the searched suburb). Crime data
-        is Victoria Police (year ending March) and is available for Greater Melbourne suburbs only —
+        is Victoria Police (year ending June) and is available for Greater Melbourne suburbs only —
         “—” means no crime data for that suburb.{' '}
         Local amenity counts are © OpenStreetMap contributors (ODbL) — community-mapped,
         indicative rather than exhaustive. Compare suburbs on “Places per km²” rather than the

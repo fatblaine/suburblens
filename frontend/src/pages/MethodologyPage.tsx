@@ -152,7 +152,7 @@ export default function MethodologyPage() {
               </Row>
               <Row label="Crime">
                 Victoria <strong className="text-fg">Crime Statistics Agency</strong> (CSA). Recorded criminal
-                incidents, year ending March. <strong className="text-fg">Greater Melbourne only</strong>,
+                incidents, year ending June. <strong className="text-fg">Greater Melbourne only</strong>,
                 counted at suburb (SAL) level.
               </Row>
               <Row label="Local amenities">

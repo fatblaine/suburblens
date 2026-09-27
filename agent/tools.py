@@ -106,7 +106,7 @@ def get_housing_mix(sal_code: str) -> dict:
 @tool
 def get_crime(sal_code: str) -> dict:
     """Get recorded criminal incidents for a suburb, GREATER MELBOURNE ONLY.
-    Returns yearly counts (year ending March, ~2022-2026) per offence category
+    Returns yearly counts (year ending June, ~2022-2026) per offence category
     (assault, break_enter, theft, robbery, property_damage, other) plus a total.
     Also returns a `benchmark` object comparing this suburb's latest-year total
     against ALL Greater Melbourne suburbs: percentileRank (0-1 = share of suburbs

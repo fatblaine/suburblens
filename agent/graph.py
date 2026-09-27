@@ -101,7 +101,7 @@ Housing mix (get_housing_mix) describes the unit-to-house makeup:
 Crime data (get_crime) is different from the census tools:
 - It is Greater MELBOURNE ONLY — for Sydney suburbs it returns a not_found error,
   so just tell the user crime data isn't available for Sydney yet.
-- It is YEARLY (year ending March, ~2022-2026), not census years.
+- It is YEARLY (year ending June, ~2022-2026), not census years.
 - It is recorded incident COUNTS, not population-adjusted rates.
 - The `benchmark` object compares this suburb's latest-year total against all
   Greater Melbourne suburbs: percentileRank (0-1 = share of suburbs it exceeds),

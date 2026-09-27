@@ -125,7 +125,7 @@ function CrimeSection({ salCode }: { salCode: string }) {
   return (
     <CollapsibleSection
       title="Crime"
-      subtitle="Recorded incidents · year ending March · Greater Melbourne"
+      subtitle="Recorded incidents · year ending June · Greater Melbourne"
     >
       <CrimeChart response={data} />
       <p className="mt-5 text-xs text-white/40">&#9432; {data.dataNote}</p>
