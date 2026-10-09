@@ -132,6 +132,63 @@ function benchRow({ label, color, gradient, pct, scaleMid }) {
 // close in height. Order is fixed — page 1 is all most people will ever see —
 // and any page that renders empty drops out of the deck; see buildPages().
 
+// One line per dimension so page 1 answers "what's this suburb like" at a glance.
+// The full bench row is too tall to stack, so benchmarks shrink to a thin inline
+// track. Each row names the detail page it summarises (data-goto) and jumps there.
+function overviewRow(goto, icon, label, body) {
+  return `
+    <button class="ov-row" data-goto="${goto}">
+      <span class="label ov-label">${svgIcon(icon)}${label}</span>
+      ${body}
+    </button>`
+}
+
+function miniBench(goto, icon, label, { color, gradient, pct }) {
+  const p = Math.max(0, Math.min(100, Math.round(pct)))
+  const text = p >= 100 ? 'Highest' : `More than ${p}%`
+  return overviewRow(goto, icon, label, `
+    <span class="ov-track" style="background:${gradient};">
+      <span class="ov-thumb" style="left:${p}%; border-color:${color};"></span>
+    </span>
+    <span class="ov-val" style="color:${color};">${text}</span>`)
+}
+
+function overviewPage({ tenure, density, amenities, education, crime }) {
+  const rent = tenure.tenure?.rent ?? {}
+  const t = TREND[tenure.trendLabel] ?? TREND.stable
+  const usable = (bm) => bm && bm.cohortCount > 1
+  const rows = []
+
+  if (rent.y2016 != null && rent.y2021 != null) {
+    const delta = rent.y2021 - rent.y2016
+    rows.push(overviewRow('Housing', ICON.home, 'Renting', `
+      <span class="ov-val ov-wide">${fmt(rent.y2016)} → ${fmt(rent.y2021)}
+        <span style="color:${t.color};">${delta > 0 ? '+' : ''}${delta.toFixed(1)}pt</span>
+      </span>`))
+  }
+  if (usable(density?.benchmark)) {
+    rows.push(miniBench('Housing', ICON.grid, 'Density',
+      { color: DENSITY_COLOR, gradient: DENSITY_GRADIENT, pct: density.benchmark.percentileRank * 100 }))
+  }
+  // Same rule as areaPage: no POIs at all means the Area page is gone, so no row.
+  if (amenities?.counts?.total && usable(amenities.benchmark)) {
+    rows.push(miniBench('Area', ICON.food, 'Amenities',
+      { color: AMENITY_COLOR, gradient: AMENITY_GRADIENT, pct: amenities.benchmark.percentileRank * 100 }))
+  }
+  if (usable(education?.benchmark)) {
+    rows.push(miniBench('People', ICON.cap, 'Uni-qualified',
+      { color: EDU_COLOR, gradient: EDU_GRADIENT, pct: education.benchmark.percentileRank * 100 }))
+  }
+  if (usable(crime?.benchmark)) {
+    rows.push(miniBench('Safety', ICON.shield, 'Crime',
+      { color: CRIME_COLOR, gradient: CRIME_GRADIENT, pct: crime.benchmark.percentileRank * 100 }))
+  }
+
+  // Under three rows the overview is little more than the Housing page again,
+  // so drop it and let the deck open on Housing as before.
+  return rows.length >= 3 ? rows.join('') : ''
+}
+
 function housingPage({ tenure, density }) {
   const rent = tenure.tenure?.rent ?? {}
   const bm = density?.benchmark
@@ -239,6 +296,7 @@ function safetyPage({ crime }) {
 // deck would hand those users blank pages — worse than not offering the page.
 function buildPages(data) {
   return [
+    { label: 'Overview', render: overviewPage },
     { label: 'Housing', render: housingPage },
     { label: 'Area',    render: areaPage },
     { label: 'People',  render: peoplePage },
@@ -368,6 +426,24 @@ function renderOverlay(data) {
         font-size: 10.5px; color: #5b606d;
       }
       .scale-mid { color: #6b7280; }
+      .ov-row {
+        display: flex; align-items: center; gap: 10px;
+        padding: 9px 4px; margin: 0 -4px; width: calc(100% + 8px);
+        background: none; border: 0; border-bottom: 1px solid rgba(255,255,255,.07);
+        border-radius: 0; cursor: pointer; text-align: left; color: inherit;
+      }
+      .ov-row:hover { background: rgba(255,255,255,.03); }
+      .ov-label { flex: none; width: 104px; }
+      .ov-track { position: relative; flex: 1; height: 4px; border-radius: 999px; margin: 0 5px; }
+      .ov-thumb {
+        position: absolute; top: 50%; transform: translate(-50%, -50%);
+        width: 10px; height: 10px; border-radius: 50%;
+        background: #13161d; border: 2px solid #4f8fef;
+        box-shadow: 0 0 0 2px #13161d;
+      }
+      .ov-val { flex: none; width: 92px; text-align: right; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+      .ov-wide { flex: 1; width: auto; color: #eef1f6; font-size: 13px; }
+      .ov-wide span { font-size: 11.5px; margin-left: 4px; }
       .nav { display: flex; align-items: stretch; gap: 2px; margin-top: 8px; }
       .nav-arrow {
         flex: none; width: 20px; background: none; border: 0; cursor: pointer;
@@ -377,7 +453,7 @@ function renderOverlay(data) {
       .nav-arrow:disabled { color: #33373f; cursor: default; }
       .nav-tabs { flex: 1; display: flex; gap: 2px; }
       .nav-tab {
-        flex: 1; background: none; border: 0; cursor: pointer; padding: 5px 2px 6px;
+        flex: 1 1 auto; background: none; border: 0; cursor: pointer; padding: 5px 2px 6px;
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
         font-size: 10.5px; letter-spacing: .04em; color: #5b606d;
         border-bottom: 1.5px solid transparent; transition: color .12s ease;
@@ -432,6 +508,14 @@ function renderOverlay(data) {
     shadow.querySelector('.nav-next').addEventListener('click', () => { page++; paint() })
     shadow.querySelectorAll('.nav-tab').forEach(el =>
       el.addEventListener('click', () => { page = Number(el.dataset.i); paint() }))
+    // Overview rows jump to the page they summarise. Delegated on .stats because
+    // paint() swaps its innerHTML; the target page is looked up by label since
+    // empty pages may have dropped out of the deck.
+    statsEl.addEventListener('click', (e) => {
+      const row = e.target.closest('.ov-row')
+      const i = row ? pages.findIndex(p => p.label === row.dataset.goto) : -1
+      if (i >= 0) { page = i; paint() }
+    })
   }
 
   document.body.appendChild(host)
