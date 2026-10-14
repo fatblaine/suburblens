@@ -851,16 +851,16 @@ app.MapGet("/api/suburbs/heatmap", async (IDbConnection db, HttpContext http, st
         LEFT JOIN v_tenure_shift t ON t.sal_code = s.sal_code
         LEFT JOIN v_amenity_benchmark ab ON ab.sal_code = s.sal_code
         LEFT JOIN v_amenity_profile   ap ON ap.sal_code = s.sal_code
-        -- Crime benchmark has one row per (suburb, year-ending); take the latest.
-        -- A per-suburb LATERAL, not a global MAX(year_ending), because Sydney and
-        -- Melbourne can be refreshed to different latest year-endings.
-        LEFT JOIN LATERAL (
-            SELECT b.pct_rank, b.total_incidents, b.year_ending
-            FROM v_crime_benchmark b
-            WHERE b.sal_code = s.sal_code
-            ORDER BY b.year_ending DESC
-            LIMIT 1
-        ) cb ON true
+        -- Crime benchmark has one row per (suburb, year-ending); take each suburb's
+        -- latest (per suburb, not a global MAX, since Sydney and Melbourne can be
+        -- refreshed to different year-endings). Must be one DISTINCT ON pass, NOT a
+        -- per-suburb LATERAL: the view's window functions block predicate pushdown,
+        -- so a LATERAL recomputes the whole view per suburb (~28s vs ~0.2s).
+        LEFT JOIN (
+            SELECT DISTINCT ON (sal_code) sal_code, pct_rank, total_incidents, year_ending
+            FROM v_crime_benchmark
+            ORDER BY sal_code, year_ending DESC
+        ) cb ON cb.sal_code = s.sal_code
         WHERE s.gccsa_code = ANY(@gccsaFilter)
           AND s.geom IS NOT NULL",
         new { gccsaFilter });
