@@ -41,16 +41,65 @@ function bboxOf(geom: MapGeometry | null | undefined): [[number, number], [numbe
   return [[minX, minY], [maxX, maxY]]
 }
 
-// RSI segment colours (kept in sync with ShiftIndexCard / Legend below).
+// The map can shade by one of several metrics (switched client-side, no refetch).
+type Metric = 'rsi' | 'amenities' | 'crime'
+
+const METRICS: { id: Metric; label: string }[] = [
+  { id: 'rsi', label: 'Residency' },
+  { id: 'amenities', label: 'Amenities' },
+  { id: 'crime', label: 'Crime' },
+]
+
+const NO_DATA = '#374151' // dark grey — shared "no data" fill for every metric
+
+// RSI segment colours (kept in sync with ShiftIndexCard / Legend below). RSI is a
+// custom index with meaningful breakpoints, so it keeps its diverging scale rather
+// than being binned into quantiles like the percentile-based metrics.
 const RSI_COLOR_EXPR: maplibregl.ExpressionSpecification = [
   'case',
-  ['==', ['get', 'residencyShiftIndex'], null], '#374151', // no data -> dark grey
+  ['==', ['get', 'residencyShiftIndex'], null], NO_DATA,    // no data -> dark grey
   ['>=', ['get', 'residencyShiftIndex'], 3], '#16a34a',    // strong ownership -> green
   ['>=', ['get', 'residencyShiftIndex'], 1], '#86efac',    // mild ownership -> light green
   ['>=', ['get', 'residencyShiftIndex'], -1], '#6b7280',   // stable -> grey
   ['>=', ['get', 'residencyShiftIndex'], -3], '#f97316',   // mild rental -> orange
   '#ef4444',                                               // strong rental (<= -3) -> red
 ]
+
+// Amenities & crime are coloured by their within-city percentile (`pct_rank`, a
+// uniform 0–1). Because the value *is* a percentile, splitting [0,1] into equal
+// 0.2 steps gives true quintiles (each band ≈ 20% of suburbs) with no server-side
+// quantile maths. `step`: output0 is for input < first stop, then one per stop.
+const AMENITY_COLOR_EXPR: maplibregl.ExpressionSpecification = [
+  'case',
+  ['==', ['get', 'amenityPctRank'], null], NO_DATA,
+  ['step', ['get', 'amenityPctRank'],
+    '#1f3d2b',        // bottom 20% — fewest amenities
+    0.2, '#2f6b45',
+    0.4, '#3fb97f',
+    0.6, '#8fe6b0',
+    0.8, '#c6f24e',   // top 20% — most amenities (lemon)
+  ],
+]
+
+// Crime runs the opposite way: a high percentile means MORE incidents, so the
+// scale goes green (fewest) -> red (most).
+const CRIME_COLOR_EXPR: maplibregl.ExpressionSpecification = [
+  'case',
+  ['==', ['get', 'crimePctRank'], null], NO_DATA,
+  ['step', ['get', 'crimePctRank'],
+    '#16a34a',        // bottom 20% — fewest incidents
+    0.2, '#86efac',
+    0.4, '#facc15',
+    0.6, '#f97316',
+    0.8, '#ef4444',   // top 20% — most incidents
+  ],
+]
+
+const COLOR_EXPR: Record<Metric, maplibregl.ExpressionSpecification> = {
+  rsi: RSI_COLOR_EXPR,
+  amenities: AMENITY_COLOR_EXPR,
+  crime: CRIME_COLOR_EXPR,
+}
 
 const CITY_CENTERS: Record<City, { center: [number, number]; zoom: number }> = {
   sydney: { center: [151.09, -33.87], zoom: 10 },
@@ -63,21 +112,34 @@ interface PanelSuburb {
   stateName: string
   residencyShiftIndex: number | null
   trendLabel: string
+  amenityPctRank: number | null
+  amenityPerSqkm: number | null
+  amenityTotalCount: number | null
+  crimePctRank: number | null
+  crimeTotalIncidents: number | null
+  crimeYearEnding: number | null
 }
 
-// MapLibre serialises GeoJSON feature properties; coerce defensively so we
-// never trust a raw `unknown`/string where the API may have sent null.
+// MapLibre serialises GeoJSON feature properties; coerce defensively so we never
+// trust a raw `unknown`/string where the API may have sent null (it can arrive as
+// the literal string "null" after serialisation).
+function num(v: unknown): number | null {
+  return v === null || v === undefined || v === '' || v === 'null' ? null : Number(v)
+}
+
 function toPanelSuburb(props: Record<string, unknown>): PanelSuburb {
-  const rsi = props.residencyShiftIndex
   return {
     salCode: String(props.salCode ?? ''),
     salName: String(props.salName ?? ''),
     stateName: String(props.stateName ?? ''),
-    residencyShiftIndex:
-      rsi === null || rsi === undefined || rsi === '' || rsi === 'null'
-        ? null
-        : Number(rsi),
+    residencyShiftIndex: num(props.residencyShiftIndex),
     trendLabel: String(props.trendLabel ?? ''),
+    amenityPctRank: num(props.amenityPctRank),
+    amenityPerSqkm: num(props.amenityPerSqkm),
+    amenityTotalCount: num(props.amenityTotalCount),
+    crimePctRank: num(props.crimePctRank),
+    crimeTotalIncidents: num(props.crimeTotalIncidents),
+    crimeYearEnding: num(props.crimeYearEnding),
   }
 }
 
@@ -95,6 +157,11 @@ export default function MapPage() {
   const [panel, setPanel] = useState<PanelSuburb | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [metric, setMetric] = useState<Metric>('rsi')
+  // Mirror the active metric in a ref so loadSuburbs (a stable useCallback) can
+  // build a freshly-rebuilt layer with the right colours after a city switch,
+  // without taking `metric` as a dependency and being recreated on every change.
+  const metricRef = useRef<Metric>('rsi')
 
   // Load GeoJSON for a city and (re)build the layers.
   const loadSuburbs = useCallback(async (targetCity: City) => {
@@ -121,7 +188,7 @@ export default function MapPage() {
         id: 'suburbs-fill',
         type: 'fill',
         source: 'suburbs',
-        paint: { 'fill-color': RSI_COLOR_EXPR, 'fill-opacity': 0.65 },
+        paint: { 'fill-color': COLOR_EXPR[metricRef.current], 'fill-opacity': 0.65 },
       })
 
       m.addLayer({
@@ -200,6 +267,16 @@ export default function MapPage() {
       map.current = null
     }
   }, [loadSuburbs])
+
+  // Recolour the fill when the selected metric changes — a client-side paint
+  // swap, no refetch (every metric's value is already in the loaded GeoJSON).
+  useEffect(() => {
+    metricRef.current = metric
+    const m = map.current
+    if (m?.getLayer('suburbs-fill')) {
+      m.setPaintProperty('suburbs-fill', 'fill-color', COLOR_EXPR[metric])
+    }
+  }, [metric])
 
   function switchCity(target: City) {
     if (target === city) return
@@ -299,6 +376,19 @@ export default function MapPage() {
             </button>
           ))}
         </div>
+        <div className="pointer-events-auto bg-black/50 backdrop-blur border border-white/10 rounded-lg p-1 flex gap-1">
+          {METRICS.map(({ id, label }) => (
+            <button
+              key={id}
+              onClick={() => setMetric(id)}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${
+                metric === id ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white/80'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <MapSearch onSelect={focusSuburb} />
         {loading && (
           <span className="text-white/50 text-sm bg-black/40 backdrop-blur px-3 py-1.5 rounded-lg border border-white/10">
@@ -316,13 +406,14 @@ export default function MapPage() {
       {panel && (
         <SlidePanel
           suburb={panel}
+          metric={metric}
           onClose={closePanel}
           onViewDetails={() => navigate(`/suburb/${panel.salCode}`)}
         />
       )}
 
       {/* Bottom legend */}
-      <Legend />
+      <Legend metric={metric} />
 
     </div>
   )
@@ -401,17 +492,51 @@ function MapSearch({ onSelect }: { onSelect: (s: SuburbSearchResult) => void }) 
   )
 }
 
-function SlidePanel({
-  suburb,
-  onClose,
-  onViewDetails,
-}: {
-  suburb: PanelSuburb
-  onClose: () => void
-  onViewDetails: () => void
-}) {
-  const rsi = suburb.residencyShiftIndex
+// Percentile (0..1) -> "87%", or "—" when absent.
+function pctLabel(p: number | null): string {
+  return p == null ? '—' : `${Math.round(p * 100)}%`
+}
 
+// The panel's headline card, switched by the active metric. Each metric shows a
+// headline number, a plain-language rank line, and a one-line data caveat that
+// mirrors the detail-page components (AmenitiesPanel / CrimeChart).
+function MetricCard({ suburb, metric }: { suburb: PanelSuburb; metric: Metric }) {
+  if (metric === 'amenities') {
+    const { amenityPctRank: p, amenityPerSqkm: density } = suburb
+    return (
+      <div className="bg-white/10 border border-white/15 rounded-xl p-4">
+        <p className="text-white/50 text-xs mb-1">Amenity density</p>
+        <p className="text-white text-2xl font-bold">
+          {density != null ? density.toFixed(1) : '—'}
+          <span className="text-white/40 text-sm font-normal"> /km²</span>
+        </p>
+        <p className="text-sm mt-1 font-medium text-lemon">
+          {p != null ? `More amenities than ${pctLabel(p)} of suburbs here` : 'No data'}
+        </p>
+        <p className="text-white/30 text-xs mt-2">OpenStreetMap POIs · indicative, not exhaustive</p>
+      </div>
+    )
+  }
+
+  if (metric === 'crime') {
+    const { crimePctRank: p, crimeTotalIncidents: total, crimeYearEnding: year } = suburb
+    return (
+      <div className="bg-white/10 border border-white/15 rounded-xl p-4">
+        <p className="text-white/50 text-xs mb-1">
+          Recorded incidents{year != null ? ` · year ending ${year}` : ''}
+        </p>
+        <p className="text-white text-2xl font-bold">
+          {total != null ? total.toLocaleString() : '—'}
+        </p>
+        <p className="text-sm mt-1 font-medium text-orange-300">
+          {p != null ? `More incidents than ${pctLabel(p)} of suburbs here` : 'No data'}
+        </p>
+        <p className="text-white/30 text-xs mt-2">By total count, not per person · larger suburbs sit higher</p>
+      </div>
+    )
+  }
+
+  // Default: RSI.
   const TREND_STYLE: Record<string, { color: string; label: string }> = {
     strong_ownership_shift: { color: 'text-green-400', label: 'Strong ownership shift' },
     mild_ownership_shift: { color: 'text-green-300', label: 'Mild ownership shift' },
@@ -420,7 +545,28 @@ function SlidePanel({
     strong_rental_shift: { color: 'text-red-400', label: 'Strong rental shift' },
   }
   const style = TREND_STYLE[suburb.trendLabel] ?? { color: 'text-white/40', label: '—' }
+  const rsi = suburb.residencyShiftIndex
+  return (
+    <div className="bg-white/10 border border-white/15 rounded-xl p-4">
+      <p className="text-white/50 text-xs mb-1">Residency Shift Index</p>
+      <p className="text-white text-2xl font-bold">{rsi != null ? rsi.toFixed(1) : '—'}</p>
+      <p className={`text-sm mt-1 font-medium ${style.color}`}>{style.label}</p>
+      <p className="text-white/30 text-xs mt-2">SuburbLens Custom · Not an ABS metric</p>
+    </div>
+  )
+}
 
+function SlidePanel({
+  suburb,
+  metric,
+  onClose,
+  onViewDetails,
+}: {
+  suburb: PanelSuburb
+  metric: Metric
+  onClose: () => void
+  onViewDetails: () => void
+}) {
   return (
     <>
       {/* Backdrop — mobile only: tap outside the sheet to close. Desktop keeps
@@ -452,12 +598,7 @@ function SlidePanel({
         </button>
       </div>
 
-      <div className="bg-white/10 border border-white/15 rounded-xl p-4">
-        <p className="text-white/50 text-xs mb-1">Residency Shift Index</p>
-        <p className="text-white text-2xl font-bold">{rsi != null ? rsi.toFixed(1) : '—'}</p>
-        <p className={`text-sm mt-1 font-medium ${style.color}`}>{style.label}</p>
-        <p className="text-white/30 text-xs mt-2">SuburbLens Custom · Not an ABS metric</p>
-      </div>
+      <MetricCard suburb={suburb} metric={metric} />
 
         <button
           onClick={onViewDetails}
@@ -471,26 +612,61 @@ function SlidePanel({
   )
 }
 
-function Legend() {
-  const items = [
-    { color: 'bg-green-700', label: 'Strong ownership' },
-    { color: 'bg-green-300', label: 'Mild ownership' },
-    { color: 'bg-gray-500', label: 'Stable' },
-    { color: 'bg-orange-400', label: 'Mild rental' },
-    { color: 'bg-red-500', label: 'Strong rental' },
-    { color: 'bg-gray-700', label: 'No data' },
-  ]
+// Legend content per metric. Swatch colours use inline hex so they match the map
+// fill expressions exactly (rather than approximating with Tailwind classes). The
+// amenity/crime quintiles are labelled by percentile band; `note` carries the
+// same caveat the map shades under.
+const LEGEND: Record<Metric, { items: { color: string; label: string }[]; note?: string }> = {
+  rsi: {
+    items: [
+      { color: '#16a34a', label: 'Strong ownership' },
+      { color: '#86efac', label: 'Mild ownership' },
+      { color: '#6b7280', label: 'Stable' },
+      { color: '#f97316', label: 'Mild rental' },
+      { color: '#ef4444', label: 'Strong rental' },
+      { color: NO_DATA, label: 'No data' },
+    ],
+  },
+  amenities: {
+    items: [
+      { color: '#1f3d2b', label: 'Bottom 20%' },
+      { color: '#2f6b45', label: '20–40%' },
+      { color: '#3fb97f', label: '40–60%' },
+      { color: '#8fe6b0', label: '60–80%' },
+      { color: '#c6f24e', label: 'Top 20%' },
+      { color: NO_DATA, label: 'No data' },
+    ],
+    note: 'OSM POIs per km², ranked within city',
+  },
+  crime: {
+    items: [
+      { color: '#16a34a', label: 'Fewest' },
+      { color: '#86efac', label: '20–40%' },
+      { color: '#facc15', label: '40–60%' },
+      { color: '#f97316', label: '60–80%' },
+      { color: '#ef4444', label: 'Most' },
+      { color: NO_DATA, label: 'No data' },
+    ],
+    note: 'By total count, not per person · larger suburbs sit higher',
+  },
+}
+
+function Legend({ metric }: { metric: Metric }) {
+  const { items, note } = LEGEND[metric]
 
   return (
     <div className="absolute bottom-6 left-4 z-10 max-w-[calc(100vw-2rem)]
                     bg-black/50 backdrop-blur border border-white/10
-                    rounded-xl px-4 py-3 flex gap-x-4 gap-y-2 flex-wrap">
-      {items.map(({ color, label }) => (
-        <div key={label} className="flex items-center gap-1.5">
-          <span className={`w-3 h-3 rounded-sm ${color} opacity-80`} />
-          <span className="text-white/60 text-xs">{label}</span>
-        </div>
-      ))}
+                    rounded-xl px-4 py-3">
+      <div className="flex gap-x-4 gap-y-2 flex-wrap">
+        {items.map(({ color, label }) => (
+          <div key={label} className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm opacity-80" style={{ backgroundColor: color }} />
+            <span className="text-white/60 text-xs">{label}</span>
+          </div>
+        ))}
+      </div>
+      {note && <p className="text-white/35 text-[11px] mt-2">{note}</p>}
     </div>
   )
 }

@@ -17,8 +17,8 @@ public class HeatmapScopeTests
     }
 
     [Theory]
-    [InlineData("sydney", "heatmap:v1:sydney")]
-    [InlineData("melbourne", "heatmap:v1:melbourne")]
+    [InlineData("sydney", "heatmap:v2:sydney")]
+    [InlineData("melbourne", "heatmap:v2:melbourne")]
     public void Resolve_uses_a_city_specific_cache_key(string city, string expectedKey)
     {
         var (cacheKey, _) = HeatmapScope.Resolve(city);
@@ -33,7 +33,7 @@ public class HeatmapScopeTests
     public void Resolve_falls_back_to_both_cities_when_absent_or_unknown(string? city)
     {
         var (cacheKey, gccsa) = HeatmapScope.Resolve(city);
-        Assert.Equal("heatmap:v1:all", cacheKey);
+        Assert.Equal("heatmap:v2:all", cacheKey);
         Assert.Equal(new[] { "1GSYD", "2GMEL" }, gccsa);
     }
 
