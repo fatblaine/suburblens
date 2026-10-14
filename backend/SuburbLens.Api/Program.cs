@@ -740,9 +740,9 @@ app.MapGet("/api/suburbs/{salCode}/density", async (IDbConnection db, HttpContex
         PersonsPerSqkm: row.PersonsPerSqkm,
         Benchmark: row.PctRank is null ? null : new DensityBenchmark(
             PercentileRank: row.PctRank.Value,
-            MedianDensity:  row.MedianDensity,
-            CohortMax:      row.CohortMax,
-            CohortCount:    row.CohortCount),
+            MedianDensity: row.MedianDensity,
+            CohortMax: row.CohortMax,
+            CohortCount: row.CohortCount),
         DataNote: "2021 ABS Census (GCP G01), usual-resident population divided by " +
                   "the suburb's total ABS area (gross density — includes parks, water " +
                   "and non-residential land). Percentile is within the same capital city."
@@ -785,9 +785,9 @@ app.MapGet("/api/suburbs/{salCode}/amenities", async (IDbConnection db, HttpCont
         TotalPerSqkm: row.TotalPerSqkm,
         Benchmark: row.PctRank is null ? null : new AmenityBenchmark(
             PercentileRank: row.PctRank.Value,
-            MedianDensity:  row.MedianDensity,
-            CohortMax:      row.CohortMax,
-            CohortCount:    row.CohortCount),
+            MedianDensity: row.MedianDensity,
+            CohortMax: row.CohortMax,
+            CohortCount: row.CohortCount),
         DataNote: "Counts are OpenStreetMap points of interest inside the suburb " +
                   "boundary (community-sourced, indicative rather than exhaustive, " +
                   "refreshed periodically). The percentile ranks suburbs by amenities " +
@@ -834,13 +834,33 @@ app.MapGet("/api/suburbs/heatmap", async (IDbConnection db, HttpContext http, st
                     'gccsaCode',           s.gccsa_code,
                     'stateName',           s.state_name,
                     'residencyShiftIndex', t.residency_shift_index,
-                    'trendLabel',          t.trend_label
+                    'trendLabel',          t.trend_label,
+                    -- Amenities (OSM POI density, within-city percentile).
+                    'amenityPctRank',      ab.pct_rank,
+                    'amenityPerSqkm',      ap.total_per_sqkm,
+                    'amenityTotalCount',   ap.total_count::int,
+                    -- Crime (latest year-ending, within-city percentile by count).
+                    'crimePctRank',        cb.pct_rank,
+                    'crimeTotalIncidents', cb.total_incidents::int,
+                    'crimeYearEnding',     cb.year_ending
                 ),
                 'geometry', ST_AsGeoJSON(ST_Simplify(s.geom::geometry, 0.001))::json
             )), '[]'::json)
         )::text
         FROM geo_sal s
         LEFT JOIN v_tenure_shift t ON t.sal_code = s.sal_code
+        LEFT JOIN v_amenity_benchmark ab ON ab.sal_code = s.sal_code
+        LEFT JOIN v_amenity_profile   ap ON ap.sal_code = s.sal_code
+        -- Crime benchmark has one row per (suburb, year-ending); take the latest.
+        -- A per-suburb LATERAL, not a global MAX(year_ending), because Sydney and
+        -- Melbourne can be refreshed to different latest year-endings.
+        LEFT JOIN LATERAL (
+            SELECT b.pct_rank, b.total_incidents, b.year_ending
+            FROM v_crime_benchmark b
+            WHERE b.sal_code = s.sal_code
+            ORDER BY b.year_ending DESC
+            LIMIT 1
+        ) cb ON true
         WHERE s.gccsa_code = ANY(@gccsaFilter)
           AND s.geom IS NOT NULL",
         new { gccsaFilter });
@@ -1013,9 +1033,9 @@ public static class HeatmapScope
     {
         var cacheKey = city?.ToLower() switch
         {
-            "sydney" => "heatmap:v1:sydney",
-            "melbourne" => "heatmap:v1:melbourne",
-            _ => "heatmap:v1:all",
+            "sydney" => "heatmap:v2:sydney",
+            "melbourne" => "heatmap:v2:melbourne",
+            _ => "heatmap:v2:all",
         };
         return (cacheKey, GccsaScope.For(city));
     }
