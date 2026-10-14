@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.2.1](https://github.com/fatblaine/suburblens/compare/suburblens-v2.2.0...suburblens-v2.2.1) (2026-10-14)
+
+
+### Bug Fixes
+
+* **map:** replace per-suburb crime lateral with one-pass distinct on ([c959cc2](https://github.com/fatblaine/suburblens/commit/c959cc24fd63630e9116c40e92bf1225e0390f69))
+* **map:** replace per-suburb crime lateral with one-pass distinct on ([738434b](https://github.com/fatblaine/suburblens/commit/738434bfe2e2f6bbdae68901a200956f584cbf49))
+* optimized heatmap sql for crime data ([c53e16a](https://github.com/fatblaine/suburblens/commit/c53e16acf2f2c22717c0e0d043514f31b65d1b54))
+
 ## [2.2.0](https://github.com/fatblaine/suburblens/compare/suburblens-v2.1.0...suburblens-v2.2.0) (2026-10-14)
 
 
