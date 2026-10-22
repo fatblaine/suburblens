@@ -1,5 +1,71 @@
 # Changelog
 
+## [2.2.0](https://github.com/fatblaine/suburblens/compare/suburblens-v2.1.0...suburblens-v2.2.0) (2026-10-14)
+
+
+### Features
+
+* **agent:** add get_amenities tool ([58bf1a3](https://github.com/fatblaine/suburblens/commit/58bf1a303e5d3c54b8e3f930c9885a0453e93416))
+* **amenities:** add amenities endpoint with within-city density percentile ([a6294c1](https://github.com/fatblaine/suburblens/commit/a6294c11fb26787164d78c55ccd6bde72133c249))
+* **amenities:** add local amenities section to the pdf compare report ([7fcf49b](https://github.com/fatblaine/suburblens/commit/7fcf49bfd87856be57ec7362cf7031c1cb720fa8))
+* **amenities:** add osm poi etl and per-suburb amenity counts ([8d17f97](https://github.com/fatblaine/suburblens/commit/8d17f97ef0ad9a0ec47d8d04c6ba6eddc6b499cb))
+* **amenities:** local amenities from OpenStreetMap ([5b39d24](https://github.com/fatblaine/suburblens/commit/5b39d244c675409597955dde83d42b2fe5fe54d5))
+* **amenities:** show local amenities on detail and compare pages ([406d62c](https://github.com/fatblaine/suburblens/commit/406d62c9f95a7cc205eb0f4d51b09bf1ab542224))
+* **api:** expose postcode on the tenure response ([b3e201d](https://github.com/fatblaine/suburblens/commit/b3e201d8d3c7c03e916dff1cd6706dbea8ddad0b))
+* **crime:** Add crime data of Sydney ([059d82c](https://github.com/fatblaine/suburblens/commit/059d82c986ae0764a968caa890287326a201d9fb))
+* **crime:** add sydney crime data from bocsar ([a546fa7](https://github.com/fatblaine/suburblens/commit/a546fa742da717400812454d1cb44e08a4d6a9fb))
+* **crime:** add sydney crime data from bocsar ([957a3a7](https://github.com/fatblaine/suburblens/commit/957a3a7f5d429c3774e016598eefa18234effda8))
+* **detail:** addressable and swipeable suburb tabs ([6bde53a](https://github.com/fatblaine/suburblens/commit/6bde53a3115e95f1321879bcf0f4b9fea7c1b285))
+* **detail:** link out to sold listings on the housing tab ([0ddeea2](https://github.com/fatblaine/suburblens/commit/0ddeea24e215c3dabc6c47ec89f7c4b53d6e8673))
+* **detail:** reflect the active suburb tab in the url ([dea5035](https://github.com/fatblaine/suburblens/commit/dea50358b512970f7a379a532520a572b5404caf))
+* **detail:** reflect the active suburb tab in the url ([b8618e0](https://github.com/fatblaine/suburblens/commit/b8618e0b668d1bc04d048c8551cd02ac24d46f09))
+* **detail:** swipe between suburb tabs with a peek at the neighbours ([317d81a](https://github.com/fatblaine/suburblens/commit/317d81a50ba55e5c228c92e24d929b3167561f39))
+* **detail:** swipe between suburb tabs with a peek at the neighbours ([a4b3cfc](https://github.com/fatblaine/suburblens/commit/a4b3cfcae7ef350cef8c9ac0b7c7c4167967d32d))
+* **etl:** map suburbs to postcodes via POA overlap ([b01cd25](https://github.com/fatblaine/suburblens/commit/b01cd257e6e090c97c00b581c4c3ccae3d7c6893))
+* **extension:** add overview tab as first overlay page ([aa2a440](https://github.com/fatblaine/suburblens/commit/aa2a4403137111650f6ee1c5a45278dbd74805b5))
+* **extension:** add overview tab as first overlay page ([7f32433](https://github.com/fatblaine/suburblens/commit/7f324331835a0873a3336ceebf3d9b55178e3d4e))
+* **extension:** page the overlay and add area, people and safety data ([5109b2a](https://github.com/fatblaine/suburblens/commit/5109b2a4617b6af8fb8c4a2369c276cd6d5df6ea))
+* **extension:** page the overlay and add area, people and safety data ([32edbb4](https://github.com/fatblaine/suburblens/commit/32edbb4bfd671e3436fc62b7dd56f4760f104c9b))
+* **home:** move chrome extension link next to feedback button ([d9614fb](https://github.com/fatblaine/suburblens/commit/d9614fbc5938881d526fbba8a2c8621ac8f0a586))
+* **home:** move chrome extension link next to feedback button ([a5e33da](https://github.com/fatblaine/suburblens/commit/a5e33da302e96a53aeb632aa5afb41967245956e))
+* **home:** move chrome extension link next to feedback button ([0a93f1d](https://github.com/fatblaine/suburblens/commit/0a93f1d0634340ff3ff2fa7094b0f7921486db74))
+* **map:** add amenity & crime percentile layers to heatmap endpoint ([2a28b59](https://github.com/fatblaine/suburblens/commit/2a28b590db3904ebbfb46c60e8f231753942b5f8))
+* **map:** add metric selector with amenity and crime choropleth ([a633a3f](https://github.com/fatblaine/suburblens/commit/a633a3f7e88f3a9e9aee300955116ec5f17269d6))
+* **map:** add metric selector with amenity and crime choropleth ([0c6ceda](https://github.com/fatblaine/suburblens/commit/0c6ceda10ccf423b2807813dc5b8e512122ce856))
+* **map:** add metric selector with amenity and crime choropleth ([ff0df8c](https://github.com/fatblaine/suburblens/commit/ff0df8c44f37c953dfd1d0a60f8d2d86d983f986))
+* multi-metric map choropleth + extension overview tab ([d31675d](https://github.com/fatblaine/suburblens/commit/d31675df4b6c3cc8c1c357a579e5eb072c2e7e46))
+* Promote dev to main, local amenities (v2.1.0) ([4fe98b4](https://github.com/fatblaine/suburblens/commit/4fe98b4761c17312f3d52d9cbd16e725c64fa2cd))
+* sold-listing links and suburb postcodes ([17482be](https://github.com/fatblaine/suburblens/commit/17482bed82fc6b5d81f3c8c64edef0fa2185d554))
+* sold-listing links, suburb postcodes and extension overlay paging ([558170a](https://github.com/fatblaine/suburblens/commit/558170ad2f3a9aff2b8f2eea8f55f7e3d00f0c07))
+
+
+### Bug Fixes
+
+* **crime:** refresh vic data to year ending june 2026 ([cb0369e](https://github.com/fatblaine/suburblens/commit/cb0369ea79edc9b8c5bf8ba843e0b1eabb0dfd4a))
+* **crime:** refresh vic data to year ending june 2026 ([5ff4a40](https://github.com/fatblaine/suburblens/commit/5ff4a40f225145d81a9ff3fbaa0a46a9196c07c1))
+* **detail:** move nearestIndex out of TabDeck to unblock lint ([3abf3d1](https://github.com/fatblaine/suburblens/commit/3abf3d1b310c2ccd9d6554aee9f71a1dd454dfea))
+* **detail:** move nearestIndex out of TabDeck to unblock lint ([de1e57e](https://github.com/fatblaine/suburblens/commit/de1e57e2becc5f36f20b973a1070351d3f6c1eac))
+
+
+### Documentation
+
+* **amenities:** attribute openstreetmap under odbl ([e892f27](https://github.com/fatblaine/suburblens/commit/e892f270543f0f9de183cccf317e3a926bdf5f3e))
+
+## [2.1.0](https://github.com/fatblaine/suburblens/compare/suburblens-v2.0.0...suburblens-v2.1.0) (2026-08-31)
+
+
+### Features
+
+* Add SAL-level population density metric and update release manifest ([99f49d0](https://github.com/fatblaine/suburblens/commit/99f49d0405b1c37ec4bbcb18755be660ce67c38c))
+* **agent:** add distances and housing-mix tools to the chat agent ([3f0f1a6](https://github.com/fatblaine/suburblens/commit/3f0f1a607a753054ff35c729223068930e6aea1c))
+* **agent:** add distances and housing-mix tools to the chat agent ([6ee1559](https://github.com/fatblaine/suburblens/commit/6ee15599b2a618387c9f44d0c31e3e16c0e62ee2))
+* **agent:** add get_density tool for population density endpoint ([bbd2d46](https://github.com/fatblaine/suburblens/commit/bbd2d467818578a3685f90373a844550a7eca33b))
+* **agent:** add get_density tool for population density endpoint ([c4e82ba](https://github.com/fatblaine/suburblens/commit/c4e82baafa959eeb2bf3f4f897ff3e89009daf0e))
+* **density:** add SAL-level population density metric ([41c4627](https://github.com/fatblaine/suburblens/commit/41c4627f0574c6d3656d4b31e36ee920a6b21ae8))
+* **density:** add SAL-level population density metric ([09118b4](https://github.com/fatblaine/suburblens/commit/09118b4212ef7239daa72f62f3a2302928d346af))
+* **frontend:** add /r/:code promo short-link redirect ([027b862](https://github.com/fatblaine/suburblens/commit/027b862c0c1b8114a01efa9c50815a1191e7cbfb))
+* **frontend:** add /r/:code promo short-link redirect ([740a6fb](https://github.com/fatblaine/suburblens/commit/740a6fb47401b0f25ca67d3c90effc126cd595d6))
+
 ## [1.4.0](https://github.com/fatblaine/suburblens/compare/suburblens-v1.3.0...suburblens-v1.4.0) (2026-08-25)
 
 

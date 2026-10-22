@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import maplibregl from 'maplibre-gl'
+import * as maplibregl from 'maplibre-gl'
+// maplibre-gl v6 resolves its worker relative to its own module URL, which no
+// longer exists once Vite bundles it. Emit the worker as an asset and point at it.
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import PageMeta from '../components/PageMeta'
 import { useSuburbSearch, maybeWarmup } from '../api/suburbs'
 import type { SuburbSearchResult } from '../types/api'
+
+maplibregl.setWorkerUrl(maplibreWorkerUrl)
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
