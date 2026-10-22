@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.2.1](https://github.com/fatblaine/suburblens/compare/suburblens-v2.2.0...suburblens-v2.2.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* **deps:** security fixes from the 2026-10-22 audit ([cd3bc63](https://github.com/fatblaine/suburblens/commit/cd3bc63d989a3d90a1785b2bd2fda7f7bed4d572))
+* **deps:** security P1 – upgrade vite, npm audit fixes, swashbuckle ([160cc1d](https://github.com/fatblaine/suburblens/commit/160cc1dbab190ba70bcff5c06a78af7947535972))
+* **deps:** upgrade maplibre-gl to v6 and react-router-dom to 7.18.4 ([731c6dc](https://github.com/fatblaine/suburblens/commit/731c6dc82b9d704dd2a4e9e25688746b7ed1a420))
+* **deps:** upgrade maplibre-gl to v6 and react-router-dom to 7.18.4 ([33f449b](https://github.com/fatblaine/suburblens/commit/33f449b9aa009117fda355166f167f5c0c3bced6))
+* **deps:** upgrade swashbuckle to 10.3.1 for microsoft.openapi 2.7.5 ([038bb5d](https://github.com/fatblaine/suburblens/commit/038bb5dc503b2ad82a2c416f07006cbd486900c4))
+* **deps:** upgrade vite to 8.3.5 and apply npm audit fixes ([2f6bbcd](https://github.com/fatblaine/suburblens/commit/2f6bbcd3e0f9be39b2fff86a278dbed5663faa18))
+* **map:** replace per-suburb crime lateral with one-pass distinct on ([c959cc2](https://github.com/fatblaine/suburblens/commit/c959cc24fd63630e9116c40e92bf1225e0390f69))
+* **map:** replace per-suburb crime lateral with one-pass distinct on ([738434b](https://github.com/fatblaine/suburblens/commit/738434bfe2e2f6bbdae68901a200956f584cbf49))
+* optimized heatmap sql for crime data ([c53e16a](https://github.com/fatblaine/suburblens/commit/c53e16acf2f2c22717c0e0d043514f31b65d1b54))
+
 ## [2.2.0](https://github.com/fatblaine/suburblens/compare/suburblens-v2.1.0...suburblens-v2.2.0) (2026-10-14)
 
 
