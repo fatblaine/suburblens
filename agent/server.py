@@ -25,6 +25,9 @@ if sys.platform == "win32":
 
 
 DB_URI = os.environ.get("SUPABASE_DB_URL")
+# Supabase's root CA. sslmode=verify-full checks the server certificate against it
+# (plain "require" only encrypts, so an impostor server would still get the password).
+SUPABASE_CA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "certs", "supabase-ca.crt")
 
 
 @asynccontextmanager
@@ -37,7 +40,8 @@ async def lifespan(app: FastAPI):
             conninfo=DB_URI,
             max_size=10,
             kwargs={"autocommit": True,
-                    "prepare_threshold": None, "sslmode": "require"},
+                    "prepare_threshold": None,
+                    "sslmode": "verify-full", "sslrootcert": SUPABASE_CA},
         ) as pool:
             checkpointer = AsyncPostgresSaver(pool)
             await checkpointer.setup()      # idempotent: creates checkpoint tables on first run

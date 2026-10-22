@@ -11,6 +11,8 @@
          default, which would ship it inside the Lambda bundle; keep it in bin/
          for local runs but never in a published artifact. -->
     <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
+    <!-- Supabase root CA (public), referenced by Root Certificate=certs/supabase-ca.crt. -->
+    <None Update="certs\supabase-ca.crt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
