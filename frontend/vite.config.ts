@@ -9,6 +9,16 @@ export default defineConfig({
   // breaking the map. Terser minifies it correctly. See docs/planning/ai-changelog.md.
   build: {
     minify: 'terser',
+    rolldownOptions: {
+      output: {
+        // The maplibre-gl v6 worker ships as .mjs, but Amplify's SPA rewrite rule
+        // only exempts .js (among others) — a .mjs request would get index.html.
+        assetFileNames: (asset) =>
+          asset.names.some((n) => n.endsWith('.mjs'))
+            ? 'assets/[name]-[hash].js'
+            : 'assets/[name]-[hash][extname]',
+      },
+    },
   },
   server: {
     proxy: {
