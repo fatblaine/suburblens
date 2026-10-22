@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.2](https://github.com/fatblaine/suburblens/compare/suburblens-v2.2.1...suburblens-v2.2.2) (2026-10-22)
+
+
+### Bug Fixes
+
+* **security:** verify supabase tls certificate on db connections ([6e474e9](https://github.com/fatblaine/suburblens/commit/6e474e986b91c77be5b436c37d3aeb29f1689ded))
+* **security:** verify supabase tls certificate on db connections ([250cfd4](https://github.com/fatblaine/suburblens/commit/250cfd47fb3ad585d19f95e6e9ec9ad52c8b5b83))
+
 ## [2.2.1](https://github.com/fatblaine/suburblens/compare/suburblens-v2.2.0...suburblens-v2.2.1) (2026-10-22)
 
 
