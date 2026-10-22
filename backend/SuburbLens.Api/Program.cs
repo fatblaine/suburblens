@@ -37,6 +37,16 @@ if (string.IsNullOrWhiteSpace(connStr))
 if (string.IsNullOrWhiteSpace(connStr))
     throw new InvalidOperationException("Database connection string could not be resolved (SUPABASE_DB_URL / DB_URL_SSM_PARAM).");
 
+// SSL Mode=VerifyFull checks the server against Supabase's root CA (shipped in
+// certs/). A relative Root Certificate path is resolved against the app directory,
+// not the working directory, so the same connection string works locally and on Lambda.
+var csb = new NpgsqlConnectionStringBuilder(connStr);
+if (!string.IsNullOrEmpty(csb.RootCertificate) && !Path.IsPathRooted(csb.RootCertificate))
+{
+    csb.RootCertificate = Path.Combine(AppContext.BaseDirectory, csb.RootCertificate);
+    connStr = csb.ConnectionString;
+}
+
 // Npgsql — connection left closed; Dapper opens/closes per query
 builder.Services.AddScoped<IDbConnection>(_ => new NpgsqlConnection(connStr));
 

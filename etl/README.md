@@ -67,12 +67,17 @@ copy .env.example .env      # Windows
 编辑 `.env`，填入 Supabase 连接串：
 
 ```
-SUPABASE_DB_URL=postgres://postgres.[project-ref]:[password]@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres
+SUPABASE_DB_URL=postgres://postgres.[project-ref]:[password]@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres?sslmode=verify-full&sslrootcert=[绝对路径]/etl/certs/supabase-ca.crt
 ```
 
 > **连接串从哪里找：**
 > Supabase Dashboard → Settings → Database → Connection String
 > 选 **Transaction pooler**（不要用 Direct connection，Lambda 并发下会耗尽连接数）
+
+> **为什么要加 `sslmode=verify-full`：**
+> 不加时连接虽然加密，但不核实对方是不是真的 Supabase；有人冒充数据库（比如连公共 Wi-Fi 时），密码会直接发给对方。
+> `etl/certs/supabase-ca.crt` 是 Supabase 的根证书（公开文件，来自 Dashboard → Settings → Database → SSL Configuration，有效期至 2031-04-26）。
+> `sslrootcert` 按当前目录解析，所以要写绝对路径。
 
 ---
 
