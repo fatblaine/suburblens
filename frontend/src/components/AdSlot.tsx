@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { isNativeApp } from '../lib/platform'
 
 declare global {
   interface Window {
@@ -34,7 +35,7 @@ export default function AdSlot({
   const pushed = useRef(false)
 
   useEffect(() => {
-    if (pushed.current) return
+    if (pushed.current || isNativeApp) return
     pushed.current = true
     try {
       ;(window.adsbygoogle = window.adsbygoogle ?? []).push({})
@@ -43,6 +44,9 @@ export default function AdSlot({
       // outcome, and retrying just spams the console.
     }
   }, [])
+
+  // AdSense terms cover web pages, not in-app webviews (see index.html).
+  if (isNativeApp) return null
 
   return (
     <div className={`my-6 ${className}`}>
