@@ -159,6 +159,22 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ===== iOS app shell (html.native, set in main.tsx) =====
+   The page draws under the status bar and home indicator (viewport-fit=cover),
+   so pad the body clear of them and shrink the full-height utilities by the
+   same amount — otherwise every min-h-screen page scrolls by ~80px and the
+   map's h-screen box overflows. Unlayered, so it outranks Tailwind utilities. */
+.native body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.native .min-h-screen {
+  min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+.native .h-screen {
+  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+
 /* AdSense marks a slot it could not fill with data-ad-status="unfilled".
    Without this the empty <ins> still occupies vertical space and leaves a
    visible gap — most obvious for users running an ad blocker (adsense-plan §3.5). */

@@ -26,7 +26,7 @@ export default function AuthBadge() {
   }
 
   return (
-    <div className="fixed top-3 right-3 z-50 flex items-center gap-2 font-mono text-xs">
+    <div className="fixed top-[calc(env(safe-area-inset-top)+0.75rem)] right-3 z-50 flex items-center gap-2 font-mono text-xs">
       {session && (
         <span className="px-2.5 py-1 rounded-lg bg-surface-2 border border-white/10 text-muted block max-w-[45vw] sm:max-w-[220px] truncate">
           {isGuest ? 'Guest' : user?.email}

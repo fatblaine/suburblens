@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { track } from '../lib/analytics'
 import FeedbackModal from './FeedbackModal'
+import ExternalLink from './ExternalLink'
+import { isNativeApp } from '../lib/platform'
 
 const CHROME_STORE_URL =
   'https://chromewebstore.google.com/detail/suburblens/ipibeapbfhilcffdbaeihcholjjdchej'
@@ -37,16 +39,20 @@ export default function Footer({ className = '' }: { className?: string }) {
         <Link to="/privacy" className="transition-colors hover:text-lemon">
           Privacy
         </Link>
-        <Dot />
-        <a
-          href={CHROME_STORE_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => track('extension_click', { placement: 'footer' })}
-          className="transition-colors hover:text-lemon"
-        >
-          Chrome extension
-        </a>
+        {/* A Chrome extension is useless on an iPhone, and App Review frowns on
+            pointing users at other platforms. */}
+        {!isNativeApp && (
+          <>
+            <Dot />
+            <ExternalLink
+              href={CHROME_STORE_URL}
+              onClick={() => track('extension_click', { placement: 'footer' })}
+              className="transition-colors hover:text-lemon"
+            >
+              Chrome extension
+            </ExternalLink>
+          </>
+        )}
         <Dot />
         <button
           type="button"
@@ -68,14 +74,12 @@ export default function Footer({ className = '' }: { className?: string }) {
           not a courtesy — do not remove it while that feature is live. */}
       <p className="mt-1 text-dim/80">
         Local amenity counts:{' '}
-        <a
+        <ExternalLink
           href="https://www.openstreetmap.org/copyright"
-          target="_blank"
-          rel="noopener noreferrer"
           className="transition-colors hover:text-lemon"
         >
           &copy; OpenStreetMap contributors
-        </a>
+        </ExternalLink>
         , available under the Open Database Licence (ODbL).
       </p>
 

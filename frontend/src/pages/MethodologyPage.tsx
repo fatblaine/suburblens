@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { CARD } from '../lib/theme'
 import PageMeta from '../components/PageMeta'
+import ExternalLink from '../components/ExternalLink'
 
 const LAST_UPDATED = '6 August 2026'
 
@@ -164,14 +165,12 @@ export default function MethodologyPage() {
                 bars, pubs, supermarkets) counted inside the suburb (SAL) boundary.{' '}
                 <strong className="text-fg">Snapshot, refreshed periodically</strong> — not a Census figure.
                 &copy; OpenStreetMap contributors, available under the{' '}
-                <a
+                <ExternalLink
                   href="https://www.openstreetmap.org/copyright"
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="underline decoration-white/20 underline-offset-2 transition-colors hover:text-lemon"
                 >
                   Open Database Licence (ODbL)
-                </a>
+                </ExternalLink>
                 .
               </Row>
             </div>

@@ -13,6 +13,7 @@ import BarListSkeleton from './BarListSkeleton'
 import NearbySuburbs from './NearbySuburbs'
 import DistancePanel from './DistancePanel'
 import AmenitiesPanel from './AmenitiesPanel'
+import ExternalLink from './ExternalLink'
 import SuburbNarrative from './SuburbNarrative'
 import TabStrip from './TabStrip'
 import TabDeck from './TabDeck'
@@ -131,17 +132,16 @@ function SalesHistorySection({
     >
       <div className="flex flex-col gap-2">
         {links.map(({ site, label, url }) => (
-          <a
+          <ExternalLink
             key={site}
             href={url}
-            target="_blank"
             rel="noopener noreferrer nofollow"
             onClick={() => track('sold_link_click', { site, sal_code: salCode })}
             className="flex items-center justify-between gap-3 rounded-xl bg-surface-2 px-4 py-3 text-sm text-fg transition-colors hover:bg-surface-3 hover:text-lemon focus:border-lemon/60"
           >
             <span>{label}</span>
             <span className="font-mono text-xs text-faint" aria-hidden="true">↗</span>
-          </a>
+          </ExternalLink>
         ))}
       </div>
     </Panel>
