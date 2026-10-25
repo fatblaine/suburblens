@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.3.0](https://github.com/fatblaine/suburblens/compare/suburblens-v2.2.1...suburblens-v2.3.0) (2026-10-25)
+
+
+### Features
+
+* **ios:** adapt web app for the capacitor shell ([18ed55f](https://github.com/fatblaine/suburblens/commit/18ed55f05794d04ba885e2dfc0b5179e3377c45c))
+* **ios:** add capacitor ios shell ([08392d7](https://github.com/fatblaine/suburblens/commit/08392d74b739b024d05a25f9e1f7c5ac81eb5f1f))
+* **ios:** add capacitor ios shell ([8e1891c](https://github.com/fatblaine/suburblens/commit/8e1891cc7c710abafe883e771e1d179a65b27120))
+* **ios:** add capacitor ios shell and adapt web app for it ([5ceb65a](https://github.com/fatblaine/suburblens/commit/5ceb65a5216df1cf91509c6d859c5745590df066))
+* **ios:** capacitor ios shell and in-app web adaptations ([5656daa](https://github.com/fatblaine/suburblens/commit/5656daa1ee2f297c24871e8ea75b7eebd772bd41))
+
+
+### Bug Fixes
+
+* **security:** verify supabase tls certificate on db connections ([6e474e9](https://github.com/fatblaine/suburblens/commit/6e474e986b91c77be5b436c37d3aeb29f1689ded))
+* **security:** verify supabase tls certificate on db connections ([250cfd4](https://github.com/fatblaine/suburblens/commit/250cfd47fb3ad585d19f95e6e9ec9ad52c8b5b83))
+
 ## [2.2.1](https://github.com/fatblaine/suburblens/compare/suburblens-v2.2.0...suburblens-v2.2.1) (2026-10-22)
 
 
