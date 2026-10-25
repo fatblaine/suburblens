@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { PUBLIC_ORIGIN } from '../lib/platform'
 
 interface AuthContextValue {
   session: Session | null
@@ -51,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       // Where the confirmation link lands the user; must be whitelisted in
       // Supabase → Authentication → URL Configuration → Redirect URLs.
-      options: { emailRedirectTo: `${window.location.origin}/login` },
+      options: { emailRedirectTo: `${PUBLIC_ORIGIN}/login` },
     })
     if (error) throw error
     // With "Confirm email" enabled, Supabase returns no session until the user
@@ -63,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Supabase → Authentication → URL Configuration → Redirect URLs, and the
     // Site URL must be the real domain (otherwise the link falls back to it).
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: `${PUBLIC_ORIGIN}/reset-password`,
     })
     if (error) throw error
   }

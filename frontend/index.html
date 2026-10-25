@@ -35,13 +35,23 @@
       rel="stylesheet"
     />
 
+    <!-- iOS app shell (Capacitor) serves this page from capacitor://localhost.
+         AdSense policy does not cover in-app webviews, and Clarity's session
+         replay would need its own App Store privacy disclosure, so neither
+         loads there. Plain inline check: this runs before any module code. -->
+    <script>
+      window.__IS_APP__ = location.protocol === 'capacitor:'
+    </script>
+
     <!-- Microsoft Clarity (session replay + heatmaps). See docs/planning/analytics-plan.md Layer A. -->
     <script type="text/javascript">
-      (function(c,l,a,r,i,t,y){
-          c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-      })(window, document, "clarity", "script", "xqoij1f8pi");
+      if (!window.__IS_APP__) {
+        (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "xqoij1f8pi");
+      }
     </script>
 
     <!-- Google Analytics 4. See docs/planning/analytics-plan.md Layer B.
@@ -60,8 +70,18 @@
     <!-- Google AdSense. Verifies site ownership (the "AdSense code snippet"
          method) and, once approved, loads the ad library. prerender.mjs uses
          the built dist/index.html as the template for all 1494 suburb pages, so
-         this tag propagates to every page automatically — no per-page work. -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5982385876517812" crossorigin="anonymous"></script>
+         this tag propagates to every page automatically — no per-page work.
+         Injected rather than a static <script src> so the app can skip it; the
+         tag still lands in <head>, which is what AdSense's ownership check reads. -->
+    <script>
+      if (!window.__IS_APP__) {
+        var ads = document.createElement('script')
+        ads.async = true
+        ads.crossOrigin = 'anonymous'
+        ads.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5982385876517812'
+        document.head.appendChild(ads)
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
