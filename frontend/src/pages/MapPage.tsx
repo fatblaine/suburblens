@@ -7,6 +7,7 @@ import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import PageMeta from '../components/PageMeta'
 import { useSuburbSearch, maybeWarmup } from '../api/suburbs'
 import type { SuburbSearchResult } from '../types/api'
+import { MAP_STYLE_URL, NO_DATA, RSI_COLOR_EXPR } from '../lib/mapStyle'
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl)
 
@@ -55,20 +56,7 @@ const METRICS: { id: Metric; label: string }[] = [
   { id: 'crime', label: 'Crime' },
 ]
 
-const NO_DATA = '#374151' // dark grey — shared "no data" fill for every metric
-
-// RSI segment colours (kept in sync with ShiftIndexCard / Legend below). RSI is a
-// custom index with meaningful breakpoints, so it keeps its diverging scale rather
-// than being binned into quantiles like the percentile-based metrics.
-const RSI_COLOR_EXPR: maplibregl.ExpressionSpecification = [
-  'case',
-  ['==', ['get', 'residencyShiftIndex'], null], NO_DATA,    // no data -> dark grey
-  ['>=', ['get', 'residencyShiftIndex'], 3], '#16a34a',    // strong ownership -> green
-  ['>=', ['get', 'residencyShiftIndex'], 1], '#86efac',    // mild ownership -> light green
-  ['>=', ['get', 'residencyShiftIndex'], -1], '#6b7280',   // stable -> grey
-  ['>=', ['get', 'residencyShiftIndex'], -3], '#f97316',   // mild rental -> orange
-  '#ef4444',                                               // strong rental (<= -3) -> red
-]
+// RSI colours + "no data" grey live in lib/mapStyle (shared with the home MapPreview).
 
 // Amenities & crime are coloured by their within-city percentile (`pct_rank`, a
 // uniform 0–1). Because the value *is* a percentile, splitting [0,1] into equal
@@ -229,7 +217,7 @@ export default function MapPage() {
 
     const m = new maplibregl.Map({
       container: mapContainer.current,
-      style: 'https://tiles.openfreemap.org/styles/dark', // free, no token
+      style: MAP_STYLE_URL, // free, no token
       center: CITY_CENTERS.sydney.center,
       zoom: CITY_CENTERS.sydney.zoom,
     })
