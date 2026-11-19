@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.3.0](https://github.com/fatblaine/suburblens/compare/suburblens-v2.2.1...suburblens-v2.3.0) (2026-11-19)
+
+
+### Features
+
+* **home:** add phone layout and header extension button ([6eee5dd](https://github.com/fatblaine/suburblens/commit/6eee5dd584d9081e4a1c14668f09570d1e6df97e))
+* **home:** add phone layout and header extension button ([3f43a5d](https://github.com/fatblaine/suburblens/commit/3f43a5d8df97546bd39d5cfbfbe0bccce8faf978))
+* **home:** redesign home page as search plus guide ([850b07d](https://github.com/fatblaine/suburblens/commit/850b07d33b655ca42141e42a4853063ff400ffcf))
+* **home:** redesign home page as search plus guide ([09df8e9](https://github.com/fatblaine/suburblens/commit/09df8e9256be2f2cc67609f55d3f5131484e8ee8))
+* **home:** release home page redesign (search plus guide, phone layout) ([c288966](https://github.com/fatblaine/suburblens/commit/c288966d8c9368879c9583ef2084ad0d8dcfce29))
+* **ios:** adapt web app for the capacitor shell ([18ed55f](https://github.com/fatblaine/suburblens/commit/18ed55f05794d04ba885e2dfc0b5179e3377c45c))
+* **ios:** add capacitor ios shell ([08392d7](https://github.com/fatblaine/suburblens/commit/08392d74b739b024d05a25f9e1f7c5ac81eb5f1f))
+* **ios:** add capacitor ios shell ([8e1891c](https://github.com/fatblaine/suburblens/commit/8e1891cc7c710abafe883e771e1d179a65b27120))
+* **ios:** add capacitor ios shell and adapt web app for it ([5ceb65a](https://github.com/fatblaine/suburblens/commit/5ceb65a5216df1cf91509c6d859c5745590df066))
+* **ios:** capacitor ios shell and in-app web adaptations ([5656daa](https://github.com/fatblaine/suburblens/commit/5656daa1ee2f297c24871e8ea75b7eebd772bd41))
+
+
+### Bug Fixes
+
+* **security:** verify supabase tls certificate on db connections ([6e474e9](https://github.com/fatblaine/suburblens/commit/6e474e986b91c77be5b436c37d3aeb29f1689ded))
+* **security:** verify supabase tls certificate on db connections ([250cfd4](https://github.com/fatblaine/suburblens/commit/250cfd47fb3ad585d19f95e6e9ec9ad52c8b5b83))
+
 ## [2.2.1](https://github.com/fatblaine/suburblens/compare/suburblens-v2.2.0...suburblens-v2.2.1) (2026-10-22)
 
 
