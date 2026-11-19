@@ -76,7 +76,8 @@ export default function MapPreview() {
   }, [])
 
   return (
-    <div className="flex-[1_1_480px] min-w-0 min-h-[360px] relative bg-ink-2">
+    // Stacked (below lg): the map goes first, copy underneath. Side by side: map on the right.
+    <div className="order-first lg:order-none flex-[1_1_480px] min-w-0 min-h-[220px] sm:min-h-[320px] lg:min-h-[360px] relative bg-ink-2">
       {/* maplibre-gl.css forces the container to position:relative, so it can't
           be the absolutely positioned layer itself: size it inside one. */}
       <div className="absolute inset-0" aria-hidden="true">
@@ -92,12 +93,13 @@ export default function MapPreview() {
         className="absolute inset-0 z-[1]"
       />
 
-      <div className="absolute left-4 bottom-4 z-[2] pointer-events-none rounded-xl bg-surface/95 border border-white/[0.08] px-3.5 py-3 font-mono text-[11px] text-muted">
-        <div className="flex items-center gap-2 mb-2">
+      {/* Phones: top-left, so it doesn't sit on the map credit at the bottom. */}
+      <div className="absolute left-2.5 top-2.5 sm:top-auto sm:left-4 sm:bottom-4 z-[2] pointer-events-none rounded-lg sm:rounded-xl bg-surface/95 border border-white/[0.08] px-2.5 py-2 sm:px-3.5 sm:py-3 font-mono text-[10px] sm:text-[11px] text-muted">
+        <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
           <span className="text-fg uppercase tracking-[0.08em]">Residency Shift</span>
-          <span className="px-1.5 py-px rounded border border-white/15 text-[10px] text-faint">SuburbLens Custom</span>
+          <span className="px-1 sm:px-1.5 py-px rounded border border-white/15 text-[9px] sm:text-[10px] text-faint">SuburbLens Custom</span>
         </div>
-        <div className="flex h-2 rounded-sm overflow-hidden w-[200px]">
+        <div className="flex h-1.5 sm:h-2 rounded-sm overflow-hidden w-[150px] sm:w-[200px]">
           {RSI_BANDS.map(b => <div key={b.label} className="flex-1" style={{ background: b.color }} />)}
         </div>
         <div className="flex justify-between mt-1.5"><span>Owning</span><span>Renting</span></div>

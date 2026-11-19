@@ -43,8 +43,10 @@ export default function AuthBadge({ inline = false }: { inline?: boolean } = {})
           : 'fixed top-[calc(env(safe-area-inset-top)+0.75rem)] right-3 z-50 flex items-center gap-2 font-mono text-xs'
       }
     >
+      {/* Inline (home header): the identity only fits beside the nav and the
+          extension button on wide screens (lg); the log in/out button always shows. */}
       {session && (
-        <span className={`${pad} rounded-lg bg-surface-2 border ${border} text-muted block max-w-[45vw] sm:max-w-[220px] truncate`}>
+        <span className={`${pad} rounded-lg bg-surface-2 border ${border} text-muted ${inline ? 'hidden lg:block' : 'block'} max-w-[45vw] sm:max-w-[220px] truncate`}>
           {isGuest ? 'Guest' : user?.email}
         </span>
       )}

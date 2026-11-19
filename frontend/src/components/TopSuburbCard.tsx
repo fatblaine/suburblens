@@ -19,17 +19,28 @@ const YEARS = [
 const km = (m: number) => `${(m / 1000).toFixed(1)} km`
 const pct = (v: number | null | undefined) => (v == null ? '–' : `${v.toFixed(1)}%`)
 
-function Stat({ label, value, note, noteClass = 'text-muted' }: {
+function Stat({ label, shortLabel, value, note, shortNote, noteClass = 'text-muted' }: {
   label: string
+  shortLabel?: string
   value: string
   note?: string
+  /** Phone version of the note (the 2-column grid is ~170px wide there). */
+  shortNote?: string
   noteClass?: string
 }) {
   return (
-    <div className="bg-surface px-4 py-3.5 min-w-0">
-      <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-faint truncate">{label}</div>
-      <div className="font-display font-semibold text-[26px] leading-tight mt-1 truncate">{value}</div>
-      {note && <div className={`font-mono text-xs truncate ${noteClass}`}>{note}</div>}
+    <div className="bg-surface px-3.5 sm:px-4 py-3 sm:py-3.5 min-w-0">
+      <div className="font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.08em] text-faint truncate">
+        <span className="sm:hidden">{shortLabel ?? label}</span>
+        <span className="hidden sm:inline">{label}</span>
+      </div>
+      <div className="font-display font-semibold text-[22px] sm:text-[26px] leading-tight mt-1 truncate">{value}</div>
+      {note && (
+        <div className={`font-mono text-[11px] sm:text-xs truncate ${noteClass}`}>
+          <span className="sm:hidden">{shortNote ?? note}</span>
+          <span className="hidden sm:inline">{note}</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -86,12 +97,12 @@ export default function TopSuburbCard() {
       <Link
         to={`/suburb/${top.salCode}`}
         onClick={() => track('top_suburb_click', { sal_code: top.salCode })}
-        className="block rounded-[20px] bg-surface border border-white/[0.07] p-6 sm:p-[26px] text-fg shadow-[0_30px_60px_-20px_rgba(0,0,0,0.6)] transition-colors hover:border-lemon/30"
+        className="block rounded-[20px] bg-surface border border-white/[0.07] p-[18px] sm:p-[26px] text-fg shadow-[0_30px_60px_-20px_rgba(0,0,0,0.6)] transition-colors hover:border-lemon/30"
       >
         <div className="flex justify-between items-start gap-3 mb-5">
           <div className="min-w-0">
-            <div className="font-display font-bold text-[26px] tracking-tight truncate" title={top.salName}>{shortSuburbName(top.salName)}</div>
-            <div className="text-[13px] text-faint mt-0.5">
+            <div className="font-display font-bold text-[24px] sm:text-[26px] tracking-tight truncate" title={top.salName}>{shortSuburbName(top.salName)}</div>
+            <div className="text-xs sm:text-[13px] text-faint mt-0.5">
               {stateAndPostcode(top.stateName, tenure.data.postcode)}
               {cbd && ` · ${km(cbd.distanceMeters)} to ${cbd.shortName ?? cbd.name}`}
             </div>
@@ -109,17 +120,21 @@ export default function TopSuburbCard() {
             label="Homes rented"
             value={pct(rentNow)}
             note={rentDelta != null ? `${rentDelta >= 0 ? '+' : ''}${rentDelta.toFixed(1)} pts since 2011` : undefined}
+            shortNote={rentDelta != null ? `${rentDelta >= 0 ? '+' : ''}${rentDelta.toFixed(1)} pts` : undefined}
             noteClass={tag.deltaClassName}
           />
           <Stat
             label="Top language"
             value={topLanguage?.language ?? '–'}
             note={topLanguage?.pct != null ? `${topLanguage.pct.toFixed(1)}% of residents` : undefined}
+            shortNote={topLanguage?.pct != null ? `${topLanguage.pct.toFixed(1)}%` : undefined}
           />
           <Stat
             label="University educated"
+            shortLabel="Uni educated"
             value={pct(uni)}
             note={uniMedian != null ? `${cityShort} median ${uniMedian.toFixed(1)}%` : undefined}
+            shortNote={uniMedian != null ? `median ${uniMedian.toFixed(1)}%` : undefined}
             noteClass="text-lemon"
           />
           <Stat
@@ -151,7 +166,7 @@ export default function TopSuburbCard() {
         </div>
 
         <div className="flex justify-between items-center gap-3 mt-5 pt-4 border-t border-white/[0.07]">
-          <div className="flex flex-wrap gap-3 text-xs text-muted">
+          <div className="flex gap-2.5 sm:gap-3 text-[11px] sm:text-xs text-muted whitespace-nowrap">
             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-owned" />Owned</span>
             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-mortgage" />Mortgage</span>
             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-rented" />Rented</span>

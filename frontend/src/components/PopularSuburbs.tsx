@@ -11,7 +11,7 @@ interface PopularSuburbsProps {
 // Shared pill shell so skeleton and real pills are pixel-identical in height —
 // that identical box model is what stops the section reflowing when data lands.
 const PILL_BASE =
-  'flex items-center gap-2 rounded-full pl-3.5 pr-3 py-2 border text-[13px]'
+  'flex items-center gap-2 h-10 rounded-full pl-3.5 pr-3 border text-[13px]'
 
 // Varied widths so the loading row reads like real suburb names, not equal bars.
 const SKELETON_WIDTHS = [96, 120, 84, 132, 104, 92, 116, 100]
@@ -43,12 +43,14 @@ export default function PopularSuburbs({ selected, onSelect }: PopularSuburbsPro
         <path d="M3 17l6-6 4 4 8-8" />
         <path d="M15 7h6v6" />
       </svg>
-      {/* No hidden scrolling: only as many pills as fit one row on desktop
-          (MAX_PILLS). Phones may wrap to a second line. */}
+      {/* One row, inside the page margins, with whole pills only: the row is
+          exactly one pill tall and wraps, so any pill that doesn't fit drops to
+          a hidden second line instead of being cut off or scrolled. Works the
+          same on phone and desktop. */}
       <div
         role="group"
         aria-label="Most viewed this month"
-        className="flex-1 min-w-0 flex flex-wrap items-center gap-2"
+        className="flex-1 min-w-0 h-10 overflow-hidden flex flex-wrap items-center gap-x-2 gap-y-4"
       >
         {isLoading
           ? SKELETON_WIDTHS.slice(0, MAX_PILLS).map((w, i) => (

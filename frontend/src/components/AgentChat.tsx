@@ -60,11 +60,13 @@ function lookupFaq(text: string): string | null {
   return FAQ.find(f => normalize(f.q) === n)?.a ?? null
 }
 
-/** `tall`: a taller message area for the home page's full-width Ask AI section. */
+/** `tall`: the home page's full-width Ask AI section: starts open, with a taller
+ *  message area (shorter on phones so the input stays on screen). */
 export default function AgentChat({ tall = false }: { tall?: boolean } = {}) {
   const { session, isGuest, user } = useAuth()
   const navigate = useNavigate()
-  const [open, setOpen] = useState(false)
+  // The home page's full-width (tall) chat starts open; elsewhere it's a toggle.
+  const [open, setOpen] = useState(tall)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -179,7 +181,7 @@ export default function AgentChat({ tall = false }: { tall?: boolean } = {}) {
       {open && (
         <div className="mt-2 bg-surface border border-white/[0.07] rounded-xl shadow-2xl shadow-black/40 overflow-hidden">
 
-          <div className={`${tall ? 'h-[440px]' : 'h-64'} overflow-y-auto px-4 py-3 space-y-2`}>
+          <div className={`${tall ? 'h-[300px] sm:h-[440px]' : 'h-64'} overflow-y-auto px-4 py-3 space-y-2`}>
             {messages.length === 0 && (
               <div className="pt-3 space-y-4">
                 <div>
