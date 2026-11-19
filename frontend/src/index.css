@@ -44,6 +44,23 @@
   @theme { --animate-fade-in: none; }
 }
 
+/* ===== Home guide: fade/rise in as a section scrolls into view =====
+   Scroll-driven (no JS). Browsers without animation-timeline simply show the
+   section as-is; reduced-motion users get no animation either. */
+@keyframes reveal {
+  from { opacity: 0.25; transform: translateY(32px); }
+  to   { opacity: 1; transform: none; }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 35%;
+    }
+  }
+}
+
 /* ===== AI assistant Markdown bubbles =====
    Tailwind v4 resets element styling, so re-style what react-markdown emits.
    Scoped to .markdown-body so it never leaks into the rest of the app. */

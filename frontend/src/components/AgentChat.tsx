@@ -60,7 +60,8 @@ function lookupFaq(text: string): string | null {
   return FAQ.find(f => normalize(f.q) === n)?.a ?? null
 }
 
-export default function AgentChat() {
+/** `tall`: a taller message area for the home page's full-width Ask AI section. */
+export default function AgentChat({ tall = false }: { tall?: boolean } = {}) {
   const { session, isGuest, user } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -178,7 +179,7 @@ export default function AgentChat() {
       {open && (
         <div className="mt-2 bg-surface border border-white/[0.07] rounded-xl shadow-2xl shadow-black/40 overflow-hidden">
 
-          <div className="h-64 overflow-y-auto px-4 py-3 space-y-2">
+          <div className={`${tall ? 'h-[440px]' : 'h-64'} overflow-y-auto px-4 py-3 space-y-2`}>
             {messages.length === 0 && (
               <div className="pt-3 space-y-4">
                 <div>
